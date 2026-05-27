@@ -31,7 +31,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -133,14 +134,14 @@ export function DataTable<TData, TValue>({
   };
 
   return (
-    <div className="w-full space-y-4">
-      <div className="rounded-md border">
+    <div className="w-full flex flex-col h-full">
+      <div className="rounded-none border-none flex-1 overflow-y-auto relative">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50/50 sticky top-0 z-20">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="h-10 px-6 font-semibold">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -155,48 +156,45 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center py-8"
-                >
-                  Loading...
+                <TableCell colSpan={columns.length} className="h-20 text-center">
+                  <div className="flex items-center justify-center gap-2 text-slate-500 font-medium">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+                    Loading...
+                  </div>
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row, idx) => {
-                const rowId = `${idx}`;
-                return (
-                  <React.Fragment key={row.id}>
-                    <TableRow
-                      onClick={() => handleRowClick(row.original, rowId)}
-                      className="cursor-pointer hover:bg-gray-100"
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {renderRowDetail && expandedRows[rowId] && (
-                      <TableRow>
-                        <TableCell colSpan={columns.length}>
-                          {renderRowDetail(row.original)}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                );
-              })
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="group border-b border-slate-50 hover:bg-blue-50/40 transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="py-3 px-6">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
             ) : (
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center py-8 text-gray-500"
+                  className="h-[300px] text-center"
                 >
-                  No results.
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                      <Search className="h-6 w-6 text-slate-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-base font-bold text-slate-900">No members found</p>
+                      <p className="text-sm text-slate-500">Try adjusting your search or filters to find what you're looking for.</p>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -204,78 +202,81 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {isServerPagination
-            ? `Showing ${currentPagination.pageIndex * currentPagination.pageSize + 1}–${Math.min((currentPagination.pageIndex + 1) * currentPagination.pageSize, rowCount || 0)} of ${rowCount || 0}`
-            : `Showing ${table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}–${Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, data.length)} of ${data.length}`}
+      {/* Pagination Container */}
+      <div className="sticky bottom-0 z-20 bg-white border-t border-slate-100 flex items-center justify-between px-8 py-4">
+        <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+          <span>Rows per page:</span>
+          <Select
+            value={currentPagination.pageSize.toString()}
+            onValueChange={(value: string) => {
+              handlePaginationChange({
+                pageIndex: 0,
+                pageSize: Number(value),
+              });
+            }}
+          >
+            <SelectTrigger className="h-10 w-[80px] rounded-xl bg-white border-slate-200 font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-slate-100 bg-gray-100 shadow-xl">
+              {[5, 20, 30, 50, 100].map((pageSize) => (
+                <SelectItem key={pageSize} value={pageSize.toString()} className="rounded-lg">
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Rows per page:</span>
-            <Select
-              value={currentPagination.pageSize.toString()}
-              onValueChange={(value: string) => {
-                handlePaginationChange({
-                  pageIndex: 0,
-                  pageSize: Number(value),
-                });
-              }}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[10, 20, 30, 50, 100].map((pageSize) => (
-                  <SelectItem key={pageSize} value={pageSize.toString()}>
-                    {pageSize}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex items-center gap-2 ">
+          <Button
+            variant="ghost"
+            className="h-10 px-4 rounded-xl text-slate-400 hover:text-slate-900 font-bold"
+            onClick={() =>
+              handlePaginationChange({
+                pageIndex: Math.max(0, currentPagination.pageIndex - 1),
+                pageSize: currentPagination.pageSize,
+              })
+            }
+            disabled={currentPagination.pageIndex === 0}
+          >
+            Previous
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {[1, 2, 3].map((page) => (
+              <Button
+                key={page}
+                variant={currentPagination.pageIndex + 1 === page ? "default" : "ghost"}
+                className={cn(
+                  "h-10 w-10 rounded-xl font-bold",
+                  currentPagination.pageIndex + 1 === page ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                )}
+                onClick={() => handlePaginationChange({ ...currentPagination, pageIndex: page - 1 })}
+              >
+                {page}
+              </Button>
+            ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                handlePaginationChange({
-                  pageIndex: Math.max(0, currentPagination.pageIndex - 1),
-                  pageSize: currentPagination.pageSize,
-                })
-              }
-              disabled={currentPagination.pageIndex === 0}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            <span className="text-sm text-gray-600">
-              Page {currentPagination.pageIndex + 1} of{" "}
-              {pageCount || Math.ceil(data.length / currentPagination.pageSize)}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                handlePaginationChange({
-                  pageIndex: currentPagination.pageIndex + 1,
-                  pageSize: currentPagination.pageSize,
-                })
-              }
-              disabled={
-                isServerPagination
-                  ? currentPagination.pageIndex >= (pageCount || 0) - 1
-                  : currentPagination.pageIndex >=
-                    Math.ceil(data.length / currentPagination.pageSize) - 1
-              }
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="h-10 px-4 rounded-lg border-slate-200 bg-gray-300 font-bold hover:bg-slate-50 ml-2"
+            onClick={() =>
+              handlePaginationChange({
+                pageIndex: currentPagination.pageIndex + 1,
+                pageSize: currentPagination.pageSize,
+              })
+            }
+            disabled={
+              isServerPagination
+                ? currentPagination.pageIndex >= (pageCount || 1) - 1
+                : currentPagination.pageIndex >=
+                  Math.ceil(data.length / currentPagination.pageSize) - 1
+            }
+          >
+            Next
+          </Button>
         </div>
       </div>
     </div>

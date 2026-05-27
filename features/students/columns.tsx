@@ -1,140 +1,157 @@
 "use client";
 
+"use client";
+
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Student } from "./api";
-import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface StudentColumnActionsProps {
   student: Student;
   onEdit: (student: Student) => void;
   onDelete: (student: Student) => void;
-  onView: (student: Student) => void;
 }
 
-const StudentColumnActions = ({ student, onEdit, onDelete, onView }: StudentColumnActionsProps) => {
+const StudentColumnActions = ({ student, onEdit, onDelete }: StudentColumnActionsProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-8 w-8 p-0">
+        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full text-slate-400">
           <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => onView(student)}>
-          <Eye className="mr-2 h-4 w-4" /> View Details
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onEdit(student)}>
-          <Pencil className="mr-2 h-4 w-4" /> Edit Student
+      <DropdownMenuContent align="end" className="w-[160px] rounded-2xl shadow-xl border-slate-100 p-2">
+        <DropdownMenuItem 
+          onClick={() => onEdit(student)}
+          className="rounded-xl flex items-center gap-2 cursor-pointer focus:bg-slate-50 py-2.5"
+        >
+          <Pencil className="h-4 w-4 text-slate-500" /> 
+          <span className="font-medium text-slate-700">Edit</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => onDelete(student)}
-          className="text-red-600 focus:text-red-600"
+          className="rounded-xl flex items-center gap-2 cursor-pointer focus:bg-red-50 text-red-600 py-2.5"
         >
-          <Trash2 className="mr-2 h-4 w-4" /> Delete Student
+          <Trash2 className="h-4 w-4" /> 
+          <span className="font-medium">Delete</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
+const getInitials = (firstName: string, lastName?: string) => {
+  return `${firstName?.charAt(0) || ""}${lastName?.charAt(0) || ""}`.toUpperCase();
+};
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600 rounded-full",
+  "bg-orange-200 text-orange-600 rounded-full",
+  "bg-purple-100 text-purple-600 rounded-full",
+  "bg-pink-100 text-pink-600 rounded-full",
+  "bg-green-100 text-green-600 rounded-full",
+];
+
+const getAvatarColor = (id: string | number) => {
+  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  return avatarColors[index];
+};
+
 export const getStudentColumns = (
   onEdit: (student: Student) => void,
   onDelete: (student: Student) => void,
-  onView: (student: Student) => void,
+  _onView: (student: Student) => void,
 ): ColumnDef<Student>[] => [
   {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && "indeterminate")}
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: "id",
-    header: "ID",
-    cell: ({ row }) => <div className="font-mono text-xs text-muted-foreground w-[60px]">{row.getValue("id")}</div>,
+    header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Student ID</span>,
+    cell: ({ row }) => <div className="font-semibold text-slate-600 text-sm">#STU-{row.getValue("id")}</div>,
   },
   {
-    header: "Student",
+    header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Student Name</span>,
     id: "student_info",
     cell: ({ row }) => {
       const student = row.original;
       return (
-        <div className="flex flex-col">
-          <span className="font-medium text-gray-900">
+        <div className="flex items-center gap-2">
+          <div className={cn(
+            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold text-white",
+            getAvatarColor(student.id)
+          )}>
+            {getInitials(student.first_name, student.last_name)}
+          </div>
+          <span className="font-semibold text-slate-900 text-sm">
             {student.first_name} {student.last_name}
           </span>
-          <span className="text-xs text-gray-500">{student.email}</span>
         </div>
       );
     },
   },
   {
-    accessorKey: "course_name",
-    header: "Course",
+    accessorKey: "email",
+    header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</span>,
     cell: ({ row }) => (
-      <div className="max-w-[200px] truncate" title={row.getValue("course_name")}>
-        {row.getValue("course_name") || "No Course"}
+      <div className="text-slate-600 font-medium text-sm truncate max-w-[180px]">
+        {row.getValue("email")}
       </div>
     ),
   },
   {
+    accessorKey: "course_name",
+    header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Enrolled Batches</span>,
+    cell: ({ row }) => {
+      const course = row.getValue("course_name") as string;
+      if (!course) return <span className="text-slate-400 text-sm">-</span>;
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {course.split(",").map((c, i) => (
+            <Badge key={i} className="bg-blue-100 text-blue-700 border-none rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-blue-200 transition-colors">
+              {c.trim()}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "status",
-    header: "Status",
+    header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Status</span>,
     cell: ({ row }) => {
       const status = (row.getValue("status") as string) || "Inactive";
-      const variant = status.toLowerCase() === "active" ? "success" : "secondary";
+      const isActive = status.toLowerCase() === "active";
       return (
-        <Badge variant={variant as any} className="capitalize">
+        <Badge className={cn(
+          "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
+          isActive 
+            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
+            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+        )}>
           {status}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "created_at",
-    header: "Joined",
-    cell: ({ row }) => {
-      const dateStr = row.getValue("created_at") as string;
-      if (!dateStr) return "-";
-      return <div className="text-gray-500">{new Date(dateStr).toLocaleDateString()}</div>;
-    },
-  },
-  {
     id: "actions",
+    header: () => <div className="text-right pr-4"><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Action</span></div>,
     cell: ({ row }) => (
-      <StudentColumnActions 
-        student={row.original} 
-        onEdit={onEdit} 
-        onDelete={onDelete} 
-        onView={onView} 
-      />
+      <div className="text-right">
+        <StudentColumnActions 
+          student={row.original} 
+          onEdit={onEdit} 
+          onDelete={onDelete} 
+        />
+      </div>
     ),
   },
 ];
