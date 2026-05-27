@@ -43,8 +43,8 @@ export default function EditInstitutionPage() {
         if (inst) {
           setName(inst.name)
           setEmail(inst.email)
-          setLocation(inst.location)
-          if (inst.contacts?.length > 0) setContacts(inst.contacts)
+          setLocation(inst.location || "")
+          if (inst.contacts && inst.contacts.length > 0) setContacts(inst.contacts as { name: string; role: string; email: string; phone: string }[])
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

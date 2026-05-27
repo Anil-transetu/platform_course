@@ -79,7 +79,7 @@ export default function UsersPage() {
       setInstitutionCount(instCount);
       
       // Handle different possible response structures
-      const usersArray = Array.isArray(result) ? result : (result?.data || result?.users || []);
+      const usersArray = Array.isArray(result) ? result : ((result as Record<string, unknown>)?.data || (result as Record<string, unknown>)?.users || []);
       
       if (Array.isArray(usersArray)) {
         const mappedUsers = usersArray.map((u: User) => {

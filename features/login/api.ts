@@ -1,7 +1,25 @@
-export const loginBaseUrl = "/api/auth/login";
+interface LoginResponse {
+  token?: string;
+  accessToken?: string;
+  role: string;
+  user?: {
+    email: string;
+    name: string;
+  };
+  message: string;
+}
 
-export const loginToApi = async (email: string, password: string) => {
-  const response = await fetch(loginBaseUrl, {
+/**
+ * Login to the API with email and password
+ * @param email User email
+ * @param password User password
+ * @returns Login response with token and role
+ */
+export async function loginToApi(
+  email: string,
+  password: string
+): Promise<LoginResponse> {
+  const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -10,19 +28,12 @@ export const loginToApi = async (email: string, password: string) => {
   });
 
   if (!response.ok) {
-    let errorMessage = "Failed to login";
-    try {
-      const errorData = await response.json();
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.detail) {
-        errorMessage = errorData.detail;
-      }
-    } catch (e) {
-      // Ignore if response is not JSON
-    }
-    throw new Error(errorMessage);
+    const error = await response.json().catch(() => ({
+      message: "Login failed",
+    }));
+    throw new Error(error.message || "Login failed");
   }
 
-  return response.json();
-};
+  const data = (await response.json()) as LoginResponse;
+  return data;
+}
