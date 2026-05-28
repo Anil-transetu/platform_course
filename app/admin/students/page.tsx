@@ -8,6 +8,7 @@ import { TableCards, StatCard } from "@/components/shared/tables/table-cards"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import StudentActionModal from "@/features/students/components/StudentActionModal"
+import BulkUploadModal from "@/features/students/components/BulkUploadModal"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   Select,
@@ -34,6 +35,8 @@ export default function StudentsPage() {
     mode: "create",
     student: null
   })
+
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false)
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -133,6 +136,12 @@ export default function StudentsPage() {
           onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
           onSuccess={handleSuccess}
         />
+        
+        <BulkUploadModal 
+          isOpen={isBulkUploadOpen}
+          onClose={() => setIsBulkUploadOpen(false)}
+          onSuccess={handleSuccess}
+        />
 
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
@@ -141,7 +150,11 @@ export default function StudentsPage() {
             <p className="text-slate-500 font-medium mt-2">Manage enrollments, batches, and student information.</p>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="h-11 px-6 rounded-lg border-slate-200 text-slate-600 font-semibold flex items-center gap-2 hover:bg-slate-100 shadow-sm bg-white transition-all">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsBulkUploadOpen(true)}
+              className="h-11 px-6 rounded-lg border-slate-200 text-slate-600 font-semibold flex items-center gap-2 hover:bg-slate-100 shadow-sm bg-white transition-all"
+            >
               <Plus size={18} />
               Bulk Upload CSV
             </Button>
