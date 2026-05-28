@@ -11,8 +11,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ColumnDef } from "@tanstack/react-table";
 
-import { DataTable } from "@/components/tables/data-table";
-import { CreateEditModal } from "@/components/forms/form-modal";
+import { DataTable } from "@/components/shared/tables/data-table";
+import { CreateEditModal } from "@/components/shared/forms/form-modal";
 import { Button } from "@/components/ui/button";
 import { useTableState } from "@/hooks/use-table-state";
 import { useApiError } from "@/hooks/use-api-error";
