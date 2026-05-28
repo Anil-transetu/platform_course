@@ -143,70 +143,20 @@ export async function deleteUser(id: string | number): Promise<void> {
 }
 
 /**
- * Fetch admin count
+ * Fetch user stats (counts)
  */
-export async function fetchAdminCount(): Promise<number> {
-  const response = await fetch("/api/v1/users/count/admins", {
+export async function fetchUserStats(): Promise<{ admins: number, representatives: number, institutions: number }> {
+  const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
 
   const data = await handleResponse(response);
-  // Handle response structure: { success, message, data: { count } }
-  if (data?.data?.count !== undefined) {
-    return data.data.count;
-  }
-  if (typeof data === "number") {
-    return data;
-  }
-  if (data?.count !== undefined) {
-    return data.count;
-  }
-  return 0;
-}
-
-/**
- * Fetch representative count
- */
-export async function fetchRepresentativeCount(): Promise<number> {
-  const response = await fetch("/api/v1/users/count/representatives", {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  const data = await handleResponse(response);
-  // Handle response structure: { success, message, data: { count } }
-  if (data?.data?.count !== undefined) {
-    return data.data.count;
-  }
-  if (typeof data === "number") {
-    return data;
-  }
-  if (data?.count !== undefined) {
-    return data.count;
-  }
-  return 0;
-}
-
-/**
- * Fetch institution count
- */
-export async function fetchInstitutionCount(): Promise<number> {
-  const response = await fetch("/api/v1/users/count/institutions", {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-
-  const data = await handleResponse(response);
-  // Handle response structure: { success, message, data: { count } }
-  if (data?.data?.count !== undefined) {
-    return data.data.count;
-  }
-  if (typeof data === "number") {
-    return data;
-  }
-  if (data?.count !== undefined) {
-    return data.count;
-  }
-  return 0;
+  // Expected response structure: data or data.data containing the counts
+  const stats = data?.data || data || {};
+  return {
+    admins: stats.total_admins || stats.admins || stats.admin_count || 0,
+    representatives: stats.total_representatives || stats.representatives || stats.representative_count || 0,
+    institutions: stats.total_institutions || stats.institutions || stats.institution_count || 0,
+  };
 }

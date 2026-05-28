@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import React, { useState, useEffect } from "react";
 import { X, Pencil, Trash2, Eye, EyeOff, Loader2, Plus, Search, MoreVertical } from "lucide-react";
 import { isEmpty, isValidEmail, inputErrorClass, errorTextClass } from "@/lib/validation";
-import { createUser, fetchUsers, deleteUser, updateUser, fetchUserById, User, fetchAdminCount, fetchRepresentativeCount, fetchInstitutionCount } from "@/features/users/api";
+import { createUser, fetchUsers, deleteUser, updateUser, fetchUserById, User, fetchUserStats } from "@/features/users/api";
 
 interface UserData {
   id: string;
@@ -53,30 +53,20 @@ export default function UsersPage() {
   const loadUsers = async () => {
     setIsFetching(true);
     try {
-      // Fetch users, admin count, representative count and institution count in parallel
-      const [result, count, repCount, instCount] = await Promise.all([
+      // Fetch users and user stats in parallel
+      const [result, stats] = await Promise.all([
         fetchUsers(),
-        fetchAdminCount().catch(err => {
-          console.error("Admin count fetch failed:", err);
-          return 0; // Fallback to 0
-        }),
-        fetchRepresentativeCount().catch(err => {
-          console.error("Representative count fetch failed:", err);
-          return 0; // Fallback to 0
-        }),
-        fetchInstitutionCount().catch(err => {
-          console.error("Institution count fetch failed:", err);
-          return 0; // Fallback to 0
+        fetchUserStats().catch(err => {
+          console.error("User stats fetch failed:", err);
+          return { admins: 0, representatives: 0, institutions: 0 };
         })
       ]);
       
       console.log("Raw API response:", result);
-      console.log("Admin count:", count);
-      console.log("Representative count:", repCount);
-      console.log("Institution count:", instCount);
-      setAdminCount(count);
-      setRepresentativeCount(repCount);
-      setInstitutionCount(instCount);
+      console.log("User stats:", stats);
+      setAdminCount(stats.admins);
+      setRepresentativeCount(stats.representatives);
+      setInstitutionCount(stats.institutions);
       
       // Handle different possible response structures
       const usersArray = Array.isArray(result) ? result : ((result as Record<string, unknown>)?.data || (result as Record<string, unknown>)?.users || []);
