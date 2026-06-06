@@ -7,6 +7,7 @@ import {
   FileText, CheckCircle, ClipboardList, Star,
   MoreVertical, FileUp, Link as LinkIcon, Pencil, Trash2
 } from "lucide-react";
+import StatsCard from "@/components/ui/StatsCard";
 
 import CreateAssignmentModal from "@/components/sidebar/CreateAssignmentModal";
 
@@ -85,11 +86,39 @@ export default function AssignmentsPage() {
       </div>
 
       {/* STAT CARDS */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        <StatCard title="Total Assignments" value="1,240" icon={<FileText size={18} />} color="blue" />
-        <StatCard title="Active Assignments" value="850" icon={<CheckCircle size={18} />} color="green" />
-        <StatCard title="Submissions Pending" value="124" icon={<ClipboardList size={18} />} color="orange" />
-        <StatCard title="Avg. Score" value="82%" icon={<Star size={18} />} color="purple" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatsCard
+          title="Total Assignments"
+          value="1,240"
+          icon={<FileText className="w-5 h-5" />}
+          iconBgClass="bg-blue-50"
+          iconColorClass="text-blue-600"
+          tooltip="Total number of assignments created"
+        />
+        <StatsCard
+          title="Active Assignments"
+          value="850"
+          icon={<CheckCircle className="w-5 h-5" />}
+          iconBgClass="bg-green-50"
+          iconColorClass="text-green-600"
+          tooltip="Assignments currently active"
+        />
+        <StatsCard
+          title="Submissions Pending"
+          value="124"
+          icon={<ClipboardList className="w-5 h-5" />}
+          iconBgClass="bg-orange-50"
+          iconColorClass="text-orange-600"
+          tooltip="Submitted assignments awaiting grading"
+        />
+        <StatsCard
+          title="Avg. Score"
+          value="82%"
+          icon={<Star className="w-5 h-5" />}
+          iconBgClass="bg-purple-50"
+          iconColorClass="text-purple-600"
+          tooltip="Average grade score across all submissions"
+        />
       </div>
 
       {/* TABLE CONTAINER */}
@@ -225,26 +254,6 @@ export default function AssignmentsPage() {
   );
 }
 
-function StatCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
-  const bgMap: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-emerald-50 text-emerald-600",
-    orange: "bg-amber-50 text-amber-600",
-    purple: "bg-purple-50 text-purple-600",
-  };
-
-  return (
-    <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-2">
-        <p className="text-gray-400 text-[11px] font-bold tracking-widest uppercase">{title}</p>
-        <div className={`p-1.5 rounded-md ${bgMap[color] || ""}`}>
-          {icon}
-        </div>
-      </div>
-      <h2 className="text-3xl font-extrabold text-gray-900 mt-2">{value}</h2>
-    </div>
-  );
-}
 
 function CourseBadge({ label, color }: { label: string; color: string }) {
   const map: Record<string, string> = {

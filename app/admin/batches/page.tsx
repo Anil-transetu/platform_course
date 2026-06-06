@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { MoreVertical, Users, Layers, CheckCircle, XCircle } from "lucide-react";
+import StatsCard from "@/components/ui/StatsCard";
 
 interface Batch {
   id: string | number;
@@ -42,50 +43,39 @@ export default function BatchesPage() {
       </div>
 
       {/* CARDS */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-
-        <div className="bg-white rounded-xl shadow-md p-6 flex items-center justify-between">
-          <div>
-            <p className="text-gray-700 text-sm">Total Batches</p>
-            <h2 className="text-3xl font-bold text-gray-800">
-              {batches.length}
-            </h2>
-          </div>
-          <div className="bg-blue-100 p-3 rounded-lg">
-            <Layers className="text-blue-600" size={28}/>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6 flex items-center justify-between">
-          <div>
-            <p className="text-gray-700 text-sm">Active Batches</p>
-            <h2 className="text-3xl font-bold text-green-600">7</h2>
-          </div>
-          <div className="bg-green-100 p-3 rounded-lg">
-            <CheckCircle className="text-green-600" size={28}/>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6 flex items-center justify-between">
-          <div>
-            <p className="text-gray-700 text-sm">Inactive Batches</p>
-            <h2 className="text-3xl font-bold text-red-600">3</h2>
-          </div>
-          <div className="bg-red-100 p-3 rounded-lg">
-            <XCircle className="text-red-600" size={28}/>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6 flex items-center justify-between">
-          <div>
-            <p className="text-gray-700 text-sm">Total Students</p>
-            <h2 className="text-3xl font-bold text-gray-800">205</h2>
-          </div>
-          <div className="bg-purple-100 p-3 rounded-lg">
-            <Users className="text-purple-600" size={28}/>
-          </div>
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatsCard
+          title="Total Batches"
+          value={batches.length}
+          icon={<Layers className="w-5 h-5" />}
+          iconBgClass="bg-blue-50"
+          iconColorClass="text-blue-600"
+          tooltip="Total number of batches created"
+        />
+        <StatsCard
+          title="Active Batches"
+          value="7"
+          icon={<CheckCircle className="w-5 h-5" />}
+          iconBgClass="bg-green-50"
+          iconColorClass="text-green-600"
+          tooltip="Currently active batches"
+        />
+        <StatsCard
+          title="Inactive Batches"
+          value="3"
+          icon={<XCircle className="w-5 h-5" />}
+          iconBgClass="bg-red-50"
+          iconColorClass="text-red-600"
+          tooltip="Batches that are currently inactive"
+        />
+        <StatsCard
+          title="Total Students"
+          value="205"
+          icon={<Users className="w-5 h-5" />}
+          iconBgClass="bg-purple-50"
+          iconColorClass="text-purple-600"
+          tooltip="Total students enrolled across all batches"
+        />
       </div>
 
       {/* TABLE */}

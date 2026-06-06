@@ -1,15 +1,10 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
-// Link removed (not used) - using router.push for navigation
+import { Search, Plus, ChevronDown, MoreVertical, Pencil, Trash2, FileText, Award, HelpCircle } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-
-import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import DataTable, { Column, SearchConfig, FilterConfig } from "@/components/reusable/DataTable";
-import DeleteDialog from "@/components/reusable/DeleteDialog";
+import StatsCard from "@/components/ui/StatsCard";
 
 const QUIZZES_STORAGE_KEY = "admin_quizzes";
 
@@ -171,96 +166,54 @@ export default function QuizzesPage() {
     return `${start}-${end} of ${filtered.length}`;
   })();
 
-  const stats = useMemo(
-    () => [
-      { label: "TOTAL QUIZZES", value: String(rows.length) },
-      { label: "ACTIVE QUIZZES", value: String(rows.filter((r) => r.status === "PUBLISHED").length) },
-      { label: "PENDING REVIEWS", value: String(rows.filter((r) => r.status === "DRAFT" || r.status === "SCHEDULED").length) },
-    ],
-    [rows],
-  );
-
-  const columns: Column<QuizItem>[] = [
-    { key: "title", label: "Quiz Title", width: "w-72", sortable: true },
-    { key: "domain", label: "Domain" },
-    {
-      key: "tags",
-      label: "Tags",
-      render: (_, row) => (
-        <div className="flex flex-wrap gap-1">
-          {row.tags.map((t) => (
-            <span key={t} className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-              {t}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    { key: "module", label: "Module" },
-    { key: "duration", label: "Questions" },
-    {
-      key: "status",
-      label: "Status",
-      render: (v: unknown) => <StatusBadge status={String(v)} />,
-    },
-  ];
-
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    setIsDeleting(true);
-    // simulate API call
-    await new Promise((r) => setTimeout(r, 700));
-    setRows((prev) => prev.filter((r) => r.id !== deleteId));
-    setDeleteId(null);
-    setIsDeleting(false);
-  };
-
-  const searchConfig: SearchConfig = {
-    enabled: true,
-    placeholder: "Search by name, domain, tags, or ID",
-    value: searchTerm,
-    onChange: (v) => setSearchTerm(v as string),
-  };
-
-  const filtersConfig: FilterConfig[] = [
-    {
-      id: "status",
-      label: "All Status",
-      type: "select",
-      options: [
-        { value: "ALL", label: "All" },
-        { value: "PUBLISHED", label: "Published" },
-        { value: "DRAFT", label: "Draft" },
-        { value: "SCHEDULED", label: "Scheduled" },
-      ],
-      value: Array.isArray(statusFilter) ? statusFilter : statusFilter || "ALL",
-      onChange: (v) => setStatusFilter(v),
-      clearable: true,
-    },
-  ];
+  const totalQuizzes = allRows.length;
+  const activeQuizzes = allRows.filter((item) => item.status === "PUBLISHED").length;
+  const pendingReviews = allRows.filter((item) => item.status === "DRAFT" || item.status === "SCHEDULED").length;
 
   return (
     <div className="mx-auto max-w-7xl p-6">
-      <ListingScreenTemplate
-        headerText="Quiz Management"
-        subHeaderText="Manage and organize student assessments with domains and tags."
-        buttonRequired
-        buttonLabel="Create New Quiz"
-        buttonOnclick={() => {}}
-      >
-        <div className="mb-5 grid gap-4 md:grid-cols-3">
-          {stats.map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-              <p className="text-xs font-semibold tracking-wide text-slate-400">{stat.label}</p>
-              <div className="mt-1 flex items-center justify-between">
-                <p className="text-3xl font-semibold text-slate-900">{stat.value}</p>
-                <span className="rounded-md border border-blue-100 bg-blue-50 p-1 text-blue-600">
-                  <Plus size={12} />
-                </span>
-              </div>
-            </div>
-          ))}
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-slate-900">Quiz Management</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage and organize assessments with domains and tags.
+          </p>
         </div>
+        <Link
+          href="/admin/quizzes/new"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm"
+        >
+          <Plus size={16} />
+          Create New Quiz
+        </Link>
+      </div>
+
+      <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatsCard
+          title="Total Quizzes"
+          value={totalQuizzes}
+          icon={<FileText size={20} />}
+          iconBgClass="bg-blue-50"
+          iconColorClass="text-blue-600"
+          tooltip="Total number of quizzes created in all modules"
+        />
+        <StatsCard
+          title="Active Quizzes"
+          value={activeQuizzes}
+          icon={<Award size={20} />}
+          iconBgClass="bg-green-50"
+          iconColorClass="text-green-600"
+          tooltip="Quizzes currently active and available to students"
+        />
+        <StatsCard
+          title="Pending Reviews"
+          value={pendingReviews}
+          icon={<HelpCircle size={20} />}
+          iconBgClass="bg-orange-50"
+          iconColorClass="text-orange-600"
+          tooltip="Quizzes that are currently in Draft or Scheduled status"
+        />
+      </div>
 
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
           <DataTable

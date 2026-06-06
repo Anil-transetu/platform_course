@@ -7,9 +7,11 @@ import {
   Users,
   Plus,
   School,
-  ArrowRight
+  ArrowRight,
+  Eye
 } from "lucide-react"
 import Link from "next/link"
+import StatsCard from "@/components/ui/StatsCard"
 
 export default function DashboardPage() {
   return (
@@ -38,48 +40,59 @@ export default function DashboardPage() {
 
       <h2 className="font-semibold mb-4 text-gray-900">Quick Navigation</h2>
 
-      <div className="grid grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
 
         {/* Institutions */}
 
-        <Link href="/admin/institutions">
-
-          <div className="bg-white rounded-xl p-6 border hover:shadow-md transition cursor-pointer">
-
-            <div className="w-10 h-10 bg-blue-100 text-blue-600 flex items-center justify-center rounded-lg mb-3">
-              <Building2 size={18}/>
-            </div>
-
-            <p className="font-semibold text-gray-900">Institutions</p>
-            <span className="text-gray-700 text-sm">42 Units</span>
-
-          </div>
-
+        <Link href="/admin/institutions" className="block w-full">
+          <StatsCard
+            title="Institutions"
+            value="42 Units"
+            icon={<Building2 size={20} />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            rightIcon={<Eye size={16} />}
+          />
         </Link>
 
         {/* Batches */}
 
-        <div className="bg-white rounded-xl p-6 border hover:shadow-md transition">
-          <Layers className="mb-3 text-purple-600"/>
-          <p className="font-semibold text-gray-900">Batches</p>
-          <span className="text-gray-700 text-sm">156 Active</span>
-        </div>
+        <Link href="/admin/batches" className="block w-full">
+          <StatsCard
+            title="Batches"
+            value="156 Active"
+            icon={<Layers size={20} />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            rightIcon={<Eye size={16} />}
+          />
+        </Link>
 
         {/* Courses */}
 
-        <div className="bg-white rounded-xl p-6 border hover:shadow-md transition">
-          <BookOpen className="mb-3 text-orange-600"/>
-          <p className="font-semibold text-gray-900">Courses</p>
-          <span className="text-gray-700 text-sm">84 Courses</span>
-        </div>
+        <Link href="/admin/courses" className="block w-full">
+          <StatsCard
+            title="Courses"
+            value="84 Courses"
+            icon={<BookOpen size={20} />}
+            iconBgClass="bg-orange-50"
+            iconColorClass="text-orange-600"
+            rightIcon={<Eye size={16} />}
+          />
+        </Link>
 
         {/* Tutors */}
 
-        <div className="bg-white rounded-xl p-6 border hover:shadow-md transition">
-          <Users className="mb-3 text-red-500"/>
-          <p className="font-semibold text-gray-900">Tutors</p>
-          <span className="text-gray-700 text-sm">892 Staff</span>
-        </div>
+        <Link href="/admin/tutors" className="block w-full">
+          <StatsCard
+            title="Tutors"
+            value="892 Staff"
+            icon={<Users size={20} />}
+            iconBgClass="bg-red-50"
+            iconColorClass="text-red-500"
+            rightIcon={<Eye size={16} />}
+          />
+        </Link>
 
       </div>
 

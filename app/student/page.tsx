@@ -2,11 +2,9 @@
 
 import { 
   BookOpen, 
-  CheckCircle2, 
-  TrendingUp, 
-  Info, 
   Calendar,
-  ArrowUpRight
+  ArrowUpRight,
+  CheckSquare
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -18,33 +16,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { cn } from "@/lib/utils";
-
-const stats = [
-  {
-    title: "Total Courses",
-    value: "5",
-    change: "+1 since last month",
-    icon: BookOpen,
-    color: "blue",
-    info: "This shows the total number of active and completed courses."
-  },
-  {
-    title: "Completed Assignments",
-    value: "12",
-    change: "85% completion rate",
-    icon: CheckCircle2,
-    color: "green",
-    info: "Your assignment submission frequency and performance."
-  },
-  {
-    title: "Overall Attendance",
-    value: "94%",
-    change: "Above average",
-    icon: Calendar,
-    color: "purple",
-    info: "Your attendance record across all active batches."
-  }
-];
+import StatsCard from "@/components/ui/StatsCard";
 
 const activityData = [
   { day: "MON", value: 40 },
@@ -66,44 +38,10 @@ export default function StudentDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
-            <div className="flex justify-between items-start relative z-10">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 group/info">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">{stat.title}</p>
-                  <div className="relative cursor-help">
-                    <Info size={14} className="text-gray-300 hover:text-gray-500 transition-colors" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-900 text-white text-[10px] rounded-lg opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50">
-                      {stat.info}
-                    </div>
-                  </div>
-                </div>
-                <p className="text-4xl font-bold text-gray-900 tracking-tight">{stat.value}</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <TrendingUp size={14} className="text-green-500" />
-                  <p className="text-xs font-semibold text-green-500">{stat.change}</p>
-                </div>
-              </div>
-              <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110",
-                stat.color === "blue" ? "bg-blue-600 shadow-blue-500/20 text-white" :
-                stat.color === "green" ? "bg-emerald-500 shadow-emerald-500/20 text-white" :
-                "bg-indigo-600 shadow-indigo-500/20 text-white"
-              )}>
-                <stat.icon size={24} />
-              </div>
-            </div>
-            {/* Background Decoration */}
-            <div className={cn(
-              "absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-3xl opacity-10 transition-opacity group-hover:opacity-20",
-              stat.color === "blue" ? "bg-blue-600" :
-              stat.color === "green" ? "bg-emerald-500" :
-              "bg-indigo-600"
-            )}></div>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatsCard title="Total Courses" value={5} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Total number of active and completed courses you are enrolled in" />
+        <StatsCard title="Completed Assignments" value={12} icon={<CheckSquare size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Total assignments you have submitted this semester" />
+        <StatsCard title="Overall Attendance" value="94%" icon={<Calendar size={20} />} iconBgClass="bg-purple-50" iconColorClass="text-purple-600" tooltip="Your attendance percentage across all enrolled courses" />
       </div>
 
       {/* Activity Chart Section */}

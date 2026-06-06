@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react"
 import {
-  Building2,
-  Settings,
+  Building,
+  CheckCircle,
   BookOpen,
   Clock,
   MoreVertical,
@@ -17,48 +17,10 @@ import {
   Search
 } from "lucide-react"
 
-import {
-  useInstitutions,
-  useInstitutionStats,
-  useCreateInstitution,
-  useUpdateInstitution,
-  useDeleteInstitution
-} from "@/features/institutions/use-institutions"
-import { Institution, InstitutionContact } from "@/features/institutions/api"
+import Link from "next/link"
 
-function ContactCard({ title, contact }: { title: string; contact: InstitutionContact }) {
-  return (
-    <div className="bg-white border rounded-xl p-4 shadow-sm w-72 flex-shrink-0">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
-      <div className="space-y-4">
-        <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Name</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
-            {contact.name}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Role</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
-            {contact.role || contact.designation || "-"}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Email</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium truncate">
-            {contact.email}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Phone Number</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
-            {contact.phone}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import { fetchInstitutions, Institution, InstitutionContact } from "@/features/institutions/api"
+import StatsCard from "@/components/ui/StatsCard"
 
 export default function InstitutionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -199,66 +161,12 @@ export default function InstitutionsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-6">
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <Building2 className="text-[#2563EB]" size={24} />
-            </div>
-            <span className="text-[#64748B] hover:text-[#0F172A] cursor-pointer">ⓘ</span>
-          </div>
-          <div className="mt-4">
-            <p className="text-[#64748B] text-sm font-medium">Total Institutions</p>
-            <h2 className="text-3xl font-bold text-[#0F172A] mt-1">
-              {statsData?.total_institutions || institutions.length || "0"}
-            </h2>
-          </div>
-        </div>
 
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="bg-green-50 p-3 rounded-lg">
-              <Settings className="text-[#10B981]" size={24} />
-            </div>
-            <span className="text-[#64748B] hover:text-[#0F172A] cursor-pointer">ⓘ</span>
-          </div>
-          <div className="mt-4">
-            <p className="text-[#64748B] text-sm font-medium">Active Institutions</p>
-            <h2 className="text-3xl font-bold text-[#0F172A] mt-1">
-              {statsData?.active_institutions || institutions.filter(i => i.status === "Active").length || "0"}
-            </h2>
-          </div>
-        </div>
-
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <BookOpen className="text-[#8B5CF6]" size={24} />
-            </div>
-            <span className="text-[#64748B] hover:text-[#0F172A] cursor-pointer">ⓘ</span>
-          </div>
-          <div className="mt-4">
-            <p className="text-[#64748B] text-sm font-medium">Avg. Courses/Institution</p>
-            <h2 className="text-3xl font-bold text-[#0F172A] mt-1">
-              {statsData?.average_courses_per_institution?.toFixed(1) || "12.4"}
-            </h2>
-          </div>
-        </div>
-
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="bg-orange-50 p-3 rounded-lg">
-              <Clock className="text-[#F59E0B]" size={24} />
-            </div>
-            <span className="text-[#64748B] hover:text-[#0F172A] cursor-pointer">ⓘ</span>
-          </div>
-          <div className="mt-4">
-            <p className="text-[#64748B] text-sm font-medium">Pending Registrations</p>
-            <h2 className="text-3xl font-bold text-[#0F172A] mt-1">
-              {statsData?.pending_registrations?.toString().padStart(2, '0') || "04"}
-            </h2>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Total Institutions" value={42} icon={<Building size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Total number of registered institutions on the platform" />
+        <StatsCard title="Active Institutions" value={38} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Institutions currently active and operational" />
+        <StatsCard title="Avg. Courses / Institution" value={12.4} icon={<BookOpen size={20} />} iconBgClass="bg-purple-50" iconColorClass="text-purple-600" tooltip="Average number of courses offered per institution" />
+        <StatsCard title="Pending Registrations" value="04" icon={<Clock size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Institutions awaiting approval or registration completion" />
       </div>
 
       {/* Search + Filter */}
