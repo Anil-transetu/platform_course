@@ -17,6 +17,7 @@ export interface Institution {
   email: string;
   phone?: string;
   location?: string;
+  address?: string;
   contacts?: InstitutionContact[];
   status?: string;
   createdAt?: string;
@@ -51,7 +52,7 @@ async function handleResponse(response: Response) {
     let messageStr = "API request failed";
     if (err.errors) {
       if (Array.isArray(err.errors)) {
-        messageStr = err.errors.map(e => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
+        messageStr = err.errors.map((e: any) => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
       } else if (typeof err.errors === "object") {
         messageStr = Object.values(err.errors).flat().join(", ");
       } else {

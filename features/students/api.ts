@@ -159,20 +159,20 @@ export async function fetchStudentStats(): Promise<StudentStats> {
 /**
  * Fetch total students count
  */
-// export async function fetchStudentCount() {
-//   const response = await fetch(`${BASE_URL}/count`, { headers: getAuthHeaders() });
-//   const result = await handleResponse(response);
-//   return result.data?.total_students || 0;
-// }
+export async function fetchStudentCount() {
+  const response = await fetch(`${BASE_URL}/count`, { headers: getAuthHeaders() });
+  const result = await handleResponse(response);
+  return result.data?.total_students || 0;
+}
 
 /**
  * Fetch active students count
  */
-// export async function fetchActiveStudentCount() {
-//   const response = await fetch(`${BASE_URL}/active-count`, { headers: getAuthHeaders() });
-//   const result = await handleResponse(response);
-//   return result.data?.active_students || 0;
-// }
+export async function fetchActiveStudentCount() {
+  const response = await fetch(`${BASE_URL}/active-count`, { headers: getAuthHeaders() });
+  const result = await handleResponse(response);
+  return result.data?.active_students || 0;
+}
 
 export async function createStudent(data: Record<string, unknown>) {
   const payload = {

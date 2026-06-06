@@ -19,8 +19,49 @@ import {
 
 import Link from "next/link"
 
-import { fetchInstitutions, Institution, InstitutionContact } from "@/features/institutions/api"
+import {
+  useInstitutions,
+  useInstitutionStats,
+  useCreateInstitution,
+  useUpdateInstitution,
+  useDeleteInstitution
+} from "@/features/institutions/use-institutions"
+import { Institution, InstitutionContact } from "@/features/institutions/api"
 import StatsCard from "@/components/ui/StatsCard"
+
+function ContactCard({ title, contact }: { title: string; contact: InstitutionContact }) {
+  return (
+    <div className="bg-white border rounded-xl p-4 shadow-sm w-72 flex-shrink-0">
+      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="space-y-4">
+        <div>
+          <label className="text-xs text-gray-500 uppercase font-semibold">Name</label>
+          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+            {contact.name}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 uppercase font-semibold">Role</label>
+          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+            {contact.role || contact.designation || "-"}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 uppercase font-semibold">Email</label>
+          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium truncate">
+            {contact.email}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 uppercase font-semibold">Phone Number</label>
+          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+            {contact.phone}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function InstitutionsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -163,10 +204,10 @@ export default function InstitutionsPage() {
       {/* Stats Cards */}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard title="Total Institutions" value={42} icon={<Building size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Total number of registered institutions on the platform" />
-        <StatsCard title="Active Institutions" value={38} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Institutions currently active and operational" />
-        <StatsCard title="Avg. Courses / Institution" value={12.4} icon={<BookOpen size={20} />} iconBgClass="bg-purple-50" iconColorClass="text-purple-600" tooltip="Average number of courses offered per institution" />
-        <StatsCard title="Pending Registrations" value="04" icon={<Clock size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Institutions awaiting approval or registration completion" />
+        <StatsCard title="Total Institutions" value={statsData?.total_institutions || institutions.length || 0} icon={<Building size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Total number of registered institutions on the platform" />
+        <StatsCard title="Active Institutions" value={statsData?.active_institutions || institutions.filter(i => i.status === "Active").length || 0} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Institutions currently active and operational" />
+        <StatsCard title="Avg. Courses / Institution" value={statsData?.average_courses_per_institution?.toFixed(1) || 12.4} icon={<BookOpen size={20} />} iconBgClass="bg-purple-50" iconColorClass="text-purple-600" tooltip="Average number of courses offered per institution" />
+        <StatsCard title="Pending Registrations" value={statsData?.pending_registrations || 0} icon={<Clock size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Institutions awaiting approval or registration completion" />
       </div>
 
       {/* Search + Filter */}

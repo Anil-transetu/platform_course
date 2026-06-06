@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Search, Plus, Trophy, BarChart2, TrendingUp } from "lucide-react"
 import { useStudents, useStudentCounts, type Student } from "@/features/students/api"
-import { getStudentColumns } from "@/features/students/columns"
+import { buildStudentColumns } from "@/features/students/columns"
 import { TableCards } from "@/components/shared/tables/table-cards"
 import StatsCard from "@/components/ui/StatsCard"
 import { Button } from "@/components/ui/button"

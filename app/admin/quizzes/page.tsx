@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import StatsCard from "@/components/ui/StatsCard";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import DataTable, { Column } from "@/components/reusable/DataTable";
+import DeleteDialog from "@/components/reusable/DeleteDialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const QUIZZES_STORAGE_KEY = "admin_quizzes";
 
@@ -16,6 +26,7 @@ type QuizItem = {
   module: string;
   duration: string;
   status: string;
+  [key: string]: any;
 };
 
 const initialRows: QuizItem[] = (() => {
@@ -102,7 +113,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function QuizzesPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string | string[]>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [rows, setRows] = useState<QuizItem[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -145,7 +156,7 @@ export default function QuizzesPage() {
       const text = `${r.title} ${r.domain} ${r.tags.join(" ")} ${r.module}`.toLowerCase();
       const matchesText = !q || text.includes(q);
       const matchesStatus =
-        statusFilter === "ALL" || statusFilter === "" || (Array.isArray(statusFilter) ? statusFilter.includes(r.status) : r.status === statusFilter);
+        statusFilter === "ALL" || statusFilter === "" || r.status === statusFilter;
       return matchesText && matchesStatus;
     });
   }, [rows, searchTerm, statusFilter]);
@@ -166,57 +177,130 @@ export default function QuizzesPage() {
     return `${start}-${end} of ${filtered.length}`;
   })();
 
-  const totalQuizzes = allRows.length;
-  const activeQuizzes = allRows.filter((item) => item.status === "PUBLISHED").length;
-  const pendingReviews = allRows.filter((item) => item.status === "DRAFT" || item.status === "SCHEDULED").length;
+  const totalQuizzes = rows.length;
+  const activeQuizzes = rows.filter((item) => item.status === "PUBLISHED").length;
+  const pendingReviews = rows.filter((item) => item.status === "DRAFT" || item.status === "SCHEDULED").length;
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    setTimeout(() => {
+      setRows((prev) => prev.filter((r) => r.id !== deleteId));
+      setDeleteId(null);
+      setIsDeleting(false);
+    }, 500);
+  };
+
+  const columns: Column<QuizItem>[] = [
+    {
+      key: "title",
+      label: "Quiz Title",
+      width: "w-1/4",
+      render: (_, row) => (
+        <span className="font-semibold text-slate-800">{row.title}</span>
+      ),
+    },
+    {
+      key: "domain",
+      label: "Domain",
+      render: (_, row) => <span className="text-slate-600">{row.domain}</span>,
+    },
+    {
+      key: "tags",
+      label: "Tags",
+      render: (_, row) => (
+        <div className="flex flex-wrap gap-1.5">
+          {row.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-md bg-blue-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-blue-700"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "module",
+      label: "Module",
+      render: (_, row) => <span className="text-slate-600">{row.module}</span>,
+    },
+    {
+      key: "duration",
+      label: "Duration",
+      render: (_, row) => <span className="text-slate-700">{row.duration}</span>,
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (_, row) => <StatusBadge status={row.status} />,
+    },
+  ];
+
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search by name, domain, tags, or ID",
+    value: searchTerm,
+    onChange: setSearchTerm,
+  };
+
+  const filtersConfig = [
+    {
+      id: "status",
+      label: "All Status",
+      type: "select" as const,
+      options: [
+        { value: "ALL", label: "All Status" },
+        { value: "PUBLISHED", label: "Published" },
+        { value: "DRAFT", label: "Draft" },
+        { value: "SCHEDULED", label: "Scheduled" },
+      ],
+      value: statusFilter,
+      onChange: (val: string | string[]) => setStatusFilter(val as string),
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
-      <div className="mb-8 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Quiz Management</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage and organize assessments with domains and tags.
-          </p>
+    <ListingScreenTemplate
+      headerText="Quiz Management"
+      subHeaderText="Manage and organize assessments with domains and tags."
+      buttonLabel="Create New Quiz"
+      buttonRequired={true}
+      buttonOnclick={() => router.push("/admin/quizzes/new")}
+    >
+      <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+          <StatsCard
+            title="Total Quizzes"
+            value={totalQuizzes}
+            icon={<FileText size={20} />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total number of quizzes created in all modules"
+          />
+          <StatsCard
+            title="Active Quizzes"
+            value={activeQuizzes}
+            icon={<Award size={20} />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Quizzes currently active and available to students"
+          />
+          <StatsCard
+            title="Pending Reviews"
+            value={pendingReviews}
+            icon={<HelpCircle size={20} />}
+            iconBgClass="bg-orange-50"
+            iconColorClass="text-orange-600"
+            tooltip="Quizzes that are currently in Draft or Scheduled status"
+          />
         </div>
-        <Link
-          href="/admin/quizzes/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm"
-        >
-          <Plus size={16} />
-          Create New Quiz
-        </Link>
-      </div>
 
-      <div className="mb-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <StatsCard
-          title="Total Quizzes"
-          value={totalQuizzes}
-          icon={<FileText size={20} />}
-          iconBgClass="bg-blue-50"
-          iconColorClass="text-blue-600"
-          tooltip="Total number of quizzes created in all modules"
-        />
-        <StatsCard
-          title="Active Quizzes"
-          value={activeQuizzes}
-          icon={<Award size={20} />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-600"
-          tooltip="Quizzes currently active and available to students"
-        />
-        <StatsCard
-          title="Pending Reviews"
-          value={pendingReviews}
-          icon={<HelpCircle size={20} />}
-          iconBgClass="bg-orange-50"
-          iconColorClass="text-orange-600"
-          tooltip="Quizzes that are currently in Draft or Scheduled status"
-        />
-      </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-          <DataTable
+        {/* DataTable Wrapper */}
+        <div className="flex-1 overflow-hidden min-h-0">
+          <DataTable<QuizItem>
             data={paginated}
             columns={columns}
             rowKey={(r) => r.id}
@@ -244,13 +328,13 @@ export default function QuizzesPage() {
                   <DropdownMenuContent>
                     <DropdownMenuItem
                       onSelect={() => router.push(`/admin/quizzes/edit/${row.id}`)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 cursor-pointer"
                     >
                       <Pencil size={13} className="text-slate-400" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => setDeleteId(row.id)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-red-600"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 cursor-pointer"
                     >
                       <Trash2 size={13} className="text-red-400" /> Delete
                     </DropdownMenuItem>
@@ -261,7 +345,7 @@ export default function QuizzesPage() {
             emptyStateMessage="No quizzes match your search/filter."
           />
         </div>
-      </ListingScreenTemplate>
+      </div>
 
       <DeleteDialog
         isOpen={Boolean(deleteId)}
@@ -271,7 +355,6 @@ export default function QuizzesPage() {
         isLoading={isDeleting}
         title="Delete Quiz"
       />
-    </div>
+    </ListingScreenTemplate>
   );
 }
-

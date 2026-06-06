@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link"; // ✅ IMPORTANT
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Users,
   CheckCircle,
@@ -12,65 +13,78 @@ import {
   Trash,
 } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import DataTable, { Column } from "@/components/reusable/DataTable";
+
+interface Tutor extends Record<string, any> {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  domain: string[];
+  batches: string[];
+  status: string;
+}
+
+const tutorsData: Tutor[] = [
+  {
+    id: 1,
+    name: "Sarah Smith",
+    email: "s.smith@example.edu",
+    phone: "+1 (234) 567-8901",
+    domain: ["Computer Science", "React"],
+    batches: ["C1-2024-A", "2024-B"],
+    status: "Active",
+  },
+  {
+    id: 2,
+    name: "Robert Johnson",
+    email: "r.johnson@example.edu",
+    phone: "+1 (234) 567-8905",
+    domain: ["Data Science", "Python"],
+    batches: ["Dr-2024-X"],
+    status: "Active",
+  },
+  {
+    id: 3,
+    name: "Emily Chen",
+    email: "e.chen@example.edu",
+    phone: "+1 (234) 567-8912",
+    domain: ["UI/UX Design"],
+    batches: ["UX-ADV-01"],
+    status: "Inactive",
+  },
+  {
+    id: 4,
+    name: "David Lee",
+    email: "d.lee@example.edu",
+    phone: "+1 (234) 567-8920",
+    domain: ["Java", "Spring"],
+    batches: ["JB-2024"],
+    status: "Active",
+  },
+  {
+    id: 5,
+    name: "Anusha Reddy",
+    email: "anusha@example.edu",
+    phone: "+91 9876543210",
+    domain: ["Machine Learning"],
+    batches: ["ML-2024"],
+    status: "Active",
+  },
+  {
+    id: 6,
+    name: "Kiran Kumar",
+    email: "kiran@example.edu",
+    phone: "+91 9123456780",
+    domain: ["Angular"],
+    batches: ["ANG-01"],
+    status: "Inactive",
+  },
+];
 
 export default function TutorsPage() {
-  const tutorsData = [
-    {
-      id: 1,
-      name: "Sarah Smith",
-      email: "s.smith@example.edu",
-      phone: "+1 (234) 567-8901",
-      domain: ["Computer Science", "React"],
-      batches: ["C1-2024-A", "2024-B"],
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Robert Johnson",
-      email: "r.johnson@example.edu",
-      phone: "+1 (234) 567-8905",
-      domain: ["Data Science", "Python"],
-      batches: ["Dr-2024-X"],
-      status: "Active",
-    },
-    {
-      id: 3,
-      name: "Emily Chen",
-      email: "e.chen@example.edu",
-      phone: "+1 (234) 567-8912",
-      domain: ["UI/UX Design"],
-      batches: ["UX-ADV-01"],
-      status: "Inactive",
-    },
-    {
-      id: 4,
-      name: "David Lee",
-      email: "d.lee@example.edu",
-      phone: "+1 (234) 567-8920",
-      domain: ["Java", "Spring"],
-      batches: ["JB-2024"],
-      status: "Active",
-    },
-    {
-      id: 5,
-      name: "Anusha Reddy",
-      email: "anusha@example.edu",
-      phone: "+91 9876543210",
-      domain: ["Machine Learning"],
-      batches: ["ML-2024"],
-      status: "Active",
-    },
-    {
-      id: 6,
-      name: "Kiran Kumar",
-      email: "kiran@example.edu",
-      phone: "+91 9123456780",
-      domain: ["Angular"],
-      batches: ["ANG-01"],
-      status: "Inactive",
-    },
-  ];
-
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -90,17 +104,19 @@ export default function TutorsPage() {
   }, []);
 
   // Filter tutors based on search
-  const filtered = DUMMY_TUTORS.filter((tutor) =>
-    tutor.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = tutorsData.filter((tutor) =>
+    tutor.name.toLowerCase().includes(search.toLowerCase()) ||
+    tutor.domain.some(d => d.toLowerCase().includes(search.toLowerCase())) ||
+    String(tutor.id).includes(search)
   );
 
   // Pagination logic
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
   const visibleData = filtered.slice(start, start + rowsPerPage);
 
   // Stats
-  const activeTutors = DUMMY_TUTORS.filter(t => t.status === "Active").length;
+  const activeTutors = tutorsData.filter((t) => t.status === "Active").length;
 
   // Column definitions for DataTable
   const columns: Column<Tutor>[] = [
@@ -119,154 +135,88 @@ export default function TutorsPage() {
             <p className="font-semibold text-gray-900 text-sm truncate">
               {row.name}
             </p>
-            <p className="text-xs text-gray-500 truncate">ID: #{String(row.id).padStart(4, "0")}</p>
+            <p className="text-xs text-gray-500 truncate">
+              ID: #{String(row.id).padStart(4, "0")}
+            </p>
           </div>
         </div>
+      ),
+    },
+    {
+      key: "domain",
+      label: "Domain",
+      render: (_, row) => (
+        <div className="flex gap-1.5 flex-wrap">
+          {row.domain.map((d: string) => (
+            <span
+              key={d}
+              className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
+            >
+              {d}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "email",
+      label: "Contact",
+      render: (_, row) => (
+        <div>
+          <p className="text-gray-900 font-medium">{row.email}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{row.phone}</p>
+        </div>
+      ),
+    },
+    {
+      key: "batches",
+      label: "Batches",
+      render: (_, row) => (
+        <div className="flex gap-1.5 flex-wrap">
+          {row.batches.map((b: string) => (
+            <span
+              key={b}
+              className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
+            >
+              {b}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (_, row) => (
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+            row.status === "Active"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {row.status}
+        </span>
+      ),
+    },
+  ];
 
-        {/* ✅ UPDATED BUTTON WITH LINK */}
-        <Link href="/admin/tutors/new">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 font-medium">
-            + Add New Tutor
-          </button>
-        </Link>
-      </div>
-
-      {/* CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatsCard
-          title="Total Tutors"
-          value={tutorsData.length}
-          icon={<Users className="w-5 h-5" />}
-          iconBgClass="bg-blue-50"
-          iconColorClass="text-blue-600"
-          tooltip="Total number of registered tutors"
-        />
-        <StatsCard
-          title="Active Tutors"
-          value="4"
-          icon={<CheckCircle className="w-5 h-5" />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-600"
-          tooltip="Tutors currently active"
-        />
-        <StatsCard
-          title="Average Rating"
-          value="4.8"
-          icon={<Star className="w-5 h-5" />}
-          iconBgClass="bg-yellow-50"
-          iconColorClass="text-yellow-600"
-          tooltip="Average rating of all tutors"
-        />
-        <StatsCard
-          title="New Tutors"
-          value="42"
-          icon={<UserPlus className="w-5 h-5" />}
-          iconBgClass="bg-purple-50"
-          iconColorClass="text-purple-600"
-          tooltip="Tutors onboarded recently"
-        />
-      </div>
-
-      {/* SEARCH */}
-      <div className="bg-white p-4 rounded-xl shadow mb-4 flex gap-4">
-        <input
-          type="text"
-          placeholder="Search by name..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="flex-1 border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-800"
-        />
-
-        <select className="border border-gray-300 px-3 py-2 rounded-lg text-gray-700">
-          <option>All Domain</option>
-        </select>
-
-        <select className="border border-gray-300 px-3 py-2 rounded-lg text-gray-700">
-          <option>All Status</option>
-        </select>
-      </div>
-
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-100 text-gray-700 text-sm font-semibold">
-            <tr>
-              <th className="p-4 text-left">Tutor Info</th>
-              <th className="p-4 text-left">Domain</th>
-              <th className="p-4 text-left">Contact</th>
-              <th className="p-4 text-left">Batches</th>
-              <th className="p-4 text-left">Status</th>
-              <th className="p-4 text-left">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {visibleData.map((tutor) => (
-              <tr key={tutor.id} className="border-b hover:bg-gray-50 transition">
-                <td className="p-4">
-                  <p className="font-bold text-gray-900 leading-tight">
-                    {tutor.name}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                    ID: {tutor.id}
-                  </p>
-                </td>
-                <td className="p-4">
-                  <p className="text-gray-900 font-medium">{tutor.email}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{tutor.phone}</p>
-                </td>
-                <td className="p-4">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {tutor.domain.map((d: string) => (
-                      <span
-                        key={d}
-                        className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
-                      >
-                        {d}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div className="flex gap-1.5 flex-wrap">
-                    {tutor.batches.map((b: string) => (
-                      <span
-                        key={b}
-                        className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
-                      >
-                        {b}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-                      tutor.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {tutor.status}
-                  </span>
-                </td>
-                <td className="p-4 text-center relative">
-                  <button
-                    onClick={() =>
-                      setOpenMenu(openMenu === tutor.id ? null : tutor.id)
-                    }
-                    className="text-gray-400 hover:text-gray-600 transition p-1"
-                  >
-                    <MoreVertical size={18} />
-                  </button>
+  const renderActions = (tutor: Tutor) => (
+    <div className="relative flex justify-center">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpenMenu(openMenu === tutor.id ? null : tutor.id);
+        }}
+        className="text-gray-400 hover:text-gray-600 transition p-1"
+      >
+        <MoreVertical size={18} />
+      </button>
 
       {openMenu === tutor.id && (
         <div
           ref={menuRef}
-          className="absolute right-8 top-10 bg-white shadow-lg border border-gray-200 rounded-lg w-32 py-2 z-20 text-left flex flex-col"
+          className="absolute right-8 top-0 bg-white shadow-lg border border-gray-200 rounded-lg w-32 py-2 z-20 text-left flex flex-col"
         >
           <Link
             href={`/admin/tutors/edit/${tutor.id}`}
@@ -291,27 +241,64 @@ export default function TutorsPage() {
       subHeaderText="Add and manage faculty members and their assignments."
       buttonLabel="Add New Tutor"
       buttonRequired={true}
-      buttonOnclick={() => console.log("Add tutor clicked")}
+      buttonOnclick={() => router.push("/admin/tutors/new")}
     >
-      {/* Page Content */}
       <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
         {/* STATS CARDS */}
         <div className="grid grid-cols-4 gap-4 flex-shrink-0">
-          <StatsCard title="Total Tutors" value={DUMMY_TUTORS.length} icon={<Users className="w-5 h-5" />} color="blue" />
-          <StatsCard title="Active Tutors" value={activeTutors} icon={<CheckCircle className="w-5 h-5" />} color="green" />
-          <StatsCard title="Average Rating" value="4.8" icon={<Star className="w-5 h-5" />} color="yellow" />
-          <StatsCard title="New Tutors (Month)" value="42" icon={<UserPlus className="w-5 h-5" />} color="purple" />
+          <StatsCard
+            title="Total Tutors"
+            value={tutorsData.length}
+            icon={<Users className="w-5 h-5" />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total number of registered tutors"
+          />
+          <StatsCard
+            title="Active Tutors"
+            value={activeTutors}
+            icon={<CheckCircle className="w-5 h-5" />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Tutors currently active"
+          />
+          <StatsCard
+            title="Average Rating"
+            value="4.8"
+            icon={<Star className="w-5 h-5" />}
+            iconBgClass="bg-yellow-50"
+            iconColorClass="text-yellow-600"
+            tooltip="Average rating of all tutors"
+          />
+          <StatsCard
+            title="New Tutors (Month)"
+            value="42"
+            icon={<UserPlus className="w-5 h-5" />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            tooltip="Tutors onboarded recently"
+          />
         </div>
 
         {/* FILTERS */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex gap-4 flex-shrink-0">
           <div className="flex-1 flex items-center gap-2">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <svg
+              className="w-5 h-5 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
             <input
               type="text"
-              placeholder="Search by name, domain, tags, or ID"
+              placeholder="Search by name, domain, or ID"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -326,11 +313,11 @@ export default function TutorsPage() {
           </select>
 
           <select className="border border-gray-300 px-4 py-2.5 rounded-lg text-gray-700 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All r tatus</option>
+            <option>All Status</option>
           </select>
         </div>
 
-        {/* DATA TABLE - Takes remaining space with flex-1 */}
+        {/* DATA TABLE */}
         <div className="flex-1 overflow-hidden min-h-0">
           <DataTable<Tutor>
             data={visibleData}
@@ -346,7 +333,10 @@ export default function TutorsPage() {
               setRowsPerPage(rows);
               setPage(1);
             }}
-            paginationInfo={`${start + 1}-${Math.min(start + rowsPerPage, filtered.length)} of ${filtered.length}`}
+            paginationInfo={`${start + 1}-${Math.min(
+              start + rowsPerPage,
+              filtered.length
+            )} of ${filtered.length}`}
             showPagination={true}
           />
         </div>
@@ -354,7 +344,3 @@ export default function TutorsPage() {
     </ListingScreenTemplate>
   );
 }
-
-type Tutor = (typeof DUMMY_TUTORS)[0];
-
-
