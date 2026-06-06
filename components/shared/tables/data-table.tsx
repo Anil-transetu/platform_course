@@ -52,6 +52,7 @@ interface DataTableProps<TData, TValue> {
 
   // Optional features
   isLoading?: boolean;
+  emptyState?: React.ReactNode;
 }
 
 /**
@@ -69,6 +70,7 @@ export function DataTable<TData, TValue>({
   pagination: controlledPagination,
   onPaginationChange,
   isLoading = false,
+  emptyState,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] =
@@ -184,17 +186,19 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-[300px] text-center"
+                  className="h-[400px] p-0"
                 >
-                  <div className="flex flex-col items-center justify-center space-y-3">
-                    <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                      <Search className="h-6 w-6 text-slate-400" />
+                  {emptyState ? emptyState : (
+                    <div className="flex flex-col items-center justify-center space-y-3 h-full w-full">
+                      <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <Search className="h-6 w-6 text-slate-400" />
+                      </div>
+                      <div className="space-y-1 text-center">
+                        <p className="text-base font-bold text-slate-900">No records found</p>
+                        <p className="text-sm text-slate-500">Try adjusting your search or filters to find what you're looking for.</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-bold text-slate-900">No members found</p>
-                      <p className="text-sm text-slate-500">Try adjusting your search or filters to find what you're looking for.</p>
-                    </div>
-                  </div>
+                  )}
                 </TableCell>
               </TableRow>
             )}

@@ -28,6 +28,7 @@ interface TableCardsProps<TData, TValue> {
   toolbarLeft?: React.ReactNode;
   toolbarRight?: React.ReactNode;
   emptyMessage?: string;
+  emptyState?: React.ReactNode;
 }
 
 
@@ -44,6 +45,7 @@ export function TableCards<TData, TValue>({
   rowCount,
   pagination,
   onPaginationChange,
+  emptyState,
 }: TableCardsProps<TData, TValue>) {
   return (
     <div className="w-full">
@@ -56,6 +58,7 @@ export function TableCards<TData, TValue>({
         rowCount={rowCount}
         pagination={pagination}
         onPaginationChange={onPaginationChange}
+        emptyState={emptyState}
       />
     </div>
   );

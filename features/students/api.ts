@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 
 // Students API - fetches directly from backend to avoid server-to-localhost proxy issues on Vercel
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
@@ -20,7 +20,7 @@ async function handleResponse(response: Response) {
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     const message = err.message || err.detail || "API request failed";
-    
+
     if (message.toLowerCase().includes("token expired") || response.status === 401) {
       if (typeof document !== "undefined") {
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -64,7 +64,7 @@ function mapStudent(s: Record<string, unknown>): Student {
   // Handle both backend format (first_name/last_name) and local format (student_name/name)
   const firstName = (s.first_name as string) || splitName((s.student_name as string) || (s.name as string) || "").first_name;
   const lastName = (s.last_name as string) || splitName((s.student_name as string) || (s.name as string) || "").last_name;
-  
+
   // Clean up ID to be a pure number - remove all non-digits
   const rawId = s.student_id || s.id;
   let cleanId = rawId as string | number;
@@ -74,7 +74,7 @@ function mapStudent(s: Record<string, unknown>): Student {
       cleanId = parseInt(strippedId, 10);
     }
   }
-  
+
   return {
     ...(s as Record<string, unknown>), // Type assertion to keep existing properties
     id: cleanId,
@@ -106,14 +106,14 @@ export async function fetchStudents(page: number = 1, limit: number = 50, search
   if (courseId && courseId.trim() !== "") {
     query.append("course_id", courseId);
   }
-  
+
   if (query.toString()) {
     url = `${BASE_URL}?${query.toString()}`;
   }
 
   const response = await fetch(url, { headers: getAuthHeaders() });
   const result = await handleResponse(response);
-  
+
   // Map backend response to Student interface
   if (result.data && Array.isArray(result.data)) {
     return {
@@ -121,7 +121,7 @@ export async function fetchStudents(page: number = 1, limit: number = 50, search
       data: result.data.map((s: Record<string, unknown>) => mapStudent(s))
     };
   }
-  
+
   return Array.isArray(result) ? result.map((s: Record<string, unknown>) => mapStudent(s)) : result;
 }
 
@@ -136,22 +136,43 @@ export async function fetchStudent(id: string | number) {
 }
 
 /**
+ * Fetch student statistics
+ */
+export interface StudentStats {
+  total_students: number;
+  active_students: number;
+  average_students_per_course: number;
+}
+
+export interface StudentStatsResponse {
+  success: boolean;
+  message: string;
+  data: StudentStats;
+}
+
+export async function fetchStudentStats(): Promise<StudentStats> {
+  const response = await fetch(`${BASE_URL}/stats`, { headers: getAuthHeaders() });
+  const result: StudentStatsResponse = await handleResponse(response);
+  return result.data;
+}
+
+/**
  * Fetch total students count
  */
-export async function fetchStudentCount() {
-  const response = await fetch(`${BASE_URL}/count`, { headers: getAuthHeaders() });
-  const result = await handleResponse(response);
-  return result.data?.total_students || 0;
-}
+// export async function fetchStudentCount() {
+//   const response = await fetch(`${BASE_URL}/count`, { headers: getAuthHeaders() });
+//   const result = await handleResponse(response);
+//   return result.data?.total_students || 0;
+// }
 
 /**
  * Fetch active students count
  */
-export async function fetchActiveStudentCount() {
-  const response = await fetch(`${BASE_URL}/active-count`, { headers: getAuthHeaders() });
-  const result = await handleResponse(response);
-  return result.data?.active_students || 0;
-}
+// export async function fetchActiveStudentCount() {
+//   const response = await fetch(`${BASE_URL}/active-count`, { headers: getAuthHeaders() });
+//   const result = await handleResponse(response);
+//   return result.data?.active_students || 0;
+// }
 
 export async function createStudent(data: Record<string, unknown>) {
   const payload = {
@@ -209,6 +230,8 @@ export function useStudents(page: number = 1, limit: number = 50, search?: strin
   return useQuery({
     queryKey: ["students", { page, limit, search, statusFilter, courseId }],
     queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId),
+    staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes to reduce API calls
+    placeholderData: keepPreviousData, // Keep previous data visible while fetching the next page for smooth pagination
   });
 }
 
@@ -230,6 +253,13 @@ export function useStudentCounts() {
       ]);
       return { total, active };
     },
+  });
+}
+
+export function useStudentStats() {
+  return useQuery({
+    queryKey: ["studentStats"],
+    queryFn: () => fetchStudentStats(),
   });
 }
 

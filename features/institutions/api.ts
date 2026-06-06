@@ -6,26 +6,28 @@ export interface InstitutionContact {
   name: string;
   email: string;
   phone: string;
+  role?: string;
   designation?: string;
 }
 
 export interface Institution {
   id: string | number;
+  batch_id?: string | number;
   name: string;
   email: string;
-  phone: string;
-  address?: string;
+  phone?: string;
   location?: string;
-  city?: string;
-  state?: string;
-  zip?: string;
-  country?: string;
   contacts?: InstitutionContact[];
   status?: string;
   createdAt?: string;
   updatedAt?: string;
-  website?: string;
-  logo?: string;
+}
+
+export interface InstitutionStats {
+  total_institutions: number;
+  active_institutions: number;
+  average_courses_per_institution: number;
+  pending_registrations: number;
 }
 
 function getAuthHeaders(): Record<string, string> {
@@ -44,10 +46,27 @@ function getAuthHeaders(): Record<string, string> {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    const message = err.message || err.detail || "API request failed";
+    console.error("API ERROR:", err);
+    
+    let messageStr = "API request failed";
+    if (err.errors) {
+      if (Array.isArray(err.errors)) {
+        messageStr = err.errors.map(e => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
+      } else if (typeof err.errors === "object") {
+        messageStr = Object.values(err.errors).flat().join(", ");
+      } else {
+        messageStr = String(err.errors);
+      }
+    } else if (Array.isArray(err.message)) {
+      messageStr = err.message.join(", ");
+    } else if (err.message) {
+      messageStr = err.message;
+    } else if (err.detail) {
+      messageStr = err.detail;
+    }
 
     if (
-      message.toLowerCase().includes("token expired") ||
+      messageStr.toLowerCase().includes("token expired") ||
       response.status === 401
     ) {
       if (typeof document !== "undefined") {
@@ -56,19 +75,44 @@ async function handleResponse(response: Response) {
         window.location.href = "/login";
       }
     }
-    throw new Error(message);
+    throw new Error(messageStr);
   }
   return response.json();
+}
+
+export function mapInstitution(data: any): Institution {
+  let contacts = data.contacts || data.point_of_contacts || data.pointOfContacts || data.institution_contacts || [];
+  
+  if (typeof contacts === 'string') {
+    try {
+      contacts = JSON.parse(contacts);
+    } catch(e) {
+      contacts = [];
+    }
+  }
+  
+  return {
+    ...data,
+    contacts,
+  };
 }
 
 /**
  * Fetch all institutions
  */
-export async function fetchInstitutions(search?: string): Promise<Institution[]> {
+export async function fetchInstitutions(search?: string, statusFilter?: string): Promise<{ data: Institution[], total?: number }> {
   let url = BASE_URL;
-
+  const query = new URLSearchParams();
+  
   if (search) {
-    url += `?search=${encodeURIComponent(search)}`;
+    query.append("search", search);
+  }
+  if (statusFilter && statusFilter !== "All Institutions") {
+    query.append("status", statusFilter.toLowerCase());
+  }
+  
+  if (query.toString()) {
+    url = `${BASE_URL}?${query.toString()}`;
   }
 
   const response = await fetch(url, {
@@ -77,7 +121,28 @@ export async function fetchInstitutions(search?: string): Promise<Institution[]>
   });
 
   const data = await handleResponse(response);
-  return Array.isArray(data) ? data : data.data || data.institutions || [];
+  const items = Array.isArray(data) ? data : data.data || data.institutions || [];
+  return {
+    data: items.map((i: any) => mapInstitution(i)),
+    total: data.total || items.length
+  };
+}
+
+/**
+ * Fetch stats for institutions
+ */
+export async function fetchInstitutionStats(): Promise<InstitutionStats> {
+  const response = await fetch(`${BASE_URL}/stats`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || {
+    total_institutions: 0,
+    active_institutions: 0,
+    average_courses_per_institution: 0,
+    pending_registrations: 0
+  };
 }
 
 /**
@@ -92,7 +157,7 @@ export async function fetchInstitutionById(
   });
 
   const data = await handleResponse(response);
-  return data.data || data;
+  return mapInstitution(data.data || data);
 }
 
 /**
@@ -119,7 +184,7 @@ export async function updateInstitution(
   institutionData: Partial<Institution>
 ): Promise<Institution> {
   const response = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT",
+    method: "PUT", // or PATCH based on operation
     headers: getAuthHeaders(),
     body: JSON.stringify(institutionData),
   });
@@ -137,5 +202,7 @@ export async function deleteInstitution(id: string | number): Promise<void> {
     headers: getAuthHeaders(),
   });
 
-  await handleResponse(response);
+  if (!response.ok && response.status !== 204) {
+    await handleResponse(response);
+  }
 }
