@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Users, UserCheck, BookOpen, Search, Plus } from "lucide-react"
+import { Search, Plus, Trophy, BarChart2, TrendingUp } from "lucide-react"
 import { useStudents, useStudentCounts, type Student } from "@/features/students/api"
 import { getStudentColumns } from "@/features/students/columns"
-import { TableCards, StatCard } from "@/components/shared/tables/table-cards"
+import { TableCards } from "@/components/shared/tables/table-cards"
+import StatsCard from "@/components/ui/StatsCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import StudentActionModal from "@/features/students/components/StudentActionModal"
@@ -96,29 +97,7 @@ export default function StudentsPage() {
 
   const columns = getStudentColumns(handleEdit, handleDelete, () => {});
 
-  const stats: StatCard[] = [
-    {
-      label: "Total Students",
-      value: "12,482",
-      helperText: "Total number of students enrolled",
-      icon: <Users size={20} className="text-blue-600" />,
-      accent: "primary",
-    },
-    {
-      label: "Active Students",
-      value: "11,204",
-      helperText: "Students currently active",
-      icon: <UserCheck size={20} className="text-emerald-600" />,
-      accent: "success",
-    },
-    {
-      label: "Avg. Courses/Student",
-      value: "3.4",
-      helperText: "Engagement metric",
-      icon: <BookOpen size={20} className="text-purple-600" />,
-      accent: "info",
-    },
-  ];
+
 
   const queryClient = useQueryClient();
   const handleSuccess = () => {
@@ -169,22 +148,10 @@ export default function StudentsPage() {
         </div>
 
         {/* Stat Cards */}
-        <div className="grid grid-cols-3 gap-5 mb-8">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-slate-200">
-              <div className="flex items-start gap-3">
-                {stat.icon && (
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center flex-shrink-0">
-                    {stat.icon}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-0.5">{stat.value}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <StatsCard title="Highest Performer" value="98%" icon={<Trophy size={20} />} iconBgClass="bg-yellow-50" iconColorClass="text-yellow-600" tooltip="Top scoring student across all batches this semester" />
+          <StatsCard title="Class Average" value="76%" icon={<BarChart2 size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Average score across all students and batches" />
+          <StatsCard title="Most Improved" value="+15%" icon={<TrendingUp size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Student showing the highest score improvement this semester" />
         </div>
 
         {/* Table Card */}

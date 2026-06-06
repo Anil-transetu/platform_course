@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import {
-  Building2,
-  Settings,
+  Building,
+  CheckCircle,
   BookOpen,
   Clock,
   MoreVertical,
@@ -13,6 +13,7 @@ import {
 import Link from "next/link"
 
 import { fetchInstitutions, Institution, InstitutionContact } from "@/features/institutions/api"
+import StatsCard from "@/components/ui/StatsCard"
 
 export default function InstitutionsPage() {
 
@@ -91,68 +92,11 @@ export default function InstitutionsPage() {
 
       {/* Stats Cards */}
 
-      <div className="grid grid-cols-4 gap-6">
-
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
-
-          <Building2 className="text-blue-600 mb-3" />
-
-          <p className="text-gray-700 text-sm">
-            Total Institutions
-          </p>
-
-          <h2 className="text-2xl font-bold text-gray-900">
-            {institutions.length}
-          </h2>
-
-        </div>
-
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
-
-          <Settings className="text-green-600 mb-3" />
-
-          <p className="text-gray-700 text-sm">
-            Active Institutions
-          </p>
-
-          <h2 className="text-2xl font-bold text-gray-900">
-            {
-              institutions.filter(
-                i => i.status === "Active"
-              ).length
-            }
-          </h2>
-
-        </div>
-
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
-
-          <BookOpen className="text-purple-600 mb-3" />
-
-          <p className="text-gray-700 text-sm">
-            Avg. Courses / Institution
-          </p>
-
-          <h2 className="text-2xl font-bold text-gray-900">
-            12.4
-          </h2>
-
-        </div>
-
-        <div className="bg-white border rounded-xl p-6 shadow-sm">
-
-          <Clock className="text-orange-600 mb-3" />
-
-          <p className="text-gray-700 text-sm">
-            Pending Registrations
-          </p>
-
-          <h2 className="text-2xl font-bold text-gray-900">
-            04
-          </h2>
-
-        </div>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatsCard title="Total Institutions" value={42} icon={<Building size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Total number of registered institutions on the platform" />
+        <StatsCard title="Active Institutions" value={38} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Institutions currently active and operational" />
+        <StatsCard title="Avg. Courses / Institution" value={12.4} icon={<BookOpen size={20} />} iconBgClass="bg-purple-50" iconColorClass="text-purple-600" tooltip="Average number of courses offered per institution" />
+        <StatsCard title="Pending Registrations" value="04" icon={<Clock size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Institutions awaiting approval or registration completion" />
       </div>
 
       {/* Search + Filter */}

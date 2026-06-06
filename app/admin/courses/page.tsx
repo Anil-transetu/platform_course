@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
+import StatsCard from "@/components/ui/StatsCard";
 
 export default function CoursesPage() {
   const [activeTab, setActiveTab] = useState("courses");
@@ -136,10 +137,10 @@ export default function CoursesPage() {
       </div>
 
       {/* CARDS */}
-      <div className="grid grid-cols-3 gap-6 mb-6">
-        <StatCard title="Total Courses" value="24" icon={<BookOpen />} />
-        <StatCard title="Active Courses" value="18" icon={<CheckCircle />} color="green" />
-        <StatCard title="Draft Courses" value="6" icon={<FileText />} color="yellow" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <StatsCard title="Total Courses" value={24} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
+        <StatsCard title="Active Courses" value={18} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
+        <StatsCard title="Draft Courses" value={6} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
       </div>
 
       {/* TABLE CONTAINER */}
@@ -281,25 +282,4 @@ export default function CoursesPage() {
       <CreateDomainModal isOpen={isDomainOpen} onClose={() => setIsDomainOpen(false)} onSubmit={handleCreateDomain} />
     </div>
   );
-}
-/* STAT CARD */
-function StatCard({ title, value, icon, color = "blue" }: { title: string; value: string; icon: React.ReactNode; color?: string }) {
-  const colorMap: Record<string, string> = {
-    blue: "text-blue-600 bg-blue-100",
-    green: "text-green-600 bg-green-100",
-    yellow: "text-yellow-600 bg-yellow-100",
-  };
-
-  return (
-    <div className="bg-white p-5 rounded-xl shadow flex justify-between items-center">
-      <div>
-        <p className="text-gray-600 text-sm">{title}</p>
-        <h2 className="text-2xl font-bold text-gray-900">{value}</h2>
-      </div>
-
-      <div className={`p-2 rounded-lg ${colorMap[color] || ""}`}>
-        {icon}
-      </div>
-    </div>
-  );
-}
+}

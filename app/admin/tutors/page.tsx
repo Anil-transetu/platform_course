@@ -11,6 +11,7 @@ import {
   Edit,
   Trash,
 } from "lucide-react";
+import StatsCard from "@/components/ui/StatsCard";
 
 export default function TutorsPage() {
   const tutorsData = [
@@ -116,25 +117,38 @@ export default function TutorsPage() {
       </div>
 
       {/* CARDS */}
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <Card title="Total Tutors" value={tutorsData.length} icon={<Users />} />
-        <Card
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatsCard
+          title="Total Tutors"
+          value={tutorsData.length}
+          icon={<Users className="w-5 h-5" />}
+          iconBgClass="bg-blue-50"
+          iconColorClass="text-blue-600"
+          tooltip="Total number of registered tutors"
+        />
+        <StatsCard
           title="Active Tutors"
           value="4"
-          icon={<CheckCircle />}
-          color="green"
+          icon={<CheckCircle className="w-5 h-5" />}
+          iconBgClass="bg-green-50"
+          iconColorClass="text-green-600"
+          tooltip="Tutors currently active"
         />
-        <Card
+        <StatsCard
           title="Average Rating"
           value="4.8"
-          icon={<Star />}
-          color="yellow"
+          icon={<Star className="w-5 h-5" />}
+          iconBgClass="bg-yellow-50"
+          iconColorClass="text-yellow-600"
+          tooltip="Average rating of all tutors"
         />
-        <Card
+        <StatsCard
           title="New Tutors"
           value="42"
-          icon={<UserPlus />}
-          color="purple"
+          icon={<UserPlus className="w-5 h-5" />}
+          iconBgClass="bg-purple-50"
+          iconColorClass="text-purple-600"
+          tooltip="Tutors onboarded recently"
         />
       </div>
 
@@ -314,24 +328,4 @@ export default function TutorsPage() {
   );
 }
 
-/* CARD COMPONENT */
-function Card({ title, value, icon, color = "blue" }: { title: string; value: string | number; icon: React.ReactNode; color?: string }) {
-  const colorMap: Record<string, string> = {
-    blue: "text-blue-600 bg-blue-100",
-    green: "text-green-600 bg-green-100",
-    yellow: "text-yellow-600 bg-yellow-100",
-    purple: "text-purple-600 bg-purple-100",
-  };
-
-  return (
-    <div className="bg-white p-5 rounded-xl shadow flex justify-between items-center">
-      <div>
-        <p className="text-gray-600 text-sm">{title}</p>
-        <h2 className="text-2xl font-bold text-gray-900">{value}</h2>
-      </div>
-
-      <div className={`p-2 rounded-lg ${colorMap[color] || ""}`}>{icon}</div>
-    </div>
-  );
-}
 
