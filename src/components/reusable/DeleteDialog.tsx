@@ -77,7 +77,7 @@ export default function DeleteDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="rounded-2xl border-slate-200 shadow-xl">
+      <DialogContent className="rounded-2xl border-border shadow-xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-50 rounded-lg">
@@ -87,7 +87,7 @@ export default function DeleteDialog({
               {title}
             </DialogTitle>
           </div>
-          <DialogDescription className="text-slate-600 mt-3">
+          <DialogDescription className="text-muted-foreground mt-3">
             {description || defaultDescription}
           </DialogDescription>
         </DialogHeader>
@@ -96,7 +96,7 @@ export default function DeleteDialog({
           <Button
             onClick={onClose}
             variant="outline"
-            className="rounded-lg border-slate-200 text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border-border text-card-foreground hover:bg-muted"
           >
             Cancel
           </Button>

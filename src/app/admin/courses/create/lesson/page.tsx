@@ -103,19 +103,19 @@ export default function LessonDetailsPage() {
   const selectedAssignment = SAMPLE_ASSIGNMENTS.find(a => a.id === selectedAssignmentId);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-muted min-h-screen">
       {/* TOP HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-white border-b border-gray-100">
+      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
           <Link href="/admin/courses/create" className="text-gray-400 hover:text-blue-600 transition-colors">Create New Course</Link>
           <ChevronRight size={14} className="text-gray-300" />
           <Link href="/admin/courses/create/module" className="text-gray-400 hover:text-blue-600 transition-colors">MODULE 1</Link>
           <ChevronRight size={14} className="text-gray-300" />
-          <span className="text-gray-900">New Lesson</span>
+          <span className="text-foreground">New Lesson</span>
         </div>
         <div className="flex gap-3">
           <Link href="/admin/courses/create/module">
-            <button className="px-5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition-all text-xs text-nowrap">
+            <button className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs text-nowrap">
               Back to Module
             </button>
           </Link>
@@ -133,12 +133,12 @@ export default function LessonDetailsPage() {
             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Lesson Structure</h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 mb-1 px-1">
-                <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600" checked onChange={() => {}} />
+                <input type="checkbox" className="w-4 h-4 rounded border-border text-blue-600" checked onChange={() => {}} />
                 <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">MODULE 1: FOUNDATIONS</span>
               </div>
-              <div className="bg-white border-blue-500 border-l-4 rounded-r-xl shadow-sm p-4 flex items-center gap-3">
+              <div className="bg-card border-blue-500 border-l-4 rounded-r-xl shadow-sm p-4 flex items-center gap-3">
                 <FileText className="text-blue-600" size={18} />
-                <span className="text-sm font-bold text-gray-900 truncate tracking-tight">{lessonTitle || "New Lesson"}</span>
+                <span className="text-sm font-bold text-foreground truncate tracking-tight">{lessonTitle || "New Lesson"}</span>
               </div>
             </div>
           </div>
@@ -150,21 +150,21 @@ export default function LessonDetailsPage() {
               {/* Add Topic */}
               <button 
                 onClick={() => router.push("/admin/courses/create/topic")}
-                className="w-full flex items-center gap-3 border border-gray-200 bg-white px-4 py-3 rounded-xl hover:bg-gray-50 transition-all group"
+                className="w-full flex items-center gap-3 border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all group"
               >
                 <Plus size={16} className="text-gray-400 group-hover:text-blue-600" />
-                <span className="text-sm font-medium text-gray-700">Add Topic</span>
+                <span className="text-sm font-medium text-card-foreground">Add Topic</span>
               </button>
               
               {/* ── Add Quiz dropdown ── */}
               <div ref={quizRef} className="relative">
                 <button 
                   onClick={() => { setQuizOpen(p => !p); setAssignmentOpen(false); }}
-                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${quizOpen ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${quizOpen ? "border-blue-400 bg-blue-50" : "border-border bg-card hover:bg-muted"}`}
                 >
                   <div className="flex items-center gap-3">
                     <FileText className={quizOpen ? "text-blue-500" : "text-gray-400"} size={18} />
-                    <span className={`text-sm font-medium ${quizOpen ? "text-blue-600" : "text-gray-700"}`}>
+                    <span className={`text-sm font-medium ${quizOpen ? "text-blue-600" : "text-card-foreground"}`}>
                       {selectedQuiz ? selectedQuiz.title : "Add Quiz"}
                     </span>
                   </div>
@@ -172,7 +172,7 @@ export default function LessonDetailsPage() {
                 </button>
 
                 {quizOpen && (
-                  <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-30 relative">
+                  <div className="mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30 relative">
                     <div className="p-3 border-b border-gray-100">
                       <input
                         autoFocus
@@ -180,7 +180,7 @@ export default function LessonDetailsPage() {
                         value={quizSearch}
                         onChange={e => setQuizSearch(e.target.value)}
                         placeholder="Search quizzes..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-400 bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg outline-none focus:border-blue-400 bg-muted"
                       />
                     </div>
                     <div className="max-h-52 overflow-y-auto">
@@ -197,7 +197,7 @@ export default function LessonDetailsPage() {
                             className={`w-full text-left flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 ${selectedQuizId === quiz.id ? "bg-blue-50" : ""}`}
                           >
                             <div>
-                              <p className="text-sm font-semibold text-gray-800">{quiz.title}</p>
+                              <p className="text-sm font-semibold text-card-foreground">{quiz.title}</p>
                               <p className="text-[10px] text-gray-400 mt-0.5">{quiz.module} · {quiz.duration}</p>
                             </div>
                             <div className="flex items-center gap-2 ml-2 shrink-0">
@@ -208,7 +208,7 @@ export default function LessonDetailsPage() {
                         ))
                       )}
                     </div>
-                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                    <div className="p-2 border-t border-gray-100 bg-muted">
                       <button
                         onClick={() => { setQuizOpen(false); router.push("/admin/quizzes/new"); }}
                         className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -232,11 +232,11 @@ export default function LessonDetailsPage() {
               <div ref={assignmentRef} className="relative">
                 <button 
                   onClick={() => { setAssignmentOpen(p => !p); setQuizOpen(false); }}
-                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${assignmentOpen ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${assignmentOpen ? "border-purple-400 bg-purple-50" : "border-border bg-card hover:bg-muted"}`}
                 >
                   <div className="flex items-center gap-3">
                     <ClipboardList className={assignmentOpen ? "text-purple-500" : "text-gray-400"} size={18} />
-                    <span className={`text-sm font-medium ${assignmentOpen ? "text-purple-600" : "text-gray-700"}`}>
+                    <span className={`text-sm font-medium ${assignmentOpen ? "text-purple-600" : "text-card-foreground"}`}>
                       {selectedAssignment ? selectedAssignment.title : "Add Assignment"}
                     </span>
                   </div>
@@ -244,7 +244,7 @@ export default function LessonDetailsPage() {
                 </button>
 
                 {assignmentOpen && (
-                  <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-30 relative">
+                  <div className="mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30 relative">
                     <div className="p-3 border-b border-gray-100">
                       <input
                         autoFocus
@@ -252,7 +252,7 @@ export default function LessonDetailsPage() {
                         value={assignmentSearch}
                         onChange={e => setAssignmentSearch(e.target.value)}
                         placeholder="Search assignments..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-purple-400 bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg outline-none focus:border-purple-400 bg-muted"
                       />
                     </div>
                     <div className="max-h-52 overflow-y-auto">
@@ -269,18 +269,18 @@ export default function LessonDetailsPage() {
                             className={`w-full text-left flex items-center justify-between px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50 last:border-0 ${selectedAssignmentId === asg.id ? "bg-purple-50" : ""}`}
                           >
                             <div>
-                              <p className="text-sm font-semibold text-gray-800">{asg.title}</p>
+                              <p className="text-sm font-semibold text-card-foreground">{asg.title}</p>
                               <p className="text-[10px] text-gray-400 mt-0.5">{asg.domain} · {asg.marks} marks</p>
                             </div>
                             <div className="flex items-center gap-2 ml-2 shrink-0">
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{asg.submissionType}</span>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-muted-foreground">{asg.submissionType}</span>
                               {selectedAssignmentId === asg.id && <Check size={14} className="text-purple-600" />}
                             </div>
                           </button>
                         ))
                       )}
                     </div>
-                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                    <div className="p-2 border-t border-gray-100 bg-muted">
                       <button
                         onClick={() => { setAssignmentOpen(false); router.push("/admin/assignments"); }}
                         className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -302,10 +302,10 @@ export default function LessonDetailsPage() {
 
               <button 
                 onClick={handleAddAnotherLesson}
-                className="w-full flex items-center gap-3 border border-gray-200 bg-white px-4 py-3 rounded-xl hover:bg-gray-50 transition-all mt-4"
+                className="w-full flex items-center gap-3 border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all mt-4"
               >
                 <Plus size={16} className="text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">Add Another Lesson</span>
+                <span className="text-sm font-medium text-card-foreground">Add Another Lesson</span>
               </button>
 
               <button 
@@ -321,9 +321,9 @@ export default function LessonDetailsPage() {
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-8">
           {/* LESSON DETAILS CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Lesson Details</h2>
+              <h2 className="text-lg font-bold text-foreground">Lesson Details</h2>
             </div>
             <div className="p-8 flex flex-col gap-6">
               <div>
@@ -332,7 +332,7 @@ export default function LessonDetailsPage() {
                   type="text"
                   value={lessonTitle}
                   onChange={(e) => setLessonTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800 shadow-inner"
+                  className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground shadow-inner"
                 />
               </div>
 
@@ -340,7 +340,7 @@ export default function LessonDetailsPage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Lesson Content</label>
                 <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                   {/* TOOLBAR */}
-                  <div className="flex items-center gap-2 p-2 bg-gray-50 border-b border-gray-100 overflow-x-auto">
+                  <div className="flex items-center gap-2 p-2 bg-muted border-b border-gray-100 overflow-x-auto">
                     <ToolbarButton icon={<Bold size={16} />} />
                     <ToolbarButton icon={<Italic size={16} />} />
                     <div className="w-[1px] h-6 bg-gray-200 mx-1" />
@@ -357,7 +357,7 @@ export default function LessonDetailsPage() {
                     placeholder="Write your lesson content here..."
                     value={lessonContent}
                     onChange={(e) => setLessonContent(e.target.value)}
-                    className="w-full h-80 p-6 outline-none resize-none font-normal text-gray-600 placeholder-gray-400 leading-relaxed text-sm"
+                    className="w-full h-80 p-6 outline-none resize-none font-normal text-muted-foreground placeholder-gray-400 leading-relaxed text-sm"
                   />
                 </div>
               </div>
@@ -365,9 +365,9 @@ export default function LessonDetailsPage() {
           </div>
 
           {/* LESSON RESOURCES CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Lesson Resources</h2>
+              <h2 className="text-lg font-bold text-foreground">Lesson Resources</h2>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-4 gap-4">
@@ -392,7 +392,7 @@ export default function LessonDetailsPage() {
 
 function ToolbarButton({ icon }: { icon: React.ReactNode }) {
   return (
-    <button className="p-2 rounded hover:bg-white hover:border border-transparent hover:border-gray-100 hover:shadow-sm text-gray-500 transition-all">
+    <button className="p-2 rounded hover:bg-card hover:border border-transparent hover:border-gray-100 hover:shadow-sm text-muted-foreground transition-all">
       {icon}
     </button>
   );
@@ -402,12 +402,12 @@ function ResourceButton({ icon, label, onClick }: { icon: React.ReactNode, label
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-gray-50/10 hover:bg-white hover:border-blue-100 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
+      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
     >
       <div className="text-gray-300 group-hover:text-blue-500 transition-colors mb-3">
         {icon}
       </div>
-      <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-900 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-bold text-gray-400 group-hover:text-foreground uppercase tracking-widest">{label}</span>
     </button>
   );
 }

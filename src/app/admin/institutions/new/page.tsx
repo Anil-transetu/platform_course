@@ -169,13 +169,13 @@ export default function AddInstitutionPage() {
   }
 
   const getInputClass = (field: string) => {
-    const base = "w-full border rounded-lg px-3 py-2 text-gray-900 transition-all duration-200"
+    const base = "w-full border rounded-lg px-3 py-2 text-foreground transition-all duration-200"
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base
   }
 
   const getContactInputClass = (index: number, field: string) => {
     const key = `contact_${index}_${field}`
-    const base = "border rounded-lg px-3 py-2 text-gray-900 transition-all duration-200"
+    const base = "border rounded-lg px-3 py-2 text-foreground transition-all duration-200"
     return errors[key] ? `${base} ${inputErrorClass}` : base
   }
 
@@ -204,17 +204,17 @@ export default function AddInstitutionPage() {
 
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-      <div className="max-w-3xl w-full max-h-[90vh] overflow-y-auto bg-white border rounded-xl shadow p-8">
+      <div className="max-w-3xl w-full max-h-[90vh] overflow-y-auto bg-card border rounded-xl shadow p-8">
 
         {/* Title */}
 
         <div className="flex justify-between items-center mb-6">
 
-          <h1 className="text-xl font-semibold text-gray-900">
+          <h1 className="text-xl font-semibold text-foreground">
             Register New Institution
           </h1>
 
-          <Link href="/admin/institutions" className="text-gray-600">
+          <Link href="/admin/institutions" className="text-muted-foreground">
             ✕
           </Link>
 
@@ -225,7 +225,7 @@ export default function AddInstitutionPage() {
         <div className="space-y-4">
 
           <div>
-            <label className="text-sm text-gray-800">
+            <label className="text-sm text-card-foreground">
               Institution Name <span className="text-red-400">*</span>
             </label>
 
@@ -241,7 +241,7 @@ export default function AddInstitutionPage() {
           <div className="grid grid-cols-2 gap-4">
 
             <div>
-              <label className="text-sm text-gray-800">
+              <label className="text-sm text-card-foreground">
                 Official Email <span className="text-red-400">*</span>
               </label>
 
@@ -255,7 +255,7 @@ export default function AddInstitutionPage() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-800">
+              <label className="text-sm text-card-foreground">
                 Location <span className="text-red-400">*</span>
               </label>
 
@@ -278,7 +278,7 @@ export default function AddInstitutionPage() {
 
           <div className="flex justify-between items-center mb-3">
 
-            <h2 className="text-sm font-medium text-gray-900">
+            <h2 className="text-sm font-medium text-foreground">
               Point of Contacts
             </h2>
 
@@ -300,7 +300,7 @@ export default function AddInstitutionPage() {
 
               <div className="flex justify-between">
 
-                <span className="text-xs text-gray-600">
+                <span className="text-xs text-muted-foreground">
                   Contact {index+1}
                 </span>
 
@@ -326,7 +326,7 @@ export default function AddInstitutionPage() {
 
                 <input
                   placeholder="Role"
-                  className="border rounded-lg px-3 py-2 text-gray-900"
+                  className="border rounded-lg px-3 py-2 text-foreground"
                   value={contact.role}
                   onChange={(e)=>handleChange(index,"role",e.target.value)}
                 />
@@ -376,7 +376,7 @@ export default function AddInstitutionPage() {
 
           <Link
             href="/admin/institutions"
-            className="px-4 py-2 text-gray-800"
+            className="px-4 py-2 text-card-foreground"
           >
             Cancel
           </Link>

@@ -131,22 +131,22 @@ export default function EditForm({ id }: EditFormProps) {
   return (
     <div className="mx-auto max-w-7xl p-6">
       {/* Breadcrumb */}
-      <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/admin/quizzes" className="hover:text-slate-700">Quizzes</Link>
+      <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/admin/quizzes" className="hover:text-card-foreground">Quizzes</Link>
         <ChevronRight size={14} />
-        <span className="font-medium text-slate-700">Edit Quiz</span>
+        <span className="font-medium text-card-foreground">Edit Quiz</span>
       </div>
 
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Quiz (ID: {id})</h1>
-          <p className="mt-1 text-sm text-slate-500">Update assessment details and questions for the existing quiz.</p>
+          <h1 className="text-2xl font-bold text-foreground">Edit Quiz (ID: {id})</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Update assessment details and questions for the existing quiz.</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/admin/quizzes")}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 shadow-sm"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted shadow-sm"
           >
             Cancel
           </button>
@@ -163,42 +163,42 @@ export default function EditForm({ id }: EditFormProps) {
         {/* LEFT COLUMN */}
         <div className="space-y-6 lg:col-span-2">
           {/* Basic Information */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
+          <section className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center gap-2 border-b border-border px-5 py-3">
               <Info size={15} className="text-blue-500" />
               <h2 className="text-xs font-bold uppercase tracking-wide text-blue-500">Basic Information</h2>
             </div>
             <div className="grid gap-4 p-5 md:grid-cols-2">
               <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-700">Quiz Title <span className="text-red-400">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-card-foreground">Quiz Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
                   onBlur={() => handleBlur("title", title)}
-                  className={getInputClass("title", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
+                  className={getInputClass("title", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
                 />
                 <ErrorMsg field="title" />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Duration (Minutes) <span className="text-red-400">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-card-foreground">Duration (Minutes) <span className="text-red-400">*</span></label>
                 <input
                   type="number"
                   value={durationMinutes}
                   onChange={(e) => handleFieldChange("durationMinutes", e.target.value, setDurationMinutes)}
                   onBlur={() => handleBlur("durationMinutes", durationMinutes)}
-                  className={getInputClass("durationMinutes", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
+                  className={getInputClass("durationMinutes", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
                 />
                 <ErrorMsg field="durationMinutes" />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Total Marks <span className="text-red-400">*</span></label>
+                <label className="mb-1 block text-sm font-medium text-card-foreground">Total Marks <span className="text-red-400">*</span></label>
                 <input
                   type="number"
                   value={totalMarks}
                   onChange={(e) => handleFieldChange("totalMarks", e.target.value, setTotalMarks)}
                   onBlur={() => handleBlur("totalMarks", totalMarks)}
-                  className={getInputClass("totalMarks", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
+                  className={getInputClass("totalMarks", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2 transition-all duration-200")}
                 />
                 <ErrorMsg field="totalMarks" />
               </div>
@@ -206,8 +206,8 @@ export default function EditForm({ id }: EditFormProps) {
           </section>
 
           {/* Quiz Content */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <section className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <div className="flex items-center gap-2">
                 <LayoutGrid size={15} className="text-blue-500" />
                 <h2 className="text-xs font-bold uppercase tracking-wide text-blue-500">Quiz Content</h2>
@@ -224,41 +224,41 @@ export default function EditForm({ id }: EditFormProps) {
             </div>
             <div className="p-5 space-y-3">
               {questions.map((q, i) => (
-                <div key={q.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div key={q.id} className="rounded-lg border border-border bg-muted p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
                         {String(i + 1).padStart(2, "0")}
                       </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         {q.type.replace("_", " ")}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <button className="rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-600">
+                      <button className="rounded p-1 text-muted-foreground hover:bg-slate-200 hover:text-muted-foreground">
                         <Pencil size={13} />
                       </button>
                       <button
                         onClick={() => removeQuestion(q.id)}
-                        className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-500"
                       >
                         <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-700 font-medium">{q.prompt}</p>
+                  <p className="text-sm text-card-foreground font-medium">{q.prompt}</p>
                 </div>
               ))}
               {questions.length === 0 && (
-                <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-center">
-                  <p className="text-sm font-semibold text-slate-700">No questions added yet</p>
-                  <p className="mt-1 text-xs text-slate-500">Click &quot;Add Question&quot; to start building your quiz.</p>
+                <div className="flex min-h-32 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted text-center">
+                  <p className="text-sm font-semibold text-card-foreground">No questions added yet</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Click &quot;Add Question&quot; to start building your quiz.</p>
                 </div>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
-                <button type="button" onClick={() => addQuestion("multiple_choice")} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">+ Multiple Choice</button>
-                <button type="button" onClick={() => addQuestion("true_false")} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">+ True / False</button>
-                <button type="button" onClick={() => addQuestion("short_answer")} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50">+ Short Answer</button>
+                <button type="button" onClick={() => addQuestion("multiple_choice")} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted">+ Multiple Choice</button>
+                <button type="button" onClick={() => addQuestion("true_false")} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted">+ True / False</button>
+                <button type="button" onClick={() => addQuestion("short_answer")} className="rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted">+ Short Answer</button>
               </div>
             </div>
           </section>
@@ -267,17 +267,17 @@ export default function EditForm({ id }: EditFormProps) {
         {/* RIGHT COLUMN */}
         <div className="space-y-6">
           {/* Categorization */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-5 py-3">
-              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">Categorization</h2>
+          <section className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border px-5 py-3">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Categorization</h2>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Domains</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Domains</label>
                 <select
                   value={domain}
                   onChange={(e) => setDomain(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2"
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2"
                 >
                   {availableDomains.map((d) => (
                     <option key={d} value={d}>{d}</option>
@@ -285,7 +285,7 @@ export default function EditForm({ id }: EditFormProps) {
                 </select>
               </div>
               <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">Tags</label>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tags</label>
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {tags.map((tag) => (
                     <span key={tag} className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-blue-700">
@@ -303,7 +303,7 @@ export default function EditForm({ id }: EditFormProps) {
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
                     placeholder="Add new tag..."
-                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2 placeholder:text-slate-400"
+                    className="flex-1 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2 placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
@@ -311,15 +311,15 @@ export default function EditForm({ id }: EditFormProps) {
           </section>
 
           {/* Visibility & Settings */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-5 py-3">
-              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-500">Visibility & Settings</h2>
+          <section className="rounded-xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border px-5 py-3">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Visibility & Settings</h2>
             </div>
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Published</p>
-                  <p className="text-xs text-slate-400">Quiz is visible to students</p>
+                  <p className="text-sm font-semibold text-card-foreground">Published</p>
+                  <p className="text-xs text-muted-foreground">Quiz is visible to students</p>
                 </div>
                 <button
                   type="button"
@@ -327,7 +327,7 @@ export default function EditForm({ id }: EditFormProps) {
                   className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all ${
                     isPublished
                       ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-slate-300 bg-white text-transparent"
+                      : "border-border bg-card text-transparent"
                   }`}
                 >
                   <Check size={14} />
@@ -335,8 +335,8 @@ export default function EditForm({ id }: EditFormProps) {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Shuffle Questions</p>
-                  <p className="text-xs text-slate-400">Randomize question order</p>
+                  <p className="text-sm font-semibold text-card-foreground">Shuffle Questions</p>
+                  <p className="text-xs text-muted-foreground">Randomize question order</p>
                 </div>
                 <button
                   type="button"
@@ -344,7 +344,7 @@ export default function EditForm({ id }: EditFormProps) {
                   className={`flex h-7 w-7 items-center justify-center rounded-full border-2 transition-all ${
                     shuffleQuestions
                       ? "border-blue-600 bg-blue-600 text-white"
-                      : "border-slate-300 bg-white text-transparent"
+                      : "border-border bg-card text-transparent"
                   }`}
                 >
                   <Check size={14} />

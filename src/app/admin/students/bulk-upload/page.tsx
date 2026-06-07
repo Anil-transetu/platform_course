@@ -119,17 +119,17 @@ Jane,Smith,jane.smith@example.com,0987654321,securepass456,Bulk upload test 2`
       ></div>
 
       {/* MODAL */}
-      <div className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+      <div className="relative bg-card w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Bulk Upload Students</h2>
-            <p className="text-sm text-gray-500 mt-1">Import multiple students at once using a CSV file.</p>
+            <h2 className="text-xl font-bold text-foreground">Bulk Upload Students</h2>
+            <p className="text-sm text-muted-foreground mt-1">Import multiple students at once using a CSV file.</p>
           </div>
           <button
             onClick={() => !isUploading && router.push("/admin/students")}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+            className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400 hover:text-muted-foreground"
             disabled={isUploading}
           >
             <X size={20}/>
@@ -158,7 +158,7 @@ Jane,Smith,jane.smith@example.com,0987654321,securepass456,Bulk upload test 2`
 
           {/* Upload Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 px-1">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2 px-1">
               Step 2: Upload your file
             </h3>
             
@@ -174,7 +174,7 @@ Jane,Smith,jane.smith@example.com,0987654321,securepass456,Bulk upload test 2`
               onClick={openFilePicker}
               className={`
                 border-2 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center gap-4 transition-all cursor-pointer
-                ${fileName ? 'border-blue-200 bg-blue-50/20' : 'border-gray-200 hover:border-blue-400 hover:bg-gray-50'}
+                ${fileName ? 'border-blue-200 bg-blue-50/20' : 'border-border hover:border-blue-400 hover:bg-muted'}
               `}
             >
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${fileName ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
@@ -184,12 +184,12 @@ Jane,Smith,jane.smith@example.com,0987654321,securepass456,Bulk upload test 2`
               <div className="text-center">
                 {fileName ? (
                   <>
-                    <p className="text-sm font-bold text-gray-900 truncate max-w-[300px]">{fileName}</p>
+                    <p className="text-sm font-bold text-foreground truncate max-w-[300px]">{fileName}</p>
                     <p className="text-xs text-blue-600 font-medium mt-1">Click to change file</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-gray-900">Choose a CSV file or drag it here</p>
+                    <p className="text-sm font-bold text-foreground">Choose a CSV file or drag it here</p>
                     <p className="text-xs text-gray-400 mt-1">Maximum file size 5MB</p>
                   </>
                 )}
@@ -221,11 +221,11 @@ Jane,Smith,jane.smith@example.com,0987654321,securepass456,Bulk upload test 2`
         </div>
 
         {/* Footer Actions */}
-        <div className="px-8 py-6 bg-gray-50 flex justify-end gap-3">
+        <div className="px-8 py-6 bg-muted flex justify-end gap-3">
           <button
             onClick={() => router.push("/admin/students")}
             disabled={isUploading}
-            className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

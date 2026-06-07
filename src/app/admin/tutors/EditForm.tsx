@@ -88,7 +88,7 @@ export default function EditForm({ id }: EditFormProps) {
   };
 
   const getInputClass = (field: string) => {
-    const base = "border rounded-lg w-full px-3 py-2 text-gray-900 transition-all duration-200";
+    const base = "border rounded-lg w-full px-3 py-2 text-foreground transition-all duration-200";
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base;
   };
 
@@ -152,32 +152,32 @@ export default function EditForm({ id }: EditFormProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-      <div className="relative bg-white rounded-xl shadow-lg w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-card rounded-xl shadow-lg w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
         <button
           onClick={() => router.push("/admin/tutors")}
-          className="absolute right-4 top-4 text-gray-600 hover:text-black"
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
         >
           <X size={20} />
         </button>
 
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">
+        <h2 className="text-xl font-semibold text-foreground mb-6">
           Edit Tutor
         </h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm text-gray-700">Tutor ID</label>
+            <label className="text-sm text-card-foreground">Tutor ID</label>
             <input
               type="text"
               name="id"
               value={tutor.id}
               disabled
-              className="border rounded-lg w-full px-3 py-2 bg-gray-100 text-gray-800"
+              className="border rounded-lg w-full px-3 py-2 bg-gray-100 text-card-foreground"
             />
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Full Name <span className="text-red-400">*</span></label>
+            <label className="text-sm text-card-foreground">Full Name <span className="text-red-400">*</span></label>
             <input
               type="text"
               name="name"
@@ -190,7 +190,7 @@ export default function EditForm({ id }: EditFormProps) {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Email <span className="text-red-400">*</span></label>
+            <label className="text-sm text-card-foreground">Email <span className="text-red-400">*</span></label>
             <input
               type="email"
               name="email"
@@ -203,7 +203,7 @@ export default function EditForm({ id }: EditFormProps) {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Phone <span className="text-red-400">*</span></label>
+            <label className="text-sm text-card-foreground">Phone <span className="text-red-400">*</span></label>
             <input
               type="text"
               name="phone"
@@ -216,14 +216,14 @@ export default function EditForm({ id }: EditFormProps) {
           </div>
 
           <div className="col-span-2">
-            <label className="text-sm text-gray-700">Domain</label>
+            <label className="text-sm text-card-foreground">Domain</label>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={domainInput}
                 onChange={(e) => setDomainInput(e.target.value)}
                 placeholder="Add domain"
-                className="border rounded-lg flex-1 px-3 py-2 text-gray-900"
+                className="border rounded-lg flex-1 px-3 py-2 text-foreground"
                 onKeyPress={(e) => e.key === 'Enter' && addDomain()}
               />
               <button
@@ -252,14 +252,14 @@ export default function EditForm({ id }: EditFormProps) {
           </div>
 
           <div className="col-span-2">
-            <label className="text-sm text-gray-700">Batches</label>
+            <label className="text-sm text-card-foreground">Batches</label>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={batchInput}
                 onChange={(e) => setBatchInput(e.target.value)}
                 placeholder="Add batch"
-                className="border rounded-lg flex-1 px-3 py-2 text-gray-900"
+                className="border rounded-lg flex-1 px-3 py-2 text-foreground"
                 onKeyPress={(e) => e.key === 'Enter' && addBatch()}
               />
               <button
@@ -273,7 +273,7 @@ export default function EditForm({ id }: EditFormProps) {
               {tutor.batches.map((b, i) => (
                 <span
                   key={i}
-                  className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-sm flex items-center gap-1"
+                  className="bg-gray-200 text-card-foreground px-2 py-1 rounded text-sm flex items-center gap-1"
                 >
                   {b}
                   <button
@@ -288,12 +288,12 @@ export default function EditForm({ id }: EditFormProps) {
           </div>
 
           <div>
-            <label className="text-sm text-gray-700">Status</label>
+            <label className="text-sm text-card-foreground">Status</label>
             <select
               name="status"
               value={tutor.status}
               onChange={handleChange}
-              className="border rounded-lg w-full px-3 py-2 text-gray-900"
+              className="border rounded-lg w-full px-3 py-2 text-foreground"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -304,7 +304,7 @@ export default function EditForm({ id }: EditFormProps) {
         <div className="flex justify-end gap-3 mt-6">
           <button
             onClick={() => router.push("/admin/tutors")}
-            className="border px-5 py-2 rounded-lg text-gray-800 hover:bg-gray-100"
+            className="border px-5 py-2 rounded-lg text-card-foreground hover:bg-accent"
           >
             Cancel
           </button>

@@ -60,7 +60,7 @@ export default function NavMain() {
       </ul>
 
       <div className="mt-8 px-3">
-        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-4">Configuration</p>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-4">Configuration</p>
         <Link
           href="/admin/settings"
           className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${

@@ -126,19 +126,19 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }: BulkUplo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div 
-        className="w-full max-w-md bg-white rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-md bg-card rounded-xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Bulk Upload Students</h2>
-            <p className="text-sm text-slate-500 mt-1">Upload student records using a CSV file.</p>
+            <h2 className="text-xl font-bold text-foreground">Bulk Upload Students</h2>
+            <p className="text-sm text-muted-foreground mt-1">Upload student records using a CSV file.</p>
           </div>
           <button 
             onClick={handleClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-muted-foreground hover:text-muted-foreground hover:bg-accent rounded-lg transition-colors"
             disabled={isUploading}
           >
             <X size={20} />
@@ -160,7 +160,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }: BulkUplo
                   ? 'border-blue-500 bg-blue-50/50' 
                   : error 
                     ? 'border-red-300 bg-red-50/30 hover:bg-red-50' 
-                    : 'border-slate-200 hover:border-blue-400 hover:bg-slate-50'
+                    : 'border-border hover:border-blue-400 hover:bg-muted'
                 }
               `}
             >
@@ -171,35 +171,35 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }: BulkUplo
                 accept=".csv"
                 onChange={handleFileChange}
               />
-              <div className={`p-4 rounded-full mb-4 ${isDragging ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
+              <div className={`p-4 rounded-full mb-4 ${isDragging ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-muted-foreground'}`}>
                 <Upload size={28} />
               </div>
-              <h3 className="text-base font-semibold text-slate-700 mb-1">
+              <h3 className="text-base font-semibold text-card-foreground mb-1">
                 Drag and drop your CSV file here
               </h3>
-              <p className="text-sm text-slate-500 mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 or click to browse files
               </p>
               
-              <div className="text-xs text-slate-400 flex items-center justify-center gap-4 w-full max-w-[200px] border-t border-slate-100 pt-4">
+              <div className="text-xs text-muted-foreground flex items-center justify-center gap-4 w-full max-w-[200px] border-t border-slate-100 pt-4">
                 <span>Maximum file size: 10MB</span>
               </div>
             </div>
           ) : (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-4">
+            <div className="bg-muted border border-border rounded-xl p-4 flex items-start gap-4">
               <div className={`p-3 rounded-lg flex-shrink-0 ${isSuccess ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
                 {isSuccess ? <CheckCircle2 size={24} /> : <File size={24} />}
               </div>
               <div className="flex-1 min-w-0 pt-1">
-                <p className="text-sm font-medium text-slate-900 truncate pr-4">
+                <p className="text-sm font-medium text-foreground truncate pr-4">
                   {file?.name}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {file && formatFileSize(file.size)}
                   </span>
                   {!isSuccess && (
-                     <span className="text-xs font-medium text-slate-400">• CSV</span>
+                     <span className="text-xs font-medium text-muted-foreground">• CSV</span>
                   )}
                 </div>
                 
@@ -218,7 +218,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }: BulkUplo
               {!isUploading && !isSuccess && (
                 <button 
                   onClick={handleRemoveFile}
-                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"
+                  className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"
                 >
                   <X size={16} />
                 </button>
@@ -246,12 +246,12 @@ export default function BulkUploadModal({ isOpen, onClose, onSuccess }: BulkUplo
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-100 bg-muted/50">
           <Button 
             variant="outline" 
             onClick={handleClose}
             disabled={isUploading}
-            className="border-slate-200 hover:bg-slate-100 text-slate-700"
+            className="border-border hover:bg-accent text-card-foreground"
           >
             Cancel
           </Button>

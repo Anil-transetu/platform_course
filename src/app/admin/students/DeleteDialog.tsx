@@ -45,15 +45,15 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
   };
 
   if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-3 text-gray-500 font-medium">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-muted gap-3 text-muted-foreground font-medium">
       <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       <p>Loading student details...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-md text-center space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="bg-card rounded-lg shadow-md p-6 w-full max-w-md text-center space-y-6">
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm flex items-start gap-2">
@@ -63,7 +63,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
         )}
 
         {/* Header */}
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-foreground">
           Are you sure you want to delete{" "}
           <span className="text-red-600">{student?.name || "this student"}</span>?
         </h1>
@@ -76,7 +76,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
             onChange={handleCheckboxChange}
             className="w-4 h-4"
           />
-          <span className="text-gray-700 text-sm">
+          <span className="text-card-foreground text-sm">
             Student is associated with any batch
           </span>
         </label>
@@ -86,7 +86,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
           <button
             onClick={() => router.push("/admin/students")}
             disabled={isDeleting}
-            className="flex-1 mr-2 px-6 py-2 rounded-lg font-medium border border-gray-300 text-gray-900 hover:bg-gray-100 disabled:opacity-50"
+            className="flex-1 mr-2 px-6 py-2 rounded-lg font-medium border border-border text-foreground hover:bg-accent disabled:opacity-50"
           >
             Cancel
           </button>

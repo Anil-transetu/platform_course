@@ -51,11 +51,11 @@ export function buildStudentColumns(args: {
   return [
     {
       accessorKey: "id",
-      header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Student ID</span>,
-      cell: ({ row }) => <div className="font-semibold text-slate-600 text-sm">#STU-{row.getValue("id")}</div>,
+      header: () => <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Student ID</span>,
+      cell: ({ row }) => <div className="font-semibold text-muted-foreground text-sm">#STU-{row.getValue("id")}</div>,
     },
     {
-      header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Student Name</span>,
+      header: () => <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Student Name</span>,
       id: "student_info",
       cell: ({ row }) => {
         const student = row.original;
@@ -67,7 +67,7 @@ export function buildStudentColumns(args: {
             )}>
               {getInitials(student.first_name, student.last_name)}
             </div>
-            <span className="font-semibold text-slate-900 text-sm">
+            <span className="font-semibold text-foreground text-sm">
               {student.first_name} {student.last_name}
             </span>
           </div>
@@ -76,19 +76,19 @@ export function buildStudentColumns(args: {
     },
     {
       accessorKey: "email",
-      header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Email Address</span>,
+      header: () => <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</span>,
       cell: ({ row }) => (
-        <div className="text-slate-600 font-medium text-sm truncate max-w-[180px]">
+        <div className="text-muted-foreground font-medium text-sm truncate max-w-[180px]">
           {row.getValue("email")}
         </div>
       ),
     },
     {
       accessorKey: "course_name",
-      header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Enrolled Batches</span>,
+      header: () => <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Enrolled Batches</span>,
       cell: ({ row }) => {
         const course = row.getValue("course_name") as string;
-        if (!course) return <span className="text-slate-400 text-sm">-</span>;
+        if (!course) return <span className="text-muted-foreground text-sm">-</span>;
         return (
           <div className="flex flex-wrap gap-1.5">
             {course.split(",").map((c, i) => (
@@ -102,7 +102,7 @@ export function buildStudentColumns(args: {
     },
     {
       accessorKey: "status",
-      header: () => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Status</span>,
+      header: () => <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Status</span>,
       cell: ({ row }) => {
         const status = (row.getValue("status") as string) || "Inactive";
         const isActive = status.toLowerCase() === "active";
@@ -111,7 +111,7 @@ export function buildStudentColumns(args: {
             "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
             isActive 
               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              : "bg-slate-100 text-muted-foreground hover:bg-slate-200"
           )}>
             {status}
           </Badge>
@@ -120,12 +120,12 @@ export function buildStudentColumns(args: {
     },
     {
       id: "actions",
-      header: () => <div className="text-right pr-4"><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Action</span></div>,
+      header: () => <div className="text-right pr-4"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Action</span></div>,
       cell: ({ row }) => (
         <div className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full text-slate-400">
+              <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-accent rounded-full text-muted-foreground">
                 <span className="sr-only">Open menu</span>
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -133,10 +133,10 @@ export function buildStudentColumns(args: {
             <DropdownMenuContent align="end" className="w-[160px] rounded-2xl shadow-xl border-slate-100 p-2">
               <DropdownMenuItem 
                 onClick={() => onEdit(row.original)}
-                className="rounded-xl flex items-center gap-2 cursor-pointer focus:bg-slate-50 py-2.5"
+                className="rounded-xl flex items-center gap-2 cursor-pointer focus:bg-muted py-2.5"
               >
-                <Pencil className="h-4 w-4 text-slate-500" /> 
-                <span className="font-medium text-slate-700">Edit</span>
+                <Pencil className="h-4 w-4 text-muted-foreground" /> 
+                <span className="font-medium text-card-foreground">Edit</span>
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(row.original)}

@@ -158,7 +158,7 @@ export function CreateEditModal<T extends Record<string, unknown>>({
                       )}
                     </FormControl>
                     {field.description && (
-                      <p className="text-xs text-gray-500">{field.description}</p>
+                      <p className="text-xs text-muted-foreground">{field.description}</p>
                     )}
                     <FormMessage />
                   </FormItem>

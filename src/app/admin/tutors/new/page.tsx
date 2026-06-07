@@ -97,7 +97,7 @@ export default function AddTutorPage() {
   };
 
   const getInputClass = (field: string) => {
-    const base = "border p-2 rounded-lg text-gray-900 transition-all duration-200";
+    const base = "border p-2 rounded-lg text-foreground transition-all duration-200";
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base;
   };
 
@@ -105,9 +105,9 @@ export default function AddTutorPage() {
     <div className="min-h-screen flex items-center justify-center bg-black/40 backdrop-blur-sm">
 
       {/* MODAL */}
-      <div className="bg-white w-full max-w-xl rounded-2xl shadow-xl p-6">
+      <div className="bg-card w-full max-w-xl rounded-2xl shadow-xl p-6">
 
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
           Register New Tutor
         </h2>
 
@@ -187,7 +187,7 @@ export default function AddTutorPage() {
 
         {/* DOMAIN */}
         <div className="mt-4">
-          <label className="text-sm text-gray-700">Domains *</label>
+          <label className="text-sm text-card-foreground">Domains *</label>
           <input
             name="domains"
             placeholder="e.g. React, Java"
@@ -206,13 +206,13 @@ export default function AddTutorPage() {
 
         {/* TAGS */}
         <div className="mt-4">
-          <label className="text-sm text-gray-700">Tags</label>
+          <label className="text-sm text-card-foreground">Tags</label>
           <input
             name="tags"
             placeholder="e.g. Frontend, Backend"
             value={form.tags}
             onChange={handleChange}
-            className="w-full border p-2 rounded-lg mt-1 text-gray-900"
+            className="w-full border p-2 rounded-lg mt-1 text-foreground"
           />
         </div>
 
@@ -221,7 +221,7 @@ export default function AddTutorPage() {
 
           <button
             onClick={() => router.push("/admin/tutors")}
-            className="px-4 py-2 text-gray-600"
+            className="px-4 py-2 text-muted-foreground"
           >
             Cancel
           </button>

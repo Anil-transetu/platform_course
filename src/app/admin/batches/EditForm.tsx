@@ -35,16 +35,16 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <div className="bg-white w-[850px] rounded-xl shadow-xl p-8">
+      <div className="bg-card w-[850px] rounded-xl shadow-xl p-8">
         
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+          <h2 className="text-xl font-semibold text-card-foreground">
             Edit Batch (ID: {id})
           </h2>
           <Link
             href="/admin/batches"
-            className="text-gray-500 hover:text-gray-700 text-xl"
+            className="text-muted-foreground hover:text-card-foreground text-xl"
           >
             ✕
           </Link>
@@ -54,7 +54,7 @@ export default function EditForm({ id }: EditFormProps) {
         <div className="space-y-5">
           {/* BATCH NAME */}
           <div>
-            <label className="text-sm text-gray-600 font-medium">
+            <label className="text-sm text-muted-foreground font-medium">
               Batch Name <span className="text-red-400">*</span>
             </label>
 
@@ -63,7 +63,7 @@ export default function EditForm({ id }: EditFormProps) {
               value={batchName}
               onChange={(e)=>{setBatchName(e.target.value); if(errors.batchName){setErrors(prev=>{const n={...prev};delete n.batchName;return n;});}}}
               onBlur={()=>{setTouched(prev=>({...prev,batchName:true}));validateBatchName(batchName);}}
-              className={`w-full mt-1 border rounded-lg p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${touched.batchName && errors.batchName ? inputErrorClass : ""}`}
+              className={`w-full mt-1 border rounded-lg p-3 text-card-foreground focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${touched.batchName && errors.batchName ? inputErrorClass : ""}`}
             />
             {touched.batchName && errors.batchName && (
               <p className={errorTextClass}>
@@ -76,22 +76,22 @@ export default function EditForm({ id }: EditFormProps) {
           {/* SELECT ROW */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Select Institution
               </label>
 
-              <select className="w-full mt-1 border rounded-lg p-3 text-gray-800">
+              <select className="w-full mt-1 border rounded-lg p-3 text-card-foreground">
                 <option>Global Tech Institute</option>
                 <option>ABC University</option>
               </select>
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Select Course
               </label>
 
-              <select className="w-full mt-1 border rounded-lg p-3 text-gray-800">
+              <select className="w-full mt-1 border rounded-lg p-3 text-card-foreground">
                 <option>Java Development</option>
                 <option>React Development</option>
               </select>
@@ -101,26 +101,26 @@ export default function EditForm({ id }: EditFormProps) {
           {/* INSTRUCTOR + STUDENTS */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Instructor
               </label>
 
               <input
                 type="text"
                 defaultValue="Dr. Robert Wilson"
-                className="w-full mt-1 border rounded-lg p-3 text-gray-800"
+                className="w-full mt-1 border rounded-lg p-3 text-card-foreground"
               />
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Enroll Students
               </label>
 
               <input
                 type="text"
                 placeholder="Search by name or ID..."
-                className="w-full mt-1 border rounded-lg p-3 text-gray-800"
+                className="w-full mt-1 border rounded-lg p-3 text-card-foreground"
               />
             </div>
           </div>
@@ -128,26 +128,26 @@ export default function EditForm({ id }: EditFormProps) {
           {/* DATE ROW */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Start Date
               </label>
 
               <input
                 type="date"
                 defaultValue="2024-01-15"
-                className="w-full mt-1 border rounded-lg p-3 text-gray-800"
+                className="w-full mt-1 border rounded-lg p-3 text-card-foreground"
               />
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 End Date
               </label>
 
               <input
                 type="date"
                 defaultValue="2024-06-15"
-                className="w-full mt-1 border rounded-lg p-3 text-gray-800"
+                className="w-full mt-1 border rounded-lg p-3 text-card-foreground"
               />
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function EditForm({ id }: EditFormProps) {
           <div className="flex justify-end gap-3 pt-4">
             <Link
               href="/admin/batches"
-              className="px-5 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+              className="px-5 py-2 border rounded-lg text-card-foreground hover:bg-accent"
             >
               Cancel
             </Link>

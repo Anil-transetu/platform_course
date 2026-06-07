@@ -106,14 +106,14 @@ export default function StudentsPage() {
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900">Student Management</h1>
-            <p className="text-slate-500 font-medium mt-2">Manage enrollments, batches, and student information.</p>
+            <h1 className="text-4xl font-bold text-foreground">Student Management</h1>
+            <p className="text-muted-foreground font-medium mt-2">Manage enrollments, batches, and student information.</p>
           </div>
           <div className="flex gap-3">
             <Button
               variant="outline"
               onClick={() => setIsBulkUploadOpen(true)}
-              className="h-11 px-6 rounded-lg border-slate-200 text-slate-600 font-semibold flex items-center gap-2 hover:bg-slate-100 shadow-sm bg-white transition-all"
+              className="h-11 px-6 rounded-lg border-border text-muted-foreground font-semibold flex items-center gap-2 hover:bg-accent shadow-sm bg-card transition-all"
             >
               <Plus size={18} />
               Bulk Upload CSV
@@ -136,28 +136,28 @@ export default function StudentsPage() {
         </div>
 
         {/* Table Card */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[600px]">
+        <div className="bg-card rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[600px]">
           {/* Toolbar */}
           <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center gap-4 bg-gradient-to-r from-slate-50/50 to-transparent">
             <div className="relative flex-1 max-w-sm group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-blue-500 transition-colors" size={18} />
               <Input
                 placeholder="Search by name, email, or user ID..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 bg-slate-50 border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-400 font-medium text-sm transition-all"
+                className="pl-10 h-10 bg-muted border-border rounded-lg focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-400 font-medium text-sm transition-all"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase">Status:</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Status:</span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[100px] h-10 rounded-lg bg-slate-50 border-slate-200 shadow-none font-medium text-sm">
+                <SelectTrigger className="w-[100px] h-10 rounded-lg bg-muted border-border shadow-none font-medium text-sm">
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg border-slate-100 shadow-lg">
                   <SelectItem value="All" className="rounded-lg font-medium text-sm">All</SelectItem>
                   <SelectItem value="Active" className="rounded-lg font-medium text-emerald-600 text-sm">Active</SelectItem>
-                  <SelectItem value="Inactive" className="rounded-lg font-medium text-slate-400 text-sm">Inactive</SelectItem>
+                  <SelectItem value="Inactive" className="rounded-lg font-medium text-muted-foreground text-sm">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -187,10 +187,10 @@ export default function StudentsPage() {
                   <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
                     <Search size={32} />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
                     {search ? `No students found for "${search}"` : "No students found"}
                   </h3>
-                  <p className="text-slate-500 max-w-sm mb-6">
+                  <p className="text-muted-foreground max-w-sm mb-6">
                     {search 
                       ? "We couldn't find any students matching your search criteria." 
                       : "We couldn't find any students matching your filters in the database."
@@ -200,7 +200,7 @@ export default function StudentsPage() {
                     <Button 
                       onClick={() => { setSearch(""); setStatusFilter("All"); }}
                       variant="outline"
-                      className="bg-white"
+                      className="bg-card"
                     >
                       Clear Filters
                     </Button>

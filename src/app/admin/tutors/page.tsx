@@ -132,10 +132,10 @@ export default function TutorsPage() {
             </span>
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-gray-900 text-sm truncate">
+            <p className="font-semibold text-foreground text-sm truncate">
               {row.name}
             </p>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               ID: #{String(row.id).padStart(4, "0")}
             </p>
           </div>
@@ -163,7 +163,7 @@ export default function TutorsPage() {
       label: "Contact",
       render: (_, row) => (
         <div>
-          <p className="text-gray-900 font-medium">{row.email}</p>
+          <p className="text-foreground font-medium">{row.email}</p>
           <p className="text-xs text-gray-400 mt-0.5">{row.phone}</p>
         </div>
       ),
@@ -176,7 +176,7 @@ export default function TutorsPage() {
           {row.batches.map((b: string) => (
             <span
               key={b}
-              className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
+              className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
             >
               {b}
             </span>
@@ -208,7 +208,7 @@ export default function TutorsPage() {
           e.stopPropagation();
           setOpenMenu(openMenu === tutor.id ? null : tutor.id);
         }}
-        className="text-gray-400 hover:text-gray-600 transition p-1"
+        className="text-gray-400 hover:text-muted-foreground transition p-1"
       >
         <MoreVertical size={18} />
       </button>
@@ -216,11 +216,11 @@ export default function TutorsPage() {
       {openMenu === tutor.id && (
         <div
           ref={menuRef}
-          className="absolute right-8 top-0 bg-white shadow-lg border border-gray-200 rounded-lg w-32 py-2 z-20 text-left flex flex-col"
+          className="absolute right-8 top-0 bg-card shadow-lg border border-border rounded-lg w-32 py-2 z-20 text-left flex flex-col"
         >
           <Link
             href={`/admin/tutors/${tutor.id}?mode=edit`}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent transition"
           >
             <Edit size={14} className="text-gray-400" /> Edit
           </Link>
@@ -281,7 +281,7 @@ export default function TutorsPage() {
         </div>
 
         {/* FILTERS */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex gap-4 flex-shrink-0">
+        <div className="bg-muted p-4 rounded-lg border border-border flex gap-4 flex-shrink-0">
           <div className="flex-1 flex items-center gap-2">
             <svg
               className="w-5 h-5 text-gray-400"
@@ -304,15 +304,15 @@ export default function TutorsPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="flex-1 bg-transparent border-0 text-sm text-gray-800 placeholder-gray-500 focus:outline-none"
+              className="flex-1 bg-transparent border-0 text-sm text-card-foreground placeholder-gray-500 focus:outline-none"
             />
           </div>
 
-          <select className="border border-gray-300 px-4 py-2.5 rounded-lg text-gray-700 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="border border-border px-4 py-2.5 rounded-lg text-card-foreground bg-card text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option>All Domain</option>
           </select>
 
-          <select className="border border-gray-300 px-4 py-2.5 rounded-lg text-gray-700 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select className="border border-border px-4 py-2.5 rounded-lg text-card-foreground bg-card text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option>All Status</option>
           </select>
         </div>

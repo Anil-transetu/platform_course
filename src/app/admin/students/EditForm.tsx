@@ -82,23 +82,23 @@ export default function EditForm({ id }: EditFormProps) {
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-[560px] overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
+      <div className="relative bg-card rounded-[24px] shadow-2xl w-full max-w-[560px] overflow-hidden transform transition-all duration-300 scale-100 flex flex-col">
 
         {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-white">
+        <div className="px-8 py-6 border-b border-gray-50 flex justify-between items-center bg-card">
           <h2 className="text-xl font-bold text-[#1E293B]">Edit Student</h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 p-2 rounded-full border-none"
+            className="text-gray-400 hover:text-muted-foreground transition-colors bg-muted p-2 rounded-full border-none"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-8 py-8 bg-white overflow-y-auto max-h-[70vh]">
+        <div className="px-8 py-8 bg-card overflow-y-auto max-h-[70vh]">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500">
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
               <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
               <p className="text-sm font-medium">Loading student details...</p>
             </div>
@@ -122,7 +122,7 @@ export default function EditForm({ id }: EditFormProps) {
                       value={formData.firstName}
                       onChange={handleChange}
                       placeholder="Ethan"
-                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
+                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
                     />
                   </div>
                   <div>
@@ -133,7 +133,7 @@ export default function EditForm({ id }: EditFormProps) {
                       value={formData.lastName}
                       onChange={handleChange}
                       placeholder="Richards"
-                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
+                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
                     />
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default function EditForm({ id }: EditFormProps) {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="ethan.r@example.com"
-                    className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
+                    className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
                   />
                 </div>
 
@@ -161,7 +161,7 @@ export default function EditForm({ id }: EditFormProps) {
                       value={formData.mobile}
                       onChange={handleChange}
                       placeholder="+1 (234) 567-8900"
-                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
+                      className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
                     />
                   </div>
                   <div className="relative">
@@ -173,12 +173,12 @@ export default function EditForm({ id }: EditFormProps) {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="secretpassword"
-                        className="w-full bg-[#F8FAFC] border-none rounded-xl pl-4 pr-12 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
+                        className="w-full bg-[#F8FAFC] border-none rounded-xl pl-4 pr-12 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-muted-foreground transition-colors"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -198,7 +198,7 @@ export default function EditForm({ id }: EditFormProps) {
                     onChange={handleChange}
                     placeholder="Add any relevant student notes here..."
                     rows={4}
-                    className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium resize-none"
+                    className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-4 text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-gray-300 font-medium resize-none"
                   />
                 </div>
               </form>
@@ -207,11 +207,11 @@ export default function EditForm({ id }: EditFormProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-6 bg-white border-t border-gray-50 flex justify-end gap-3 mt-auto rounded-b-[24px]">
+        <div className="px-8 py-6 bg-card border-t border-gray-50 flex justify-end gap-3 mt-auto rounded-b-[24px]">
           <button
             type="button"
             onClick={handleClose}
-            className="px-8 py-3 text-sm font-bold text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all focus:outline-none"
+            className="px-8 py-3 text-sm font-bold text-muted-foreground bg-card border border-border rounded-xl hover:bg-muted transition-all focus:outline-none"
           >
             Cancel
           </button>

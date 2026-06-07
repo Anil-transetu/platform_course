@@ -81,7 +81,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-10 rounded-xl shadow-lg text-center text-gray-500 italic">
+        <div className="bg-card p-10 rounded-xl shadow-lg text-center text-muted-foreground italic">
           Loading institution details...
         </div>
       </div>
@@ -91,7 +91,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
   if (!institution && !error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="bg-white p-10 rounded-xl shadow-lg text-center text-gray-800">
+        <div className="bg-card p-10 rounded-xl shadow-lg text-center text-card-foreground">
            Institution not found
            <div className="mt-4">
              <Link href="/admin/institutions" className="text-blue-600 hover:underline">Back to Institutions</Link>
@@ -103,8 +103,8 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="bg-card p-6 rounded-xl shadow-lg w-full max-w-md">
+        <h2 className="text-lg font-semibold text-foreground mb-4">
           Delete Institution
         </h2>
 
@@ -114,22 +114,22 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
           </div>
         )}
 
-        <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+        <p className="text-sm text-card-foreground mb-4 leading-relaxed">
           You are about to delete
-          <span className="font-semibold text-gray-900">
+          <span className="font-semibold text-foreground">
             {" "} {institution?.name || "this institution"}
           </span>. This action cannot be undone.
         </p>
 
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <div className="bg-muted p-4 rounded-lg mb-6">
             <div className="flex items-start gap-3">
               <input
                 id="batch-check"
                 type="checkbox"
                 onChange={handleCheck}
-                className="mt-1 w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                className="mt-1 w-4 h-4 rounded border-border text-red-600 focus:ring-red-500"
               />
-              <label htmlFor="batch-check" className="text-sm text-gray-700 font-medium cursor-pointer">
+              <label htmlFor="batch-check" className="text-sm text-card-foreground font-medium cursor-pointer">
                 Confirm: I have checked that there are no active batches for this institution.
               </label>
             </div>
@@ -145,7 +145,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
         <div className="flex justify-end gap-3 pt-2">
           <Link
             href="/admin/institutions"
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent rounded-lg transition-colors"
           >
             Cancel
           </Link>

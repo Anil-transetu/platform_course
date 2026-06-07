@@ -49,13 +49,13 @@ export default function ListingScreenTemplate({
   children,
 }: ListingScreenTemplateProps) {
   return (
-    <div className="flex flex-col h-full w-full bg-white rounded-2xl">
+    <div className="flex flex-col h-full w-full bg-card rounded-2xl">
       {/* Header Section */}
       <div className="flex items-center justify-between gap-4 p-6 border-b border-slate-100">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">{headerText}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{headerText}</h1>
           {subHeaderText && (
-            <p className="text-sm text-slate-500 mt-1">{subHeaderText}</p>
+            <p className="text-sm text-muted-foreground mt-1">{subHeaderText}</p>
           )}
         </div>
 

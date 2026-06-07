@@ -107,12 +107,12 @@ export default function StudentActionModal({
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
       
       <div className={cn(
-        "relative w-full bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300",
+        "relative w-full bg-card rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300",
         isDelete ? "max-w-md" : "max-w-xl"
       )}>
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400">
             <X size={20} />
           </button>
         </div>
@@ -127,17 +127,17 @@ export default function StudentActionModal({
 
           {isDelete ? (
             <div className="space-y-6">
-              <p className="text-gray-600">
-                Are you sure you want to delete student <span className="font-bold text-gray-900">{student?.first_name} {student?.last_name}</span>?
+              <p className="text-muted-foreground">
+                Are you sure you want to delete student <span className="font-bold text-foreground">{student?.first_name} {student?.last_name}</span>?
               </p>
               
-              <div className="flex items-center space-x-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div className="flex items-center space-x-3 p-4 bg-muted rounded-2xl border border-slate-100">
                 <Checkbox 
                   id="batch-check" 
                   checked={formData.is_associated_with_batch}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_associated_with_batch: !!checked }))}
                 />
-                <label htmlFor="batch-check" className="text-sm font-medium text-slate-600 cursor-pointer">
+                <label htmlFor="batch-check" className="text-sm font-medium text-muted-foreground cursor-pointer">
                   Is the student associated with any batch?
                 </label>
               </div>
@@ -151,7 +151,7 @@ export default function StudentActionModal({
                     placeholder="e.g. John" 
                     value={formData.first_name}
                     onChange={e => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-                    className="h-12 rounded-xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="h-12 rounded-xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500"
                     required
                   />
                 </div>
@@ -161,7 +161,7 @@ export default function StudentActionModal({
                     placeholder="e.g. Doe" 
                     value={formData.last_name}
                     onChange={e => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-                    className="h-12 rounded-xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="h-12 rounded-xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default function StudentActionModal({
                   placeholder="john.doe@example.com" 
                   value={formData.email}
                   onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="h-12 rounded-xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="h-12 rounded-xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   required
                 />
               </div>
@@ -185,7 +185,7 @@ export default function StudentActionModal({
                     placeholder="+1 (555) 000-0000" 
                     value={formData.mobile_number}
                     onChange={e => setFormData(prev => ({ ...prev, mobile_number: e.target.value }))}
-                    className="h-12 rounded-xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="h-12 rounded-xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500"
                   />
                 </div>
                 <div className="space-y-2">
@@ -196,13 +196,13 @@ export default function StudentActionModal({
                       placeholder="••••••••" 
                       value={formData.password}
                       onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                      className="h-12 rounded-xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500 pr-10"
+                      className="h-12 rounded-xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500 pr-10"
                       required={mode === "create"}
                     />
                     <button 
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-muted-foreground"
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -219,7 +219,7 @@ export default function StudentActionModal({
                   placeholder="Add any relevant student notes here..." 
                   value={formData.notes}
                   onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="min-h-[100px] rounded-2xl bg-slate-50 border-none focus-visible:ring-2 focus-visible:ring-blue-500 resize-none"
+                  className="min-h-[100px] rounded-2xl bg-muted border-none focus-visible:ring-2 focus-visible:ring-blue-500 resize-none"
                 />
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function StudentActionModal({
               type="button" 
               variant="outline" 
               onClick={onClose}
-              className="h-12 px-8 rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 bg-white"
+              className="h-12 px-8 rounded-xl border-border text-muted-foreground hover:bg-muted bg-card"
             >
               Cancel
             </Button>

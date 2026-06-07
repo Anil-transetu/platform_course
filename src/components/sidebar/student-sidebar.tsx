@@ -62,7 +62,7 @@ export default function StudentSidebar() {
                       "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                       active 
                         ? "bg-blue-600/10 text-blue-500 font-medium border border-blue-600/20" 
-                        : "hover:bg-white/5 hover:text-white"
+                        : "hover:bg-card/5 hover:text-white"
                     )}
                   >
                     <Icon size={20} className={cn("transition-colors", active ? "text-blue-500" : "group-hover:text-white")} />
@@ -76,7 +76,7 @@ export default function StudentSidebar() {
         </div>
 
         <div>
-          <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-gray-600 mb-4">Account</p>
+          <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-4">Account</p>
           <ul className="space-y-1">
             {accountLinks.map((link) => {
               const active = isActive(link.href);
@@ -89,7 +89,7 @@ export default function StudentSidebar() {
                       "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                       active 
                         ? "bg-blue-600/10 text-blue-500 font-medium border border-blue-600/20" 
-                        : "hover:bg-white/5 hover:text-white"
+                        : "hover:bg-card/5 hover:text-white"
                     )}
                   >
                     <Icon size={20} className={cn("transition-colors", active ? "text-blue-500" : "group-hover:text-white")} />
@@ -103,7 +103,7 @@ export default function StudentSidebar() {
       </div>
 
       {/* Bottom Profile */}
-      <div className="p-4 bg-white/5 mt-auto border-t border-gray-800">
+      <div className="p-4 bg-card/5 mt-auto border-t border-gray-800">
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="relative group cursor-pointer">
             <Image 
@@ -117,9 +117,9 @@ export default function StudentSidebar() {
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="text-white text-sm font-semibold truncate leading-tight">Alex Thompson</p>
-            <p className="text-[10px] text-gray-500 uppercase tracking-tighter">Student</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-tighter">Student</p>
           </div>
-          <button className="text-gray-500 hover:text-red-400 transition-colors p-2 hover:bg-red-400/10 rounded-lg">
+          <button className="text-muted-foreground hover:text-red-400 transition-colors p-2 hover:bg-red-400/10 rounded-lg">
             <LogOut size={18} />
           </button>
         </div>
@@ -128,7 +128,7 @@ export default function StudentSidebar() {
       {/* Support Footer */}
       <div className="px-6 py-4">
         <div className="bg-blue-600/5 rounded-xl p-3 border border-blue-600/10">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Academic Support</p>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Academic Support</p>
           <button className="flex items-center gap-2 text-xs text-blue-500 font-medium hover:text-blue-400">
             <HelpCircle size={14} />
             Help Center
