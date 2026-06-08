@@ -1,4 +1,5 @@
-import AppSidebar from "@/components/sidebar/app-sidebar";
+import RolesSidebar from "@/components/sidebar/roles-sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function AdminLayout({
   children,
@@ -6,12 +7,21 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-muted">
-      <AppSidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider className="h-screen overflow-hidden">
+      <RolesSidebar role="ADMIN" />
+      <SidebarInset className="flex flex-col overflow-hidden bg-muted">
+        <header className="h-14 border-b border-[#2a374a] flex items-center px-4 bg-[#111827] lg:hidden shrink-0">
+          <SidebarTrigger className="text-white hover:bg-white/10" />
+        </header>
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
+
+
+
+
 

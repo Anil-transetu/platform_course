@@ -1,5 +1,6 @@
-import StudentSidebar from "@/components/sidebar/student-sidebar";
+import RolesSidebar from "@/components/sidebar/roles-sidebar";
 import StudentHeader from "@/components/student/student-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function StudentLayout({
   children,
@@ -7,14 +8,16 @@ export default function StudentLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      <StudentSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+    <SidebarProvider className="h-screen overflow-hidden">
+      <RolesSidebar role="STUDENT" />
+      <SidebarInset className="flex flex-col overflow-hidden bg-[#F8FAFC]">
         <StudentHeader />
-        <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
+
+

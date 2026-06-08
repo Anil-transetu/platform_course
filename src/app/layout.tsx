@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
+import { TooltipProvider } from "@/components/ui/tooltip";
+
 export const metadata = {
   title: "Admin Dashboard",
   description: "LMS Admin Panel",
@@ -26,7 +28,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <QueryProvider>
-            {children}
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>
