@@ -1,216 +1,241 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Search, Plus, Trophy, BarChart2, TrendingUp } from "lucide-react"
-import { useStudents, useStudentCounts, type Student } from "@/features/admin/students/api/student-api"
-import { buildStudentColumns } from "@/app/admin/students/columns"
-import { TableCards } from "@/components/shared/tables/table-cards"
-import StatsCard from "@/components/ui/StatsCard"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import StudentActionModal from "@/app/admin/students/components/StudentActionModal"
-import BulkUploadModal from "@/app/admin/students/components/BulkUploadModal"
-import { useQueryClient } from "@tanstack/react-query"
+"use client";
+import React, { useState, useEffect } from "react";
+import { useStudents, useStudentStats } from "@/hooks/use-students";
+import { Student } from "@/types/student";
+import { studentColumns } from "./columns";
+import StudentFormModal from "./StudentFormModal";
+import BulkUploadModal from "./BulkUploadModal";
+import StudentDeleteDialog from "./StudentDeleteDialog";
+import StatsCard from "@/components/ui/StatsCard";
+import DataTable from "@/components/reusable/DataTable";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Users, UserCheck, BookOpen, MoreVertical, Upload, Pencil, Trash2 } from "lucide-react";
+import { Toaster } from "react-hot-toast";
+
+function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <MoreVertical size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Pencil size={14} className="text-gray-400" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Trash2 size={14} className="text-red-500" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function StudentsPage() {
-  const router = useRouter()
-  const [search, setSearch] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("All")
-  const [courseFilter] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(10)
-
-  const [modalState, setModalState] = useState<{
-    isOpen: boolean;
-    mode: "create" | "edit" | "delete";
+  // Modal state
+  const [formModal, setFormModal] = useState<{
+    open: boolean;
+    mode: "add" | "edit";
+    student?: Student | null;
+  }>({
+    open: false,
+    mode: "add",
+    student: null,
+  });
+  const [bulkModal, setBulkModal] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
     student: Student | null;
   }>({
-    isOpen: false,
-    mode: "create",
-    student: null
-  })
-
-  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false)
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(search)
-    }, 500)
-    return () => clearTimeout(timeoutId)
-  }, [search])
-
-  // TanStack Query Hooks
-  const {
-    data: studentsData,
-    isLoading: loading,
-  } = useStudents(currentPage, itemsPerPage, debouncedSearch, statusFilter, courseFilter);
-
-  const students = (studentsData?.data || []) as Student[];
-  const totalRows = ((studentsData as Record<string, unknown>)?.meta as Record<string, unknown>)?.total as number || ((studentsData as Record<string, unknown>)?.total as number) || ((studentsData as Record<string, unknown>)?.pagination as Record<string, unknown>)?.total as number || students.length;
-  
-  // Calculate stats based on real data
-  const activeStudentsCount = students.filter((s: Student) => s.status?.toLowerCase() === 'active').length;
-  const avgCourses = 1.0;
-
-  // Handlers for the Table Actions
-  const handleEdit = (student: Student) => {
-    router.push(`/admin/students/${student.id}?mode=edit`);
-  };
-
-  const handleDelete = (student: Student) => {
-    router.push(`/admin/students/${student.id}?mode=delete`);
-  };
-
-  const handleCreate = () => {
-    setModalState({ isOpen: true, mode: "create", student: null });
-  };
-
-  const columns = buildStudentColumns({
-    onEdit: handleEdit,
-    onDelete: handleDelete,
+    open: false,
+    student: null,
   });
 
+  // Filters & Pagination state
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const queryClient = useQueryClient();
-  const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["students"] });
+  // Reset page when search or status changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status]);
+
+  // Data fetching hooks
+  const { data: studentsData, isLoading } = useStudents(
+    page,
+    rowsPerPage,
+    debouncedSearch || undefined,
+    status
+  );
+
+  const { data: stats } = useStudentStats();
+
+  const studentsList = Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
+  const totalCount = Array.isArray(studentsData) ? studentsData.length : studentsData?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  // DataTable configs
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search by name, email, or user ID...",
+    value: search,
+    onChange: (val: string) => setSearch(val),
   };
 
+  const filterConfig = [
+    {
+      id: "status",
+      label: "Status: All",
+      type: "select" as const,
+      value: status,
+      options: [
+        { value: "All", label: "Status: All" },
+        { value: "Active", label: "Status: Active" },
+        { value: "Inactive", label: "Status: Inactive" },
+      ],
+      onChange: (val: string | string[]) => {
+        const selected = Array.isArray(val) ? val[0] : val;
+        setStatus((selected || "All") as "All" | "Active" | "Inactive");
+      },
+    },
+  ];
+
+  const paginationInfo = totalCount > 0
+    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+    : "0-0 of 0";
+
+  const extraHeaderActions = (
+    <button
+      onClick={() => setBulkModal(true)}
+      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
+    >
+      <Upload size={16} />
+      Bulk Upload CSV
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <StudentActionModal
-          isOpen={modalState.isOpen}
-          mode={modalState.mode}
-          student={modalState.student}
-          onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
-          onSuccess={handleSuccess}
-        />
+    <ListingScreenTemplate
+      headerText="Student Management"
+      subHeaderText="Manage enrollments, batches, and student information."
+      buttonLabel="Add Student"
+      buttonRequired={true}
+      buttonOnclick={() => setFormModal({ open: true, mode: "add", student: null })}
+      extraActions={extraHeaderActions}
+    >
+      <div className="p-6 space-y-6 flex flex-col h-full overflow-y-auto">
+        <Toaster position="top-right" />
 
-        <BulkUploadModal
-          isOpen={isBulkUploadOpen}
-          onClose={() => setIsBulkUploadOpen(false)}
-          onSuccess={handleSuccess}
-        />
-
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900">Student Management</h1>
-            <p className="text-slate-500 font-medium mt-2">Manage enrollments, batches, and student information.</p>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setIsBulkUploadOpen(true)}
-              className="h-11 px-6 rounded-lg border-slate-200 text-slate-600 font-semibold flex items-center gap-2 hover:bg-slate-100 shadow-sm bg-white transition-all"
-            >
-              <Plus size={18} />
-              Bulk Upload CSV
-            </Button>
-            <Button
-              onClick={handleCreate}
-              className="h-11 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all"
-            >
-              <Plus size={18} />
-              Add Student
-            </Button>
-          </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+          <StatsCard
+            title="Total Students"
+            value={stats?.total_students?.toLocaleString() ?? "0"}
+            icon={<Users size={20} />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total registered students in the system"
+          />
+          <StatsCard
+            title="Active Students"
+            value={stats?.active_students?.toLocaleString() ?? "0"}
+            icon={<UserCheck size={20} />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Students currently active and enrolled"
+          />
+          <StatsCard
+            title="Avg. Courses/Student"
+            value={stats?.average_students_per_course ? stats.average_students_per_course.toFixed(1) : "0.0"}
+            icon={<BookOpen size={20} />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            tooltip="Average number of course enrollments per student"
+          />
         </div>
 
-        {/* Stat Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <StatsCard title="Highest Performer" value="98%" icon={<Trophy size={20} />} iconBgClass="bg-yellow-50" iconColorClass="text-yellow-600" tooltip="Top scoring student across all batches this semester" />
-          <StatsCard title="Class Average" value="76%" icon={<BarChart2 size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="Average score across all students and batches" />
-          <StatsCard title="Most Improved" value="+15%" icon={<TrendingUp size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Student showing the highest score improvement this semester" />
-        </div>
-
-        {/* Table Card */}
-        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden flex flex-col h-[600px]">
-          {/* Toolbar */}
-          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center gap-4 bg-gradient-to-r from-slate-50/50 to-transparent">
-            <div className="relative flex-1 max-w-sm group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
-              <Input
-                placeholder="Search by name, email, or user ID..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 h-10 bg-slate-50 border-slate-200 rounded-lg focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-400 font-medium text-sm transition-all"
+        {/* Data Table */}
+        <div className="flex-1 min-h-[350px]">
+          <DataTable<Student>
+            data={studentsList}
+            columns={studentColumns}
+            rowKey={(row) => String(row.id)}
+            actions={(student) => (
+              <ActionMenu
+                onEdit={() => setFormModal({ open: true, mode: "edit", student })}
+                onDelete={() => setDeleteDialog({ open: true, student })}
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase">Status:</span>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[100px] h-10 rounded-lg bg-slate-50 border-slate-200 shadow-none font-medium text-sm">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg border-slate-100 shadow-lg">
-                  <SelectItem value="All" className="rounded-lg font-medium text-sm">All</SelectItem>
-                  <SelectItem value="Active" className="rounded-lg font-medium text-emerald-600 text-sm">Active</SelectItem>
-                  <SelectItem value="Inactive" className="rounded-lg font-medium text-slate-400 text-sm">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="px-6 flex-1 overflow-y-auto">
-            <TableCards
-              title=""
-              subtitle=""
-              stats={[]}
-              columns={columns}
-              data={students}
-              isLoading={loading}
-              rowCount={totalRows}
-              pageCount={Math.max(1, Math.ceil(totalRows / itemsPerPage))}
-              pagination={{
-                pageIndex: currentPage - 1,
-                pageSize: itemsPerPage
-              }}
-              onPaginationChange={(p) => {
-                setCurrentPage(p.pageIndex + 1)
-                setItemsPerPage(p.pageSize)
-              }}
-              emptyState={
-                <div className="flex flex-col items-center justify-center text-center p-8 h-full w-full">
-                  <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                    <Search size={32} />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                    {search ? `No students found for "${search}"` : "No students found"}
-                  </h3>
-                  <p className="text-slate-500 max-w-sm mb-6">
-                    {search 
-                      ? "We couldn't find any students matching your search criteria." 
-                      : "We couldn't find any students matching your filters in the database."
-                    } Please try adjusting your settings.
-                  </p>
-                  {(search || statusFilter !== "All" || courseFilter) && (
-                    <Button 
-                      onClick={() => { setSearch(""); setStatusFilter("All"); }}
-                      variant="outline"
-                      className="bg-white"
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
-              }
-            />
-          </div>
+            )}
+            rowsPerPage={rowsPerPage}
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            onRowsPerPageChange={(rows) => {
+              setRowsPerPage(rows);
+              setPage(1);
+            }}
+            paginationInfo={paginationInfo}
+            search={searchConfig}
+            filters={filterConfig}
+            showPagination={true}
+            loading={isLoading}
+            emptyStateMessage="No students found matching your criteria."
+            bodyHeight="h-auto"
+          />
         </div>
       </div>
-    </div>
-  )
+
+      {/* Modals */}
+      <StudentFormModal
+        open={formModal.open}
+        mode={formModal.mode}
+        student={formModal.student}
+        onClose={() => setFormModal({ open: false, mode: "add", student: null })}
+      />
+      <BulkUploadModal
+        open={bulkModal}
+        onClose={() => setBulkModal(false)}
+      />
+      <StudentDeleteDialog
+        open={deleteDialog.open}
+        student={deleteDialog.student}
+        onClose={() => setDeleteDialog({ open: false, student: null })}
+      />
+    </ListingScreenTemplate>
+  );
 }

@@ -32,19 +32,7 @@ async function handleResponse(response: Response) {
   return response.json();
 }
 
-export interface Student {
-  id: string | number;
-  first_name: string;
-  last_name?: string;
-  email: string;
-  mobile_number?: string;
-  status: string;
-  course_id?: number | string;
-  course_name?: string;
-  name?: string;
-  notes?: string;
-  created_at?: string;
-}
+import { Student, StudentStats } from "@/types/student";
 
 /**
  * Mapping helper: Splits a full name into first and last name
@@ -138,11 +126,7 @@ export async function fetchStudent(id: string | number) {
 /**
  * Fetch student statistics
  */
-export interface StudentStats {
-  total_students: number;
-  active_students: number;
-  average_students_per_course: number;
-}
+
 
 export interface StudentStatsResponse {
   success: boolean;
