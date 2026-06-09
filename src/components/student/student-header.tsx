@@ -1,13 +1,15 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, Pencil } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function StudentHeader() {
   return (
-    <header className="h-20 px-4 md:px-8 flex items-center justify-between bg-card border-b border-gray-100 shrink-0">
+    <header className="h-20 px-4 md:px-8 flex items-center justify-between bg-card border-b border-gray-100 shrink-0 relative z-[100]">
       <div className="flex items-center gap-2 flex-1 max-w-xl">
-        <SidebarTrigger className="lg:hidden" />
+        <SidebarTrigger className="lg:hidden">
+          <Pencil className="w-5 h-5" />
+        </SidebarTrigger>
         {/* Placeholder for search or breadcrumbs if needed */}
       </div>
       
