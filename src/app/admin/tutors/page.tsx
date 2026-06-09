@@ -1,38 +1,37 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import {
   Users,
   CheckCircle,
   Star,
   UserPlus,
   MoreVertical,
-  Edit,
-  Trash,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import DataTable, { Column } from "@/components/reusable/DataTable";
+import DataTable from "@/components/reusable/DataTable";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Tutor } from "./TutorFormModal";
+import TutorFormModal from "./TutorFormModal";
+import TutorDeleteDialog from "./TutorDeleteDialog";
+import { buildTutorColumns } from "./columns";
+import { Toaster } from "react-hot-toast";
 
-interface Tutor extends Record<string, any> {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  domain: string[];
-  batches: string[];
-  status: string;
-}
-
-const tutorsData: Tutor[] = [
+const initialTutorsData: Tutor[] = [
   {
     id: 1,
     name: "Sarah Smith",
     email: "s.smith@example.edu",
     phone: "+1 (234) 567-8901",
-    domain: ["Computer Science", "React"],
+    domain: ["COMPUTER SCIENCE", "REACT"],
     batches: ["C1-2024-A", "2024-B"],
     status: "Active",
   },
@@ -41,8 +40,8 @@ const tutorsData: Tutor[] = [
     name: "Robert Johnson",
     email: "r.johnson@example.edu",
     phone: "+1 (234) 567-8905",
-    domain: ["Data Science", "Python"],
-    batches: ["Dr-2024-X"],
+    domain: ["DATA SCIENCE", "PYTHON"],
+    batches: ["DR-2024-X"],
     status: "Active",
   },
   {
@@ -50,7 +49,7 @@ const tutorsData: Tutor[] = [
     name: "Emily Chen",
     email: "e.chen@example.edu",
     phone: "+1 (234) 567-8912",
-    domain: ["UI/UX Design"],
+    domain: ["UI/UX DESIGN"],
     batches: ["UX-ADV-01"],
     status: "Inactive",
   },
@@ -59,7 +58,7 @@ const tutorsData: Tutor[] = [
     name: "David Lee",
     email: "d.lee@example.edu",
     phone: "+1 (234) 567-8920",
-    domain: ["Java", "Spring"],
+    domain: ["JAVA", "SPRING"],
     batches: ["JB-2024"],
     status: "Active",
   },
@@ -68,7 +67,7 @@ const tutorsData: Tutor[] = [
     name: "Anusha Reddy",
     email: "anusha@example.edu",
     phone: "+91 9876543210",
-    domain: ["Machine Learning"],
+    domain: ["MACHINE LEARNING"],
     batches: ["ML-2024"],
     status: "Active",
   },
@@ -77,163 +76,171 @@ const tutorsData: Tutor[] = [
     name: "Kiran Kumar",
     email: "kiran@example.edu",
     phone: "+91 9123456780",
-    domain: ["Angular"],
+    domain: ["ANGULAR"],
     batches: ["ANG-01"],
     status: "Inactive",
   },
 ];
 
+function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <MoreVertical size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Pencil size={14} className="text-gray-400" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Trash2 size={14} className="text-red-500" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function TutorsPage() {
-  const router = useRouter();
+  const [tutorsData, setTutorsData] = useState<Tutor[]>(initialTutorsData);
+  
+  // Modal state
+  const [formModal, setFormModal] = useState<{
+    open: boolean;
+    mode: "add" | "edit";
+    tutor?: Tutor | null;
+  }>({
+    open: false,
+    mode: "add",
+    tutor: null,
+  });
+
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    tutor: Tutor | null;
+  }>({
+    open: false,
+    tutor: null,
+  });
+
   const [search, setSearch] = useState("");
+  const [domainFilter, setDomainFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [openMenu, setOpenMenu] = useState<number | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+  // Filter tutors
+  const filteredData = tutorsData.filter((tutor) => {
+    const matchesSearch =
+      tutor.name.toLowerCase().includes(search.toLowerCase()) ||
+      tutor.domain.some(d => d.toLowerCase().includes(search.toLowerCase())) ||
+      String(tutor.id).includes(search);
+    
+    const matchesDomain = domainFilter === "All" || tutor.domain.includes(domainFilter);
+    const matchesStatus = statusFilter === "All" || tutor.status === statusFilter;
+    
+    return matchesSearch && matchesDomain && matchesStatus;
+  });
 
-  // Filter tutors based on search
-  const filtered = tutorsData.filter((tutor) =>
-    tutor.name.toLowerCase().includes(search.toLowerCase()) ||
-    tutor.domain.some(d => d.toLowerCase().includes(search.toLowerCase())) ||
-    String(tutor.id).includes(search)
-  );
-
-  // Pagination logic
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = filtered.slice(start, start + rowsPerPage);
+  const visibleData = filteredData.slice(start, start + rowsPerPage);
 
-  // Stats
   const activeTutors = tutorsData.filter((t) => t.status === "Active").length;
 
-  // Column definitions for DataTable
-  const columns: Column<Tutor>[] = [
+  // Extract unique domains for filter dropdown
+  const allDomains = Array.from(new Set(tutorsData.flatMap(t => t.domain)));
+
+  // DataTable configs
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search by name, domain, or ID...",
+    value: search,
+    onChange: (val: string) => {
+      setSearch(val);
+      setPage(1);
+    },
+  };
+
+  const filterConfig = [
     {
-      key: "name",
-      label: "Tutor Info",
-      width: "w-1/5",
-      render: (_, row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-blue-600">
-              {row.name.charAt(0)}
-            </span>
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-foreground text-sm truncate">
-              {row.name}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              ID: #{String(row.id).padStart(4, "0")}
-            </p>
-          </div>
-        </div>
-      ),
+      id: "domain",
+      label: "All Domain",
+      type: "select" as const,
+      value: domainFilter,
+      options: [
+        { value: "All", label: "All Domain" },
+        ...allDomains.map(d => ({ value: d, label: d }))
+      ],
+      onChange: (val: string | string[]) => {
+        setDomainFilter(Array.isArray(val) ? val[0] : val);
+        setPage(1);
+      },
     },
     {
-      key: "domain",
-      label: "Domain",
-      render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap">
-          {row.domain.map((d: string) => (
-            <span
-              key={d}
-              className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: "email",
-      label: "Contact",
-      render: (_, row) => (
-        <div>
-          <p className="text-foreground font-medium">{row.email}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{row.phone}</p>
-        </div>
-      ),
-    },
-    {
-      key: "batches",
-      label: "Batches",
-      render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap">
-          {row.batches.map((b: string) => (
-            <span
-              key={b}
-              className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide"
-            >
-              {b}
-            </span>
-          ))}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (_, row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-            row.status === "Active"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
+      id: "status",
+      label: "All Status",
+      type: "select" as const,
+      value: statusFilter,
+      options: [
+        { value: "All", label: "All Status" },
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" },
+      ],
+      onChange: (val: string | string[]) => {
+        setStatusFilter(Array.isArray(val) ? val[0] : val);
+        setPage(1);
+      },
     },
   ];
 
-  const renderActions = (tutor: Tutor) => (
-    <div className="relative flex justify-center">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpenMenu(openMenu === tutor.id ? null : tutor.id);
-        }}
-        className="text-gray-400 hover:text-muted-foreground transition p-1"
-      >
-        <MoreVertical size={18} />
-      </button>
+  const paginationInfo = totalCount > 0
+    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
+    : "0-0 of 0";
 
-      {openMenu === tutor.id && (
-        <div
-          ref={menuRef}
-          className="absolute right-8 top-0 bg-card shadow-lg border border-border rounded-lg w-32 py-2 z-20 text-left flex flex-col"
-        >
-          <Link
-            href={`/admin/tutors/${tutor.id}?mode=edit`}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-card-foreground hover:bg-accent transition"
-          >
-            <Edit size={14} className="text-gray-400" /> Edit
-          </Link>
-          <Link
-            href={`/admin/tutors/${tutor.id}?mode=delete`}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition"
-          >
-            <Trash size={14} className="text-red-400" /> Delete
-          </Link>
-        </div>
-      )}
-    </div>
-  );
+  const handleSaveTutor = (data: any) => {
+    if (formModal.mode === "add") {
+      const newTutor: Tutor = {
+        id: Math.max(...tutorsData.map(t => t.id), 0) + 1,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        domain: data.domains,
+        batches: [],
+        status: "Active",
+      };
+      setTutorsData([newTutor, ...tutorsData]);
+    } else if (formModal.tutor) {
+      setTutorsData(tutorsData.map(t => 
+        t.id === formModal.tutor!.id ? { ...t, ...data, domain: data.domains } : t
+      ));
+    }
+  };
+
+  const handleDeleteTutor = () => {
+    if (deleteDialog.tutor) {
+      setTutorsData(tutorsData.filter(t => t.id !== deleteDialog.tutor!.id));
+    }
+  };
 
   return (
     <ListingScreenTemplate
@@ -241,11 +248,13 @@ export default function TutorsPage() {
       subHeaderText="Add and manage faculty members and their assignments."
       buttonLabel="Add New Tutor"
       buttonRequired={true}
-      buttonOnclick={() => router.push("/admin/tutors/new")}
+      buttonOnclick={() => setFormModal({ open: true, mode: "add", tutor: null })}
     >
       <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+        <Toaster position="top-right" />
+        
         {/* STATS CARDS */}
-        <div className="grid grid-cols-4 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
           <StatsCard
             title="Total Tutors"
             value={tutorsData.length}
@@ -280,50 +289,22 @@ export default function TutorsPage() {
           />
         </div>
 
-        {/* FILTERS */}
-        <div className="bg-muted p-4 rounded-lg border border-border flex gap-4 flex-shrink-0">
-          <div className="flex-1 flex items-center gap-2">
-            <svg
-              className="w-5 h-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by name, domain, or ID"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="flex-1 bg-transparent border-0 text-sm text-card-foreground placeholder-gray-500 focus:outline-none"
-            />
-          </div>
-
-          <select className="border border-border px-4 py-2.5 rounded-lg text-card-foreground bg-card text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All Domain</option>
-          </select>
-
-          <select className="border border-border px-4 py-2.5 rounded-lg text-card-foreground bg-card text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option>All Status</option>
-          </select>
-        </div>
-
         {/* DATA TABLE */}
         <div className="flex-1 overflow-hidden min-h-0">
           <DataTable<Tutor>
             data={visibleData}
-            columns={columns}
-            rowKey={(tutor) => tutor.id}
-            actions={renderActions}
+            columns={buildTutorColumns()}
+            rowKey={(tutor) => String(tutor.id)}
+            search={searchConfig}
+            filters={filterConfig}
+            actions={(tutor) => (
+              <div className="flex justify-center">
+                <ActionMenu 
+                  onEdit={() => setFormModal({ open: true, mode: "edit", tutor })}
+                  onDelete={() => setDeleteDialog({ open: true, tutor })}
+                />
+              </div>
+            )}
             bodyHeight="h-full"
             rowsPerPage={rowsPerPage}
             currentPage={page}
@@ -333,14 +314,26 @@ export default function TutorsPage() {
               setRowsPerPage(rows);
               setPage(1);
             }}
-            paginationInfo={`${start + 1}-${Math.min(
-              start + rowsPerPage,
-              filtered.length
-            )} of ${filtered.length}`}
+            paginationInfo={paginationInfo}
             showPagination={true}
           />
         </div>
       </div>
+
+      <TutorFormModal
+        open={formModal.open}
+        mode={formModal.mode}
+        tutor={formModal.tutor}
+        onClose={() => setFormModal({ open: false, mode: "add", tutor: null })}
+        onSave={handleSaveTutor}
+      />
+      
+      <TutorDeleteDialog
+        open={deleteDialog.open}
+        tutor={deleteDialog.tutor}
+        onClose={() => setDeleteDialog({ open: false, tutor: null })}
+        onConfirm={handleDeleteTutor}
+      />
     </ListingScreenTemplate>
   );
 }
