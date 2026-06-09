@@ -32,30 +32,30 @@ import StatsCard from "@/components/ui/StatsCard"
 
 function ContactCard({ title, contact }: { title: string; contact: InstitutionContact }) {
   return (
-    <div className="bg-white border rounded-xl p-4 shadow-sm w-72 flex-shrink-0">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
+    <div className="bg-card border rounded-xl p-4 shadow-sm w-72 flex-shrink-0">
+      <h3 className="font-semibold text-foreground mb-4">{title}</h3>
       <div className="space-y-4">
         <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Name</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+          <label className="text-xs text-muted-foreground uppercase font-semibold">Name</label>
+          <div className="bg-muted rounded-md p-2 mt-1 text-sm text-foreground font-medium">
             {contact.name}
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Role</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+          <label className="text-xs text-muted-foreground uppercase font-semibold">Role</label>
+          <div className="bg-muted rounded-md p-2 mt-1 text-sm text-foreground font-medium">
             {contact.role || contact.designation || "-"}
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Email</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium truncate">
+          <label className="text-xs text-muted-foreground uppercase font-semibold">Email</label>
+          <div className="bg-muted rounded-md p-2 mt-1 text-sm text-foreground font-medium truncate">
             {contact.email}
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 uppercase font-semibold">Phone Number</label>
-          <div className="bg-gray-50 rounded-md p-2 mt-1 text-sm text-gray-900 font-medium">
+          <label className="text-xs text-muted-foreground uppercase font-semibold">Phone Number</label>
+          <div className="bg-muted rounded-md p-2 mt-1 text-sm text-foreground font-medium">
             {contact.phone}
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function InstitutionsPage() {
       </div>
 
       {/* Search + Filter */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm">
+      <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-[#E2E8F0] shadow-sm">
         <div className="relative w-[400px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={18} />
           <input
@@ -226,7 +226,7 @@ export default function InstitutionsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
+      <div className="bg-card border border-[#E2E8F0] rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
             <tr>
@@ -241,11 +241,11 @@ export default function InstitutionsPage() {
           </thead>
           <tbody className="divide-y divide-[#E2E8F0]">
             {isLoading ? (
-              <tr><td colSpan={7} className="p-8 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Loading...</td></tr>
             ) : error ? (
               <tr><td colSpan={7} className="p-8 text-center text-red-500">Failed to load data.</td></tr>
             ) : institutions.length === 0 ? (
-              <tr><td colSpan={7} className="p-8 text-center text-gray-500">No institutions found.</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No institutions found.</td></tr>
             ) : (
               institutions.map((inst: Institution) => (
                 <React.Fragment key={inst.id}>
@@ -258,7 +258,7 @@ export default function InstitutionsPage() {
                     <td className="p-4 text-center">
                       <button
                         onClick={() => setExpandedRow(expandedRow === inst.id ? null : inst.id)}
-                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors ${expandedRow === inst.id ? 'bg-[#EFF6FF] text-[#2563EB]' : 'text-[#64748B] hover:bg-gray-100'}`}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors ${expandedRow === inst.id ? 'bg-[#EFF6FF] text-[#2563EB]' : 'text-[#64748B] hover:bg-accent'}`}
                       >
                         <Eye size={18} />
                         {expandedRow === inst.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -282,7 +282,7 @@ export default function InstitutionsPage() {
                         <MoreVertical size={20} />
                       </button>
                       {openMenu === inst.id && (
-                        <div className="absolute right-8 top-10 mt-1 w-36 bg-white border border-[#E2E8F0] rounded-xl shadow-lg z-10 py-1">
+                        <div className="absolute right-8 top-10 mt-1 w-36 bg-card border border-[#E2E8F0] rounded-xl shadow-lg z-10 py-1">
                           <button
                             onClick={() => handleOpenEdit(inst)}
                             className="block w-full text-left px-4 py-2 text-sm text-[#0F172A] hover:bg-[#F8FAFC]"
@@ -308,7 +308,7 @@ export default function InstitutionsPage() {
                             const renderContacts = inst.contacts && inst.contacts.length > 0 ? inst.contacts : (inst as any).point_of_contacts || [];
                             
                             if (renderContacts.length === 0) {
-                              return <div className="text-sm text-gray-500 italic">No contacts available.</div>
+                              return <div className="text-sm text-muted-foreground italic">No contacts available.</div>
                             }
                             
                             return (
@@ -330,7 +330,7 @@ export default function InstitutionsPage() {
         </table>
         
         {/* Pagination */}
-        <div className="flex justify-between items-center p-4 border-t border-[#E2E8F0] bg-white">
+        <div className="flex justify-between items-center p-4 border-t border-[#E2E8F0] bg-card">
           <p className="text-sm text-[#64748B]">
             Showing 1 - {institutions.length} of {institutions.length}
           </p>
@@ -352,7 +352,7 @@ export default function InstitutionsPage() {
       {/* Register / Edit Modal */}
       {(isRegisterModalOpen || isEditModalOpen) && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center">
-          <div className="bg-white rounded-2xl shadow-2xl w-[600px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95">
+          <div className="bg-card rounded-2xl shadow-2xl w-[600px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95">
             <div className="flex justify-between items-center p-6 border-b border-[#E2E8F0]">
               <h2 className="text-xl font-bold text-[#0F172A]">
                 {isEditModalOpen ? "Edit Institution Details" : "Register New Institution"}
@@ -419,7 +419,7 @@ export default function InstitutionsPage() {
 
                   <div className="space-y-4">
                     {formData.contacts?.map((contact, index) => (
-                      <div key={index} className="border border-[#E2E8F0] rounded-xl p-4 bg-white relative">
+                      <div key={index} className="border border-[#E2E8F0] rounded-xl p-4 bg-card relative">
                         {index > 0 && (
                           <button
                             type="button"
@@ -481,7 +481,7 @@ export default function InstitutionsPage() {
               </form>
             </div>
             
-            <div className="p-6 border-t border-[#E2E8F0] flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
+            <div className="p-6 border-t border-[#E2E8F0] flex justify-end gap-3 bg-muted rounded-b-2xl">
               <button
                 type="button"
                 onClick={() => { setIsRegisterModalOpen(false); setIsEditModalOpen(false); }}
@@ -505,7 +505,7 @@ export default function InstitutionsPage() {
       {/* Delete Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center">
-          <div className="bg-white rounded-2xl shadow-2xl w-[400px] p-6 text-center animate-in fade-in zoom-in-95">
+          <div className="bg-card rounded-2xl shadow-2xl w-[400px] p-6 text-center animate-in fade-in zoom-in-95">
             <div className="flex justify-end">
               <button onClick={() => setIsDeleteModalOpen(false)} className="text-[#94A3B8] hover:text-[#0F172A]">
                 <X size={20} />
@@ -524,7 +524,7 @@ export default function InstitutionsPage() {
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-6 py-2.5 text-[#64748B] font-semibold hover:bg-gray-100 rounded-lg transition-colors border border-transparent"
+                className="px-6 py-2.5 text-[#64748B] font-semibold hover:bg-accent rounded-lg transition-colors border border-transparent"
               >
                 Cancel
               </button>

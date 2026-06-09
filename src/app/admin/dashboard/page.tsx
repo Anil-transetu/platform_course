@@ -22,8 +22,8 @@ export default function DashboardPage() {
       <div className="flex justify-between items-center mb-8">
 
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Admin Hub</h1>
-          <p className="text-gray-700 text-sm">
+          <h1 className="text-2xl font-semibold text-foreground">Admin Hub</h1>
+          <p className="text-card-foreground text-sm">
             Manage institutions, learning paths, and users.
           </p>
         </div>
@@ -31,14 +31,14 @@ export default function DashboardPage() {
         <input
           type="text"
           placeholder="Search anything..."
-          className="border rounded-lg px-4 py-2 w-72 bg-gray-50 text-gray-900"
+          className="border rounded-lg px-4 py-2 w-72 bg-muted text-foreground"
         />
 
       </div>
 
       {/* Quick Navigation */}
 
-      <h2 className="font-semibold mb-4 text-gray-900">Quick Navigation</h2>
+      <h2 className="font-semibold mb-4 text-foreground">Quick Navigation</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
 
@@ -98,7 +98,7 @@ export default function DashboardPage() {
 
       {/* Creation Hub */}
 
-      <h2 className="font-semibold mb-4 text-gray-900">⚡ Creation Hub</h2>
+      <h2 className="font-semibold mb-4 text-foreground">⚡ Creation Hub</h2>
 
       <div className="grid grid-cols-3 gap-6">
 
@@ -129,22 +129,22 @@ export default function DashboardPage() {
 
         <Link href="/admin/institutions/new">
 
-          <div className="bg-white rounded-xl p-6 border-l-4 border-blue-500 flex justify-between items-center cursor-pointer">
+          <div className="bg-card rounded-xl p-6 border-l-4 border-blue-500 flex justify-between items-center cursor-pointer">
 
             <div className="flex gap-3 items-center">
 
               <School size={18} className="text-blue-500"/>
 
               <div>
-                <p className="font-semibold text-gray-900">Add Institution</p>
-                <p className="text-xs text-gray-700">
+                <p className="font-semibold text-foreground">Add Institution</p>
+                <p className="text-xs text-card-foreground">
                   Onboard a new institution
                 </p>
               </div>
 
             </div>
 
-            <ArrowRight size={18} className="text-gray-600"/>
+            <ArrowRight size={18} className="text-muted-foreground"/>
 
           </div>
 
@@ -152,17 +152,17 @@ export default function DashboardPage() {
 
         {/* Build Course */}
 
-        <div className="bg-white rounded-xl p-6 border-l-4 border-yellow-500 flex justify-between items-center">
+        <div className="bg-card rounded-xl p-6 border-l-4 border-yellow-500 flex justify-between items-center">
           <div className="flex gap-3 items-center">
             <BookOpen size={18} className="text-yellow-500"/>
             <div>
-              <p className="font-semibold text-gray-900">Build Course</p>
-              <p className="text-xs text-gray-700">
+              <p className="font-semibold text-foreground">Build Course</p>
+              <p className="text-xs text-card-foreground">
                 Author curriculum content
               </p>
             </div>
           </div>
-          <ArrowRight size={18} className="text-gray-600"/>
+          <ArrowRight size={18} className="text-muted-foreground"/>
         </div>
 
       </div>

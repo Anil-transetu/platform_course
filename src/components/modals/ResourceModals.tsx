@@ -51,7 +51,7 @@ export default function ResourceModals({ isOpen, type, onClose }: ResourceModals
       />
       
       {/* MODAL CONTAINER */}
-      <div className={`relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 ${isOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-4"}`}>
+      <div className={`relative w-full max-w-lg bg-card rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-300 ${isOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-4"}`}>
         {getModalContent()}
       </div>
     </div>
@@ -88,9 +88,9 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
           <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shadow-sm">
             <FileUp className="text-red-500" size={20} strokeWidth={2.5} />
           </div>
-          <h2 className="text-lg font-bold text-gray-900 tracking-tight">Attach PDF Resource</h2>
+          <h2 className="text-lg font-bold text-foreground tracking-tight">Attach PDF Resource</h2>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+        <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400">
           <X size={20} />
         </button>
       </div>
@@ -103,7 +103,7 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
             placeholder="e.g. Design Principles Guide.pdf"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -118,12 +118,12 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
           />
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer relative overflow-hidden"
+            className="border border-dashed border-border rounded-2xl p-12 flex flex-col items-center justify-center bg-muted/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer relative overflow-hidden"
           >
-            <div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-14 h-14 rounded-2xl bg-card shadow-md flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <UploadCloud className={file ? "text-green-500" : "text-blue-500"} size={28} strokeWidth={1.5} />
             </div>
-            <p className="text-sm font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
+            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors">
               {file ? file.name : "Click to upload or drag and drop"}
             </p>
             <p className="text-[10px] text-gray-400 mt-2 font-medium">Maximum file size: 50MB</p>
@@ -132,7 +132,7 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex items-center justify-end gap-3 mt-10">
-        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all text-sm">Cancel</button>
+        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
           className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
@@ -170,8 +170,8 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-lg font-bold text-gray-900 tracking-tight">Upload Image</h2>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+        <h2 className="text-lg font-bold text-foreground tracking-tight">Upload Image</h2>
+        <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400">
           <X size={20} />
         </button>
       </div>
@@ -184,7 +184,7 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
             placeholder="Enter image name..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -198,16 +198,16 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
           />
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-gray-200 rounded-2xl p-10 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer"
+            className="border border-dashed border-border rounded-2xl p-10 flex flex-col items-center justify-center bg-muted/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer"
           >
             <div className="w-14 h-14 rounded-2xl bg-blue-50/50 flex items-center justify-center mb-6">
               <ImageIcon className={file ? "text-green-600" : "text-blue-600"} size={28} strokeWidth={1.5} />
             </div>
-            <p className="text-sm font-bold text-gray-800 group-hover:text-blue-700 transition-colors">
+            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors">
               {file ? file.name : "Drag & drop your image here"}
             </p>
             <p className="text-[10px] text-gray-400 mt-2 font-medium">Supports PNG, JPG or WEBP (Max 5MB)</p>
-            <button className="mt-8 px-6 py-2.5 border border-blue-600/20 text-blue-600 bg-white rounded-xl font-bold text-xs hover:bg-blue-50 hover:border-blue-600/40 transition-all shadow-sm">
+            <button className="mt-8 px-6 py-2.5 border border-blue-600/20 text-blue-600 bg-card rounded-xl font-bold text-xs hover:bg-blue-50 hover:border-blue-600/40 transition-all shadow-sm">
               Choose Image
             </button>
           </div>
@@ -215,7 +215,7 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex items-center justify-end gap-3 mt-10">
-        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all text-sm">Cancel</button>
+        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleUpload}
           className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
@@ -252,7 +252,7 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="p-8 text-gray-900">
+    <div className="p-8 text-foreground">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shadow-sm">
@@ -260,7 +260,7 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
           </div>
           <h2 className="text-lg font-bold tracking-tight">Attach Video Resource</h2>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+        <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400">
           <X size={20} />
         </button>
       </div>
@@ -273,7 +273,7 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
             placeholder="Enter a title for this video..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -288,12 +288,12 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
           />
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer"
+            className="border border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center bg-muted/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer"
           >
-            <div className="w-12 h-12 rounded-2xl bg-white shadow-md flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+            <div className="w-12 h-12 rounded-2xl bg-card shadow-md flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
               <Video className={file ? "text-green-500" : "text-blue-500"} size={24} strokeWidth={1.5} />
             </div>
-            <p className="text-xs font-bold text-gray-800 group-hover:text-blue-700 transition-colors text-center">
+            <p className="text-xs font-bold text-card-foreground group-hover:text-blue-700 transition-colors text-center">
               {file ? file.name : "Click to select video from computer"}
             </p>
           </div>
@@ -304,7 +304,7 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
             <span className="w-full border-t border-gray-100"></span>
           </div>
           <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
-            <span className="bg-white px-4 text-gray-300">OR</span>
+            <span className="bg-card px-4 text-gray-300">OR</span>
           </div>
         </div>
 
@@ -317,14 +317,14 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
               placeholder="Paste YouTube or Vimeo link here..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
             />
           </div>
         </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 mt-10">
-        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all text-sm">Cancel</button>
+        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
           className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
@@ -354,8 +354,8 @@ function UrlModalContent({ onClose }: { onClose: () => void }) {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-lg font-bold text-gray-900 tracking-tight">Add URL</h2>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+        <h2 className="text-lg font-bold text-foreground tracking-tight">Add URL</h2>
+        <button onClick={onClose} className="p-2 hover:bg-accent rounded-full transition-colors text-gray-400">
           <X size={20} />
         </button>
       </div>
@@ -368,7 +368,7 @@ function UrlModalContent({ onClose }: { onClose: () => void }) {
             placeholder="e.g., External Documentation"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -381,14 +381,14 @@ function UrlModalContent({ onClose }: { onClose: () => void }) {
               placeholder="https://example.com/resource"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
             />
           </div>
         </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 mt-10">
-        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all text-sm">Cancel</button>
+        <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAddLink}
           className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"

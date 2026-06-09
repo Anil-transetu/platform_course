@@ -20,17 +20,17 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
-      <div className="bg-white rounded-xl shadow-xl w-[400px] p-6 text-center">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+      <div className="bg-card rounded-xl shadow-xl w-[400px] p-6 text-center">
+        <h2 className="text-lg font-semibold text-card-foreground mb-2">
           Confirm Delete
         </h2>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           Are you sure you want to delete course (ID: {id})?
         </p>
         <div className="flex justify-center gap-3">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-sm rounded-lg border text-gray-700 hover:bg-gray-100"
+            className="px-4 py-2 text-sm rounded-lg border text-card-foreground hover:bg-accent"
           >
             Cancel
           </button>

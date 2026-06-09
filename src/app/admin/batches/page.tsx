@@ -31,7 +31,7 @@ export default function BatchesPage() {
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
+        <h1 className="text-3xl font-bold text-card-foreground">
           Batches Dashboard
         </h1>
 
@@ -79,11 +79,11 @@ export default function BatchesPage() {
       </div>
 
       {/* TABLE */}
-      <div className="bg-white rounded-xl shadow-md border overflow-hidden">
+      <div className="bg-card rounded-xl shadow-md border overflow-hidden">
 
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr className="text-gray-700 text-sm">
+          <thead className="bg-muted border-b">
+            <tr className="text-card-foreground text-sm">
               <th className="p-4 text-left font-semibold">Batch Name</th>
               <th className="p-4 text-left font-semibold">Instructor</th>
               <th className="p-4 text-left font-semibold">Students</th>
@@ -94,11 +94,11 @@ export default function BatchesPage() {
 
           <tbody>
             {visibleData.map((batch) => (
-              <tr key={batch.id} className="border-b hover:bg-gray-50 transition">
+              <tr key={batch.id} className="border-b hover:bg-muted transition">
 
-                <td className="p-4 text-gray-800 font-medium">{batch.name}</td>
-                <td className="p-4 text-gray-700">{batch.instructor}</td>
-                <td className="p-4 text-gray-700">{batch.students}</td>
+                <td className="p-4 text-card-foreground font-medium">{batch.name}</td>
+                <td className="p-4 text-card-foreground">{batch.instructor}</td>
+                <td className="p-4 text-card-foreground">{batch.students}</td>
 
                 <td className="p-4">
                   <span
@@ -118,19 +118,19 @@ export default function BatchesPage() {
                     onClick={() =>
                       setOpenMenu(openMenu === batch.id ? null : batch.id)
                     }
-                    className="text-gray-700 hover:text-black"
+                    className="text-card-foreground hover:text-foreground"
                   >
                     <MoreVertical size={18} />
                   </button>
 
                   {openMenu === batch.id && (
-                    <div className="absolute right-0 mt-2 w-32 bg-white border rounded-lg shadow-lg z-10">
+                    <div className="absolute right-0 mt-2 w-32 bg-card border rounded-lg shadow-lg z-10">
 
                       {/* EDIT */}
                       <Link href={`/admin/batches/${batch.id}?mode=edit`}>
                         <button
                           onClick={() => setOpenMenu(null)}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-gray-800"
+                          className="w-full text-left px-4 py-2 hover:bg-accent text-sm text-card-foreground"
                         >
                           Edit
                         </button>
@@ -140,7 +140,7 @@ export default function BatchesPage() {
                       <Link href={`/admin/batches/${batch.id}?mode=delete`}>
                         <button
                           onClick={() => setOpenMenu(null)}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 text-sm"
+                          className="w-full text-left px-4 py-2 hover:bg-accent text-red-600 text-sm"
                         >
                           Delete
                         </button>
@@ -162,7 +162,7 @@ export default function BatchesPage() {
       {/* PAGINATION */}
       <div className="flex justify-between items-center mt-6">
 
-        <div className="flex items-center gap-2 text-gray-800">
+        <div className="flex items-center gap-2 text-card-foreground">
           <span>Rows per page</span>
 
           <select
@@ -171,7 +171,7 @@ export default function BatchesPage() {
               setRowsPerPage(Number(e.target.value));
               setPage(1);
             }}
-            className="border rounded px-2 py-1 text-gray-800"
+            className="border rounded px-2 py-1 text-card-foreground"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -183,7 +183,7 @@ export default function BatchesPage() {
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
-            className="px-3 py-1 border rounded bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-40"
+            className="px-3 py-1 border rounded bg-card text-card-foreground hover:bg-accent disabled:opacity-40"
           >
             Previous
           </button>
@@ -198,7 +198,7 @@ export default function BatchesPage() {
                 className={`px-3 py-1 border rounded ${
                   page === pageNumber
                     ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-800 hover:bg-gray-100"
+                    : "bg-card text-card-foreground hover:bg-accent"
                 }`}
               >
                 {pageNumber}
@@ -209,7 +209,7 @@ export default function BatchesPage() {
           <button
             disabled={page === totalPages}
             onClick={() => setPage(page + 1)}
-            className="px-3 py-1 border rounded bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-40"
+            className="px-3 py-1 border rounded bg-card text-card-foreground hover:bg-accent disabled:opacity-40"
           >
             Next
           </button>

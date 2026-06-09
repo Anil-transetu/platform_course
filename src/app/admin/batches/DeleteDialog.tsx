@@ -25,17 +25,17 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
     <div className="fixed inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-50">
 
       {/* MODAL */}
-      <div className="bg-white rounded-xl shadow-xl w-[400px] p-6">
+      <div className="bg-card rounded-xl shadow-xl w-[400px] p-6">
 
         {/* TITLE */}
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+        <h2 className="text-lg font-semibold text-card-foreground mb-2">
           Confirm Delete
         </h2>
 
         {/* DESCRIPTION */}
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-muted-foreground mb-6">
           Are you sure you want to delete batch{" "}
-          <span className="font-medium text-gray-800">
+          <span className="font-medium text-card-foreground">
             CS-2024-01
           </span>
           ?
@@ -46,7 +46,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
 
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-sm rounded-lg border text-gray-700 hover:bg-gray-100"
+            className="px-4 py-2 text-sm rounded-lg border text-card-foreground hover:bg-accent"
           >
             Cancel
           </button>

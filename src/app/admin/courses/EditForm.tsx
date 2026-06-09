@@ -12,17 +12,17 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <div className="bg-white w-[500px] rounded-xl shadow-xl p-8 text-center space-y-6">
-        <h2 className="text-xl font-semibold text-gray-800">
+      <div className="bg-card w-[500px] rounded-xl shadow-xl p-8 text-center space-y-6">
+        <h2 className="text-xl font-semibold text-card-foreground">
           Edit Course (ID: {id})
         </h2>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Course edit functionality will be implemented here.
         </p>
         <div className="flex justify-center gap-3">
           <Link
             href="/admin/courses"
-            className="px-5 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+            className="px-5 py-2 border rounded-lg text-card-foreground hover:bg-accent"
           >
             Back to Courses
           </Link>

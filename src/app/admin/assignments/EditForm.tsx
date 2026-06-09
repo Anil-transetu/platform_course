@@ -129,25 +129,25 @@ export default function EditForm({ id }: EditFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-8 font-sans">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="min-h-screen bg-muted/50 p-8 font-sans">
+      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         
         {/* HEADER */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => router.back()}
-              className="p-2 hover:bg-slate-100 rounded-lg transition text-gray-400"
+              className="p-2 hover:bg-accent rounded-lg transition text-gray-400"
             >
               <ChevronLeft size={20} />
             </button>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-foreground">
               Edit Assignment (ID: {id})
             </h2>
           </div>
           <button 
             onClick={() => router.push("/admin/assignments")}
-            className="text-gray-400 hover:text-gray-600 transition"
+            className="text-gray-400 hover:text-muted-foreground transition"
           >
             <X size={20} />
           </button>
@@ -167,24 +167,24 @@ export default function EditForm({ id }: EditFormProps) {
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Assignment Title <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium text-card-foreground mb-1.5">Assignment Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
                   onBlur={() => handleBlur("title", title)}
-                  className={getInputClass("title", "w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition")}
+                  className={getInputClass("title", "w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition")}
                 />
                 <ErrorMsg field="title" />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Domains</label>
+                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Domains</label>
                   <select 
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-gray-700"
+                    className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-card-foreground"
                   >
                     <option>Web Development</option>
                     <option>Data Science</option>
@@ -192,34 +192,34 @@ export default function EditForm({ id }: EditFormProps) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Tags <span className="text-red-400">*</span></label>
+                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Tags <span className="text-red-400">*</span></label>
                   <input
                     type="text"
                     value={tags}
                     onChange={(e) => handleFieldChange("tags", e.target.value, setTags)}
                     onBlur={() => handleBlur("tags", tags)}
-                    className={getInputClass("tags", "w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-gray-700")}
+                    className={getInputClass("tags", "w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-card-foreground")}
                   />
                   <ErrorMsg field="tags" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description <span className="text-red-400">*</span></label>
-                <div className={`border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition ${touched.description && errors.description ? inputErrorClass : ""}`}>
-                  <div className="bg-gray-50/50 border-b border-gray-200 px-3 py-2 flex items-center gap-1">
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Bold size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Italic size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><List size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><LinkIcon size={14} /></button>
+                <label className="block text-sm font-medium text-card-foreground mb-1.5">Description <span className="text-red-400">*</span></label>
+                <div className={`border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition ${touched.description && errors.description ? inputErrorClass : ""}`}>
+                  <div className="bg-muted/50 border-b border-border px-3 py-2 flex items-center gap-1">
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Bold size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Italic size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><List size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><LinkIcon size={14} /></button>
                     <div className="flex-1"></div>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Code size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Code size={14} /></button>
                   </div>
                   <textarea
                     value={description}
                     onChange={(e) => handleFieldChange("description", e.target.value, setDescription)}
                     onBlur={() => handleBlur("description", description)}
-                    className="w-full px-4 py-3 text-sm outline-none min-h-[160px] resize-y leading-relaxed text-gray-600"
+                    className="w-full px-4 py-3 text-sm outline-none min-h-[160px] resize-y leading-relaxed text-muted-foreground"
                   />
                 </div>
                 <ErrorMsg field="description" />
@@ -251,7 +251,7 @@ export default function EditForm({ id }: EditFormProps) {
                       type="text"
                       value={c.name}
                       onChange={(e) => { handleUpdateCriteria(i, "name", e.target.value); const key = `criteria_${i}_name`; if (errors[key]) { setErrors(prev => { const n = {...prev}; delete n[key]; return n; }); } }}
-                      className={`w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 ${errors[`criteria_${i}_name`] ? inputErrorClass : ""}`}
+                      className={`w-full border border-border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 ${errors[`criteria_${i}_name`] ? inputErrorClass : ""}`}
                     />
                     {errors[`criteria_${i}_name`] && (
                       <p className={errorTextClass}>
@@ -265,7 +265,7 @@ export default function EditForm({ id }: EditFormProps) {
                       type="text"
                       value={c.marks}
                       onChange={(e) => { handleUpdateCriteria(i, "marks", e.target.value); const key = `criteria_${i}_marks`; if (errors[key]) { setErrors(prev => { const n = {...prev}; delete n[key]; return n; }); } }}
-                      className={`w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 text-center font-bold transition-all duration-200 ${errors[`criteria_${i}_marks`] ? inputErrorClass : ""}`}
+                      className={`w-full border border-border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 text-center font-bold transition-all duration-200 ${errors[`criteria_${i}_marks`] ? inputErrorClass : ""}`}
                     />
                     {errors[`criteria_${i}_marks`] && (
                       <p className={errorTextClass}>
@@ -289,10 +289,10 @@ export default function EditForm({ id }: EditFormProps) {
         </div>
 
         {/* FOOTER */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-muted/50">
           <button
             onClick={() => router.push("/admin/assignments")}
-            className="px-8 py-2.5 border border-gray-200 text-gray-700 font-bold text-sm rounded-lg hover:bg-gray-100 transition shadow-sm"
+            className="px-8 py-2.5 border border-border text-card-foreground font-bold text-sm rounded-lg hover:bg-accent transition shadow-sm"
           >
             Cancel
           </button>

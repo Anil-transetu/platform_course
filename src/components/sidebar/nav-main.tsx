@@ -2,77 +2,61 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NavItem } from "@/config/navigation";
 
 import {
-  LayoutDashboard,
-  User,
-  Building2,
-  Users,
-  Layers,
-  BookOpen,
-  UserCheck,
-  HelpCircle,
-  FileEdit,
-  Settings,
-} from "lucide-react";
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 
-export default function NavMain() {
+interface NavMainProps {
+  items: NavItem[];
+}
+
+export default function NavMain({ items }: NavMainProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
+    // Exact match for base dashboard, partial match for sub-routes
+    if (href === "/student") return pathname === "/student";
+    if (href === "/admin/dashboard") return pathname === "/admin/dashboard";
     return pathname === href || pathname.startsWith(href + "/");
   };
 
-  const navItems = [
-    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { label: "User", href: "/admin/users", icon: User },
-    { label: "Institutions", href: "/admin/institutions", icon: Building2 },
-    { label: "Students", href: "/admin/students", icon: Users },
-    { label: "Batches", href: "/admin/batches", icon: Layers },
-    { label: "Courses", href: "/admin/courses", icon: BookOpen },
-    { label: "Tutors", href: "/admin/tutors", icon: UserCheck },
-    { label: "Quizzes", href: "/admin/quizzes", icon: HelpCircle },
-    { label: "Assignments", href: "/admin/assignments", icon: FileEdit },
-  ];
+  const activeClass =
+    "bg-gradient-to-r from-blue-600 to-blue-500 text-white min-h-12 px-4 rounded-xl shadow-[0_0_25px_rgba(37,99,235,0.35)] hover:scale-[1.02] hover:shadow-[0_0_35px_rgba(37,99,235,0.45)] transition-all duration-300 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:shadow-none";
+
+  const inactiveClass =
+    "text-gray-300 hover:text-white hover:border-slate-500 hover:bg-slate-800/30 border border-transparent min-h-12 px-4 rounded-2xl hover:scale-[1.02] transition-all duration-300 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:w-12 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:border-0";
 
   return (
-    <nav className="p-4">
-      <ul className="space-y-1 text-sm">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.href);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  active
-                    ? "bg-blue-600 text-white font-medium"
-                    : "text-gray-400 hover:text-white hover:bg-[#2a374a]"
-                }`}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="mt-8 px-3">
-        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-4">Configuration</p>
-        <Link
-          href="/admin/settings"
-          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-            isActive("/admin/settings")
-              ? "bg-blue-600 text-white font-medium"
-              : "text-gray-400 hover:text-white hover:bg-[#2a374a]"
-          }`}
-        >
-          <Settings size={18} />
-          <span>Settings</span>
-        </Link>
-      </div>
-    </nav>
+    <SidebarGroup className="group-data-[collapsible=icon]:px-1.5">
+      <SidebarGroupContent>
+        <SidebarMenu className="space-y-1.5 group-data-[collapsible=icon]:space-y-2">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <SidebarMenuItem key={item.href}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={active}
+                  tooltip={item.label}
+                  className={active ? activeClass : inactiveClass}
+                >
+                  <Link href={item.href}>
+                    <Icon size={22} className="shrink-0" />
+                    <span className="text-[15px] font-medium ml-3 group-data-[collapsible=icon]:hidden">{item.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

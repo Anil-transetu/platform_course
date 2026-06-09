@@ -130,17 +130,17 @@ export default function ModuleDetailsPage() {
   const selectedAssignment = SAMPLE_ASSIGNMENTS.find(a => a.id === selectedAssignmentId);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-muted min-h-screen">
       {/* TOP HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-white border-b border-gray-100 shadow-sm">
+      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 shadow-sm">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
           <Link href="/admin/courses/create" className="text-gray-400 hover:text-blue-600 transition-colors">Create New Course</Link>
           <ChevronRight size={14} className="text-gray-300" />
-          <span className="text-gray-900 font-bold">New Module</span>
+          <span className="text-foreground font-bold">New Module</span>
         </div>
         <div className="flex gap-3">
           <Link href="/admin/courses/create">
-            <button className="px-5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition-all text-xs">
+            <button className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs">
               Back to Course
             </button>
           </Link>
@@ -159,9 +159,9 @@ export default function ModuleDetailsPage() {
           {/* MODULE STRUCTURE */}
           <div>
             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Module Structure</h3>
-            <div className="bg-white border-blue-500 border-l-4 rounded-r-xl shadow-sm p-4 flex items-center gap-3">
+            <div className="bg-card border-blue-500 border-l-4 rounded-r-xl shadow-sm p-4 flex items-center gap-3">
               <FolderPlus className="text-blue-600" size={18} />
-              <span className="text-sm font-bold text-gray-900 truncate">{moduleTitle || "New Module"}</span>
+              <span className="text-sm font-bold text-foreground truncate">{moduleTitle || "New Module"}</span>
             </div>
           </div>
 
@@ -172,23 +172,23 @@ export default function ModuleDetailsPage() {
               {/* Add Lesson */}
               <button 
                 onClick={() => router.push("/admin/courses/create/lesson")}
-                className="w-full flex items-center gap-3 border border-gray-200 bg-white px-4 py-3 rounded-xl hover:bg-gray-50 transition-all group shadow-sm text-left"
+                className="w-full flex items-center gap-3 border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all group shadow-sm text-left"
               >
                 <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
                   <Plus size={14} className="text-blue-600 group-hover:text-white" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Add Lesson</span>
+                <span className="text-sm font-medium text-card-foreground group-hover:text-blue-600 transition-colors">Add Lesson</span>
               </button>
               
               {/* ── Add Quiz dropdown ── */}
               <div ref={quizRef} className="relative">
                 <button 
                   onClick={() => { setQuizOpen(p => !p); setAssignmentOpen(false); }}
-                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${quizOpen ? "border-blue-400 bg-blue-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${quizOpen ? "border-blue-400 bg-blue-50" : "border-border bg-card hover:bg-muted"}`}
                 >
                   <div className="flex items-center gap-3">
                     <FileText className={quizOpen ? "text-blue-500" : "text-gray-400"} size={18} />
-                    <span className={`text-sm font-medium ${quizOpen ? "text-blue-600" : "text-gray-700"}`}>
+                    <span className={`text-sm font-medium ${quizOpen ? "text-blue-600" : "text-card-foreground"}`}>
                       {selectedQuiz ? selectedQuiz.title : "Add Quiz"}
                     </span>
                   </div>
@@ -196,7 +196,7 @@ export default function ModuleDetailsPage() {
                 </button>
 
                 {quizOpen && (
-                  <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-30 relative">
+                  <div className="mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30 relative">
                     {/* Search */}
                     <div className="p-3 border-b border-gray-100">
                       <input
@@ -205,7 +205,7 @@ export default function ModuleDetailsPage() {
                         value={quizSearch}
                         onChange={e => setQuizSearch(e.target.value)}
                         placeholder="Search quizzes..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-400 bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg outline-none focus:border-blue-400 bg-muted"
                       />
                     </div>
 
@@ -224,7 +224,7 @@ export default function ModuleDetailsPage() {
                             className={`w-full text-left flex items-center justify-between px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0 ${selectedQuizId === quiz.id ? "bg-blue-50" : ""}`}
                           >
                             <div>
-                              <p className="text-sm font-semibold text-gray-800">{quiz.title}</p>
+                              <p className="text-sm font-semibold text-card-foreground">{quiz.title}</p>
                               <p className="text-[10px] text-gray-400 mt-0.5">{quiz.module} · {quiz.duration}</p>
                             </div>
                             <div className="flex items-center gap-2 ml-2 shrink-0">
@@ -237,7 +237,7 @@ export default function ModuleDetailsPage() {
                     </div>
 
                     {/* Footer action */}
-                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                    <div className="p-2 border-t border-gray-100 bg-muted">
                       <button
                         onClick={() => { setQuizOpen(false); router.push("/admin/quizzes/new"); }}
                         className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -262,11 +262,11 @@ export default function ModuleDetailsPage() {
               <div ref={assignmentRef} className="relative">
                 <button 
                   onClick={() => { setAssignmentOpen(p => !p); setQuizOpen(false); }}
-                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${assignmentOpen ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-white hover:bg-gray-50"}`}
+                  className={`w-full flex items-center justify-between border px-4 py-3 rounded-xl transition-all shadow-sm ${assignmentOpen ? "border-purple-400 bg-purple-50" : "border-border bg-card hover:bg-muted"}`}
                 >
                   <div className="flex items-center gap-3">
                     <ClipboardList className={assignmentOpen ? "text-purple-500" : "text-gray-400"} size={18} />
-                    <span className={`text-sm font-medium ${assignmentOpen ? "text-purple-600" : "text-gray-700"}`}>
+                    <span className={`text-sm font-medium ${assignmentOpen ? "text-purple-600" : "text-card-foreground"}`}>
                       {selectedAssignment ? selectedAssignment.title : "Add Assignment"}
                     </span>
                   </div>
@@ -274,7 +274,7 @@ export default function ModuleDetailsPage() {
                 </button>
 
                 {assignmentOpen && (
-                  <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-30 relative">
+                  <div className="mt-2 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30 relative">
                     {/* Search */}
                     <div className="p-3 border-b border-gray-100">
                       <input
@@ -283,7 +283,7 @@ export default function ModuleDetailsPage() {
                         value={assignmentSearch}
                         onChange={e => setAssignmentSearch(e.target.value)}
                         placeholder="Search assignments..."
-                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-purple-400 bg-gray-50"
+                        className="w-full px-3 py-2 text-sm border border-border rounded-lg outline-none focus:border-purple-400 bg-muted"
                       />
                     </div>
 
@@ -302,11 +302,11 @@ export default function ModuleDetailsPage() {
                             className={`w-full text-left flex items-center justify-between px-4 py-3 hover:bg-purple-50 transition-colors border-b border-gray-50 last:border-0 ${selectedAssignmentId === asg.id ? "bg-purple-50" : ""}`}
                           >
                             <div>
-                              <p className="text-sm font-semibold text-gray-800">{asg.title}</p>
+                              <p className="text-sm font-semibold text-card-foreground">{asg.title}</p>
                               <p className="text-[10px] text-gray-400 mt-0.5">{asg.domain} · {asg.marks} marks</p>
                             </div>
                             <div className="flex items-center gap-2 ml-2 shrink-0">
-                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{asg.submissionType}</span>
+                              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-muted-foreground">{asg.submissionType}</span>
                               {selectedAssignmentId === asg.id && <Check size={14} className="text-purple-600" />}
                             </div>
                           </button>
@@ -315,7 +315,7 @@ export default function ModuleDetailsPage() {
                     </div>
 
                     {/* Footer action */}
-                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                    <div className="p-2 border-t border-gray-100 bg-muted">
                       <button
                         onClick={() => { setAssignmentOpen(false); router.push("/admin/assignments"); }}
                         className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -349,9 +349,9 @@ export default function ModuleDetailsPage() {
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-8">
           {/* MODULE DETAILS CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Module Details</h2>
+              <h2 className="text-lg font-bold text-foreground">Module Details</h2>
             </div>
             <div className="p-8 flex flex-col gap-6">
               <div>
@@ -362,7 +362,7 @@ export default function ModuleDetailsPage() {
                   onChange={(e) => { setModuleTitle(e.target.value); if(errors.moduleTitle){setErrors(prev=>{const n={...prev};delete n.moduleTitle;return n;});} }}
                   onBlur={() => handleFieldBlur("moduleTitle", moduleTitle)}
                   placeholder="e.g., Introduction to UI Design Fundamentals"
-                  className={`w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800 ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""}`}
+                  className={`w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""}`}
                 />
                 {touched.moduleTitle && errors.moduleTitle && (
                   <p className={errorTextClass}>
@@ -376,7 +376,7 @@ export default function ModuleDetailsPage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Module Description <span className="text-red-400">*</span></label>
                 <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                   {/* TOOLBAR */}
-                  <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-100 overflow-x-auto">
+                  <div className="flex items-center gap-1 p-2 bg-muted border-b border-gray-100 overflow-x-auto">
                     <ToolbarButton icon={<Bold size={16} />} />
                     <ToolbarButton icon={<Italic size={16} />} />
                     <div className="w-[1px] h-6 bg-gray-200 mx-1" />
@@ -393,7 +393,7 @@ export default function ModuleDetailsPage() {
                     placeholder="Provide a detailed description of what students will learn in this module..."
                     value={moduleDescription}
                     onChange={e => setModuleDescription(e.target.value)}
-                    className="w-full h-48 p-4 outline-none resize-none font-normal text-gray-600 placeholder-gray-400 leading-relaxed"
+                    className="w-full h-48 p-4 outline-none resize-none font-normal text-muted-foreground placeholder-gray-400 leading-relaxed"
                   />
                 </div>
               </div>
@@ -401,9 +401,9 @@ export default function ModuleDetailsPage() {
           </div>
 
           {/* MODULE RESOURCES CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Module Resources</h2>
+              <h2 className="text-lg font-bold text-foreground">Module Resources</h2>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-4 gap-4">
@@ -428,7 +428,7 @@ export default function ModuleDetailsPage() {
 
 function ToolbarButton({ icon }: { icon: React.ReactNode }) {
   return (
-    <button className="p-2 rounded hover:bg-white hover:shadow-sm text-gray-500 transition-all">
+    <button className="p-2 rounded hover:bg-card hover:shadow-sm text-muted-foreground transition-all">
       {icon}
     </button>
   );
@@ -438,12 +438,12 @@ function ResourceButton({ icon, label, onClick }: { icon: React.ReactNode, label
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-gray-50/10 hover:bg-white hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
+      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
     >
       <div className="text-gray-400 group-hover:text-blue-500 transition-colors mb-3">
         {icon}
       </div>
-      <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-900 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-bold text-gray-400 group-hover:text-foreground uppercase tracking-widest">{label}</span>
     </button>
   );
 }

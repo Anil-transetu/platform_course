@@ -166,32 +166,32 @@ export default function NewQuizPage() {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-4 flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/admin/quizzes" className="hover:text-slate-700">
+      <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+        <Link href="/admin/quizzes" className="hover:text-card-foreground">
           Quizzes
         </Link>
         <ChevronRight size={14} />
-        <span className="font-medium text-slate-700">Create New Quiz</span>
+        <span className="font-medium text-card-foreground">Create New Quiz</span>
       </div>
 
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold text-slate-900">Create New Quiz</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-3xl font-semibold text-foreground">Create New Quiz</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Fill in the details below to set up a new student assessment.
         </p>
       </div>
 
       <form className="space-y-5" onSubmit={handleCreateQuiz}>
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-5 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Quiz Details
             </h2>
           </div>
 
           <div className="grid gap-4 p-5 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Quiz Title <span className="text-red-400">*</span>
               </label>
               <input
@@ -200,7 +200,7 @@ export default function NewQuizPage() {
                 onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
                 onBlur={() => handleFieldBlur("title", title)}
                 placeholder="e.g. Introduction to Data Structures Midterm"
-                className={getInputClass("title", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 placeholder:text-slate-400 focus:ring-2 transition-all duration-200")}
+                className={getInputClass("title", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 placeholder:text-muted-foreground focus:ring-2 transition-all duration-200")}
               />
               {touched.title && errors.title && (
                 <p className={errorTextClass}>
@@ -211,7 +211,7 @@ export default function NewQuizPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Duration (Minutes) <span className="text-red-400">*</span>
               </label>
               <input
@@ -221,7 +221,7 @@ export default function NewQuizPage() {
                 onBlur={() => handleFieldBlur("durationMinutes", durationMinutes)}
                 min={0}
                 placeholder="e.g. 60"
-                className={getInputClass("durationMinutes", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 placeholder:text-slate-400 focus:ring-2 transition-all duration-200")}
+                className={getInputClass("durationMinutes", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 placeholder:text-muted-foreground focus:ring-2 transition-all duration-200")}
               />
               {touched.durationMinutes && errors.durationMinutes && (
                 <p className={errorTextClass}>
@@ -232,7 +232,7 @@ export default function NewQuizPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Total Marks <span className="text-red-400">*</span>
               </label>
               <input
@@ -242,7 +242,7 @@ export default function NewQuizPage() {
                 onBlur={() => handleFieldBlur("totalMarks", totalMarks)}
                 min={0}
                 placeholder="e.g. 100"
-                className={getInputClass("totalMarks", "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 placeholder:text-slate-400 focus:ring-2 transition-all duration-200")}
+                className={getInputClass("totalMarks", "w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 placeholder:text-muted-foreground focus:ring-2 transition-all duration-200")}
               />
               {touched.totalMarks && errors.totalMarks && (
                 <p className={errorTextClass}>
@@ -254,16 +254,16 @@ export default function NewQuizPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border px-5 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Categorization
             </h2>
           </div>
 
           <div className="grid gap-4 p-5 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Domains <span className="text-red-400">*</span>
               </label>
               <div className="mb-2 flex flex-wrap gap-1.5">
@@ -287,7 +287,7 @@ export default function NewQuizPage() {
               <div className="relative">
                 <Search
                   size={14}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
                 />
                 <input
                   type="text"
@@ -302,7 +302,7 @@ export default function NewQuizPage() {
                   }}
                   onChange={(e) => setDomainSearch(e.target.value)}
                   placeholder="Search domains..."
-                  className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-8 pr-3 text-sm text-slate-700 outline-none ring-blue-200 placeholder:text-slate-400 focus:ring-2"
+                  className="w-full rounded-lg border border-border bg-card py-2 pl-8 pr-3 text-sm text-card-foreground outline-none ring-blue-200 placeholder:text-muted-foreground focus:ring-2"
                 />
               </div>
               {filteredDomains.length > 0 && (
@@ -315,14 +315,14 @@ export default function NewQuizPage() {
                         setSelectedDomains((prev) => [...prev, item]);
                         setDomainSearch("");
                       }}
-                      className="rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold tracking-wide text-slate-600 hover:bg-slate-50"
+                      className="rounded-md border border-border px-2 py-1 text-[10px] font-semibold tracking-wide text-muted-foreground hover:bg-muted"
                     >
                       + {item}
                     </button>
                   ))}
                 </div>
               )}
-              <p className="mt-1 text-xs text-slate-400">Assign your quiz category tags by domain.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Assign your quiz category tags by domain.</p>
               {touched.domains && errors.domains && (
                 <p className={errorTextClass}>
                   <svg className="w-3 h-3 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
@@ -332,7 +332,7 @@ export default function NewQuizPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Tags
               </label>
               <div className="mb-2 flex flex-wrap gap-1.5">
@@ -359,25 +359,25 @@ export default function NewQuizPage() {
                   }
                 }}
                 placeholder="Type and press Enter"
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 placeholder:text-slate-400 focus:ring-2"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 placeholder:text-muted-foreground focus:ring-2"
               />
               <div className="mt-2">
                 <button
                   type="button"
                   onClick={addTag}
-                  className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                  className="rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
                 >
                   Add Tag
                 </button>
               </div>
-              <p className="mt-1 text-xs text-slate-400">Helpful in searching and filtering assessments.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Helpful in searching and filtering assessments.</p>
             </div>
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Quiz Content</h2>
+        <section className="rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quiz Content</h2>
             <button
               type="button"
               onClick={() => addQuestion("multiple_choice")}
@@ -390,12 +390,12 @@ export default function NewQuizPage() {
 
           <div className="p-5">
             {questions.length === 0 ? (
-              <div className="flex min-h-56 flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-center">
+              <div className="flex min-h-56 flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted px-4 text-center">
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100">
-                  <CircleHelp size={18} className="text-slate-400" />
+                  <CircleHelp size={18} className="text-muted-foreground" />
                 </div>
-                <p className="text-sm font-semibold text-slate-700">No questions added yet</p>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="text-sm font-semibold text-card-foreground">No questions added yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Start building your quiz by adding multiple choice, true/false, or short answer
                   questions.
                 </p>
@@ -403,7 +403,7 @@ export default function NewQuizPage() {
                   <button
                     type="button"
                     onClick={() => addQuestion("multiple_choice")}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground"
                   >
                     <SlidersHorizontal size={12} />
                     Multiple Choice
@@ -411,7 +411,7 @@ export default function NewQuizPage() {
                   <button
                     type="button"
                     onClick={() => addQuestion("true_false")}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground"
                   >
                     <SlidersHorizontal size={12} />
                     True / False
@@ -419,7 +419,7 @@ export default function NewQuizPage() {
                   <button
                     type="button"
                     onClick={() => addQuestion("short_answer")}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"
+                    className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground"
                   >
                     <SlidersHorizontal size={12} />
                     Short Answer
@@ -429,9 +429,9 @@ export default function NewQuizPage() {
             ) : (
               <div className="space-y-3">
                 {questions.map((question, index) => (
-                  <div key={question.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div key={question.id} className="rounded-lg border border-border bg-muted p-3">
                     <div className="mb-1 flex items-center justify-between">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Question {index + 1} - {question.type.replace("_", " ")}
                       </p>
                       <button
@@ -453,7 +453,7 @@ export default function NewQuizPage() {
                           ),
                         )
                       }
-                      className="w-full rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-blue-200 focus:ring-2"
+                      className="w-full rounded border border-border bg-card px-3 py-2 text-sm text-card-foreground outline-none ring-blue-200 focus:ring-2"
                     />
                   </div>
                 ))}
@@ -467,7 +467,7 @@ export default function NewQuizPage() {
         <div className="mt-6 flex items-center justify-end gap-3">
           <Link
             href="/admin/quizzes"
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
           >
             Cancel
           </Link>

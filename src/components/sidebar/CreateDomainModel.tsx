@@ -49,12 +49,12 @@ export default function CreateDomainModal({ isOpen, onClose, onSubmit }: CreateD
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       
       {/* MODAL */}
-      <div className="bg-white w-[500px] rounded-xl shadow-lg p-6 relative">
+      <div className="bg-card w-[500px] rounded-xl shadow-lg p-6 relative">
 
         {/* CLOSE */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500"
+          className="absolute top-4 right-4 text-muted-foreground"
         >
           <X size={18} />
         </button>
@@ -68,7 +68,7 @@ export default function CreateDomainModal({ isOpen, onClose, onSubmit }: CreateD
 
           {/* DOMAIN NAME */}
           <div>
-            <label className="text-sm text-gray-600">Domain Name</label>
+            <label className="text-sm text-muted-foreground">Domain Name</label>
             <input
               type="text"
               value={domainName}
@@ -80,7 +80,7 @@ export default function CreateDomainModal({ isOpen, onClose, onSubmit }: CreateD
 
           {/* DESCRIPTION */}
           <div>
-            <label className="text-sm text-gray-600">Description</label>
+            <label className="text-sm text-muted-foreground">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -91,7 +91,7 @@ export default function CreateDomainModal({ isOpen, onClose, onSubmit }: CreateD
 
           {/* FINAL ASSIGNMENT */}
           <div>
-            <label className="text-sm text-gray-600">
+            <label className="text-sm text-muted-foreground">
               Final Assignment
             </label>
             <select 
@@ -107,7 +107,7 @@ export default function CreateDomainModal({ isOpen, onClose, onSubmit }: CreateD
 
           {/* TAG INPUT */}
           <div>
-            <label className="text-sm text-gray-600">Tags</label>
+            <label className="text-sm text-muted-foreground">Tags</label>
 
             <div className="flex gap-2 mt-1">
               <input

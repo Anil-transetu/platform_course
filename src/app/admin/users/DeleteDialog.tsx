@@ -51,9 +51,9 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
   if (isFetching) {
     return (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center gap-3">
+        <div className="bg-card rounded-2xl p-8 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-sm text-gray-500 font-medium">Loading user details...</p>
+          <p className="text-sm text-muted-foreground font-medium">Loading user details...</p>
         </div>
       </div>
     );
@@ -61,20 +61,20 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-card rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-6 pb-4">
-          <h2 className="text-xl font-bold text-gray-900">Confirm Delete</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-xl font-bold text-foreground">Confirm Delete</h2>
+          <button onClick={handleClose} className="text-gray-400 hover:text-muted-foreground">
             <X size={20} />
           </button>
         </div>
         <div className="p-6 pt-0">
-          <p className="text-sm text-gray-600">
-            Are you sure you want to delete user <span className="font-semibold text-gray-800">{user?.full_name || user?.name || "this user"}</span>?
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete user <span className="font-semibold text-card-foreground">{user?.full_name || user?.name || "this user"}</span>?
           </p>
         </div>
         <div className="flex justify-center gap-3 p-6 pt-0">
-          <button onClick={handleClose} className="px-6 py-2 border border-gray-200 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 shadow-sm transition-colors">
+          <button onClick={handleClose} className="px-6 py-2 border border-border text-sm font-medium text-card-foreground bg-card rounded-lg hover:bg-muted shadow-sm transition-colors">
             Cancel
           </button>
           <button 

@@ -26,9 +26,9 @@ export default function StatsCard({
   rightIcon,
 }: StatsCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full">
+    <div className="bg-card rounded-xl border border-gray-100 shadow-sm p-4 w-full">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           {title}
         </p>
         {tooltip ? (
@@ -36,7 +36,7 @@ export default function StatsCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="text-gray-400 hover:text-gray-600 ml-1"
+                  className="text-gray-400 hover:text-muted-foreground ml-1"
                   aria-label="More information"
                 >
                   <Info size={14} />
@@ -48,14 +48,14 @@ export default function StatsCard({
             </Tooltip>
           </TooltipProvider>
         ) : rightIcon ? (
-          <div className="text-gray-400 hover:text-gray-600 ml-1">
+          <div className="text-gray-400 hover:text-muted-foreground ml-1">
             {rightIcon}
           </div>
         ) : null}
       </div>
 
       <div className="flex items-end justify-between">
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <p className="text-3xl font-bold text-foreground">{value}</p>
         {icon && (
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgClass}`}

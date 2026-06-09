@@ -45,15 +45,15 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-lg`}
+        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-card shadow-lg`}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="flex items-center justify-between border-b border-border p-6">
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             <button
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-accent hover:text-muted-foreground"
             >
               <X className="h-5 w-5" />
             </button>
@@ -62,7 +62,7 @@ export const Modal: React.FC<ModalProps> = ({
         {!title && (
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 z-10"
+            className="absolute right-4 top-4 inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-accent hover:text-muted-foreground z-10"
           >
             <X className="h-5 w-5" />
           </button>

@@ -143,7 +143,7 @@ export default function EditForm({ id }: EditFormProps) {
   };
 
   const getInputClass = (field: string) => {
-    const base = "w-full border rounded-lg px-3 py-2 text-gray-900 transition-all duration-200";
+    const base = "w-full border rounded-lg px-3 py-2 text-foreground transition-all duration-200";
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base;
   };
 
@@ -184,23 +184,23 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-lg p-8">
+      <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-card rounded-xl shadow-lg p-8">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-foreground">
             Edit Institution Details (ID: {id})
           </h2>
           <Link
             href="/admin/institutions"
-            className="text-gray-500"
+            className="text-muted-foreground"
           >
             ✕
           </Link>
         </div>
 
         {isLoading ? (
-          <div className="py-20 text-center text-gray-500 italic">
+          <div className="py-20 text-center text-muted-foreground italic">
             Loading institution details...
           </div>
         ) : (
@@ -215,7 +215,7 @@ export default function EditForm({ id }: EditFormProps) {
             {/* Institution Info */}
             <div className="space-y-4">
               <div>
-                <label className="text-xs text-gray-600">
+                <label className="text-xs text-muted-foreground">
                   Institution Name <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -229,7 +229,7 @@ export default function EditForm({ id }: EditFormProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-gray-600">
+                  <label className="text-xs text-muted-foreground">
                     Official Email <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -242,7 +242,7 @@ export default function EditForm({ id }: EditFormProps) {
                 </div>
 
                 <div>
-                  <label className="text-xs text-gray-600">
+                  <label className="text-xs text-muted-foreground">
                     Location <span className="text-red-400">*</span>
                   </label>
                   <input
@@ -259,7 +259,7 @@ export default function EditForm({ id }: EditFormProps) {
             {/* Contacts */}
             <div className="mt-6">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-medium text-gray-900">
+                <h3 className="text-sm font-medium text-foreground">
                   Point of Contacts
                 </h3>
                 <button
@@ -277,7 +277,7 @@ export default function EditForm({ id }: EditFormProps) {
                   className="border rounded-lg p-4 mb-4 space-y-3"
                 >
                   <div className="flex justify-between">
-                    <span className="text-xs text-gray-600">
+                    <span className="text-xs text-muted-foreground">
                       Contact {index+1}
                     </span>
                     {contacts.length>1 &&(
@@ -295,7 +295,7 @@ export default function EditForm({ id }: EditFormProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <input
                       placeholder="Name"
-                      className="border rounded-lg px-3 py-2 text-gray-900"
+                      className="border rounded-lg px-3 py-2 text-foreground"
                       value={contact.name}
                       onChange={(e)=>
                         handleChange(
@@ -308,7 +308,7 @@ export default function EditForm({ id }: EditFormProps) {
 
                     <input
                       placeholder="Role"
-                      className="border rounded-lg px-3 py-2 text-gray-900"
+                      className="border rounded-lg px-3 py-2 text-foreground"
                       value={contact.role}
                       onChange={(e)=>
                         handleChange(
@@ -323,7 +323,7 @@ export default function EditForm({ id }: EditFormProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <input
                       placeholder="Email"
-                      className="border rounded-lg px-3 py-2 text-gray-900"
+                      className="border rounded-lg px-3 py-2 text-foreground"
                       value={contact.email}
                       onChange={(e)=>
                         handleChange(
@@ -336,7 +336,7 @@ export default function EditForm({ id }: EditFormProps) {
 
                     <input
                       placeholder="Phone"
-                      className="border rounded-lg px-3 py-2 text-gray-900"
+                      className="border rounded-lg px-3 py-2 text-foreground"
                       value={contact.phone}
                       onChange={(e)=>
                         handleChange(
@@ -355,7 +355,7 @@ export default function EditForm({ id }: EditFormProps) {
             <div className="flex justify-end gap-4 mt-6">
               <Link
                 href="/admin/institutions"
-                className="text-gray-600 flex items-center"
+                className="text-muted-foreground flex items-center"
               >
                 Cancel
               </Link>

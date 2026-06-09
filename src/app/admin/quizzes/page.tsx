@@ -197,13 +197,13 @@ export default function QuizzesPage() {
       label: "Quiz Title",
       width: "w-1/4",
       render: (_, row) => (
-        <span className="font-semibold text-slate-800">{row.title}</span>
+        <span className="font-semibold text-card-foreground">{row.title}</span>
       ),
     },
     {
       key: "domain",
       label: "Domain",
-      render: (_, row) => <span className="text-slate-600">{row.domain}</span>,
+      render: (_, row) => <span className="text-muted-foreground">{row.domain}</span>,
     },
     {
       key: "tags",
@@ -224,12 +224,12 @@ export default function QuizzesPage() {
     {
       key: "module",
       label: "Module",
-      render: (_, row) => <span className="text-slate-600">{row.module}</span>,
+      render: (_, row) => <span className="text-muted-foreground">{row.module}</span>,
     },
     {
       key: "duration",
       label: "Duration",
-      render: (_, row) => <span className="text-slate-700">{row.duration}</span>,
+      render: (_, row) => <span className="text-card-foreground">{row.duration}</span>,
     },
     {
       key: "status",
@@ -320,7 +320,7 @@ export default function QuizzesPage() {
               <div className="flex items-center justify-end">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-md hover:bg-slate-50 text-slate-500">
+                    <Button variant="ghost" className="h-8 w-8 p-0 rounded-md hover:bg-muted text-muted-foreground">
                       <span className="sr-only">Open actions</span>
                       <MoreVertical size={16} />
                     </Button>
@@ -328,9 +328,9 @@ export default function QuizzesPage() {
                   <DropdownMenuContent>
                     <DropdownMenuItem
                       onSelect={() => router.push(`/admin/quizzes/${row.id}?mode=edit`)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 text-sm text-card-foreground cursor-pointer"
                     >
-                      <Pencil size={13} className="text-slate-400" /> Edit
+                      <Pencil size={13} className="text-muted-foreground" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={() => router.push(`/admin/quizzes/${row.id}?mode=delete`)}

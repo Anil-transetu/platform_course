@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useStudents, useStudentStats } from "@/hooks/use-students";
 import { Student } from "@/types/student";
-import { studentColumns } from "./columns";
+import { buildStudentColumns } from "./columns";
 import StudentFormModal from "./StudentFormModal";
 import BulkUploadModal from "./BulkUploadModal";
 import StudentDeleteDialog from "./StudentDeleteDialog";
@@ -106,8 +106,15 @@ export default function StudentsPage() {
   const { data: stats } = useStudentStats();
 
   const studentsList = Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
-  const totalCount = Array.isArray(studentsData) ? studentsData.length : studentsData?.total || 0;
+  const totalCount = stats?.total_students || (Array.isArray(studentsData) ? studentsData.length : studentsData?.total || studentsList.length || 0);
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  // If the backend returned more items than rowsPerPage, it means it didn't paginate, so we slice locally.
+  let visibleData = studentsList;
+  if (studentsList.length > rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    visibleData = studentsList.slice(start, start + rowsPerPage);
+  }
 
   // DataTable configs
   const searchConfig = {
@@ -125,8 +132,8 @@ export default function StudentsPage() {
       value: status,
       options: [
         { value: "All", label: "Status: All" },
-        { value: "Active", label: "Status: Active" },
-        { value: "Inactive", label: "Status: Inactive" },
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" },
       ],
       onChange: (val: string | string[]) => {
         const selected = Array.isArray(val) ? val[0] : val;
@@ -158,66 +165,58 @@ export default function StudentsPage() {
       buttonOnclick={() => setFormModal({ open: true, mode: "add", student: null })}
       extraActions={extraHeaderActions}
     >
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-y-auto">
+      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
           <StatsCard
-            title="Total Students"
-            value={stats?.total_students?.toLocaleString() ?? "0"}
-            icon={<Users size={20} />}
+            title="TOTAL STUDENTS"
+            value={stats?.total_students ?? 0}
+            icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
-            tooltip="Total registered students in the system"
+            tooltip="Total number of registered students"
           />
           <StatsCard
-            title="Active Students"
-            value={stats?.active_students?.toLocaleString() ?? "0"}
-            icon={<UserCheck size={20} />}
+            title="ACTIVE STUDENTS"
+            value={stats?.active_students ?? 0}
+            icon={<UserCheck className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
-            tooltip="Students currently active and enrolled"
+            tooltip="Students currently active"
           />
           <StatsCard
-            title="Avg. Courses/Student"
+            title="AVG. COURSES/STUDENT"
             value={stats?.average_students_per_course ? stats.average_students_per_course.toFixed(1) : "0.0"}
-            icon={<BookOpen size={20} />}
+            icon={<BookOpen className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
-            tooltip="Average number of course enrollments per student"
+            tooltip="Average number of courses per student"
           />
         </div>
 
-        {/* Data Table */}
-        <div className="flex-1 min-h-[350px]">
-          <DataTable<Student>
-            data={studentsList}
-            columns={studentColumns}
-            rowKey={(row) => String(row.id)}
-            actions={(student) => (
-              <ActionMenu
+        <DataTable<Student>
+          columns={buildStudentColumns()}
+          data={visibleData}
+          loading={isLoading}
+          search={searchConfig}
+          filters={filterConfig}
+          actions={(student) => (
+            <div className="flex justify-center">
+              <ActionMenu 
                 onEdit={() => setFormModal({ open: true, mode: "edit", student })}
                 onDelete={() => setDeleteDialog({ open: true, student })}
               />
-            )}
-            rowsPerPage={rowsPerPage}
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            onRowsPerPageChange={(rows) => {
-              setRowsPerPage(rows);
-              setPage(1);
-            }}
-            paginationInfo={paginationInfo}
-            search={searchConfig}
-            filters={filterConfig}
-            showPagination={true}
-            loading={isLoading}
-            emptyStateMessage="No students found matching your criteria."
-            bodyHeight="h-auto"
-          />
-        </div>
+            </div>
+          )}
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={setRowsPerPage}
+          paginationInfo={paginationInfo}
+          showPagination={true}
+        />
       </div>
 
       {/* Modals */}

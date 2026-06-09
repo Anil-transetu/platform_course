@@ -58,9 +58,9 @@ export default function TopicDetailsPage() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-muted min-h-screen">
       {/* TOP HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-white border-b border-gray-100 shadow-sm">
+      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 shadow-sm">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
           <Link href="/admin/courses/create" className="text-gray-400 hover:text-blue-600 transition-colors">Create New Course</Link>
           <ChevronRight size={12} className="text-gray-300" />
@@ -68,11 +68,11 @@ export default function TopicDetailsPage() {
           <ChevronRight size={12} className="text-gray-300" />
           <Link href="/admin/courses/create/lesson" className="text-gray-400 hover:text-blue-600 transition-colors">Foundations of User Experience</Link>
           <ChevronRight size={12} className="text-gray-300" />
-          <span className="text-gray-900">New Topic</span>
+          <span className="text-foreground">New Topic</span>
         </div>
         <div className="flex gap-3">
           <Link href="/admin/courses/create/lesson">
-            <button className="px-5 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition-all text-xs">
+            <button className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs">
               Back to Lesson
             </button>
           </Link>
@@ -90,7 +90,7 @@ export default function TopicDetailsPage() {
             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Topic Structure</h3>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2 px-1">
-                <input type="checkbox" className="w-3 h-3 rounded border-gray-300 text-blue-600" />
+                <input type="checkbox" className="w-3 h-3 rounded border-border text-blue-600" />
                 <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">MODULE 1: FOUNDATIONS</span>
               </div>
               <div className="flex flex-col ml-4 border-l-2 border-gray-100 pl-4 gap-2">
@@ -98,9 +98,9 @@ export default function TopicDetailsPage() {
                   <FileText className="text-gray-300" size={14} />
                   <span className="text-xs font-bold text-gray-400 truncate tracking-tight">LESSON 1: FOUNDATIONS</span>
                 </div>
-                <div className="bg-white border-blue-500 border-l-4 rounded-r-xl shadow-sm p-3 flex items-center gap-3">
+                <div className="bg-card border-blue-500 border-l-4 rounded-r-xl shadow-sm p-3 flex items-center gap-3">
                   <Target className="text-blue-600" size={16} />
-                  <span className="text-sm font-bold text-gray-900 truncate tracking-tight">Topic: {topicTitle || "[New Topic]"}</span>
+                  <span className="text-sm font-bold text-foreground truncate tracking-tight">Topic: {topicTitle || "[New Topic]"}</span>
                 </div>
               </div>
             </div>
@@ -112,22 +112,22 @@ export default function TopicDetailsPage() {
             <div className="flex flex-col gap-3">
               <button 
                 onClick={handleAddQuiz}
-                className="w-full flex items-center justify-between border border-gray-200 bg-white px-4 py-3 rounded-xl hover:bg-gray-50 transition-all"
+                className="w-full flex items-center justify-between border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all"
               >
                 <div className="flex items-center gap-3">
                   <Plus size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Add Quiz</span>
+                  <span className="text-sm font-medium text-card-foreground">Add Quiz</span>
                 </div>
                 <ChevronDown size={14} className="text-gray-400" />
               </button>
 
               <button 
                 onClick={handleAddAssignment}
-                className="w-full flex items-center justify-between border border-gray-200 bg-white px-4 py-3 rounded-xl hover:bg-gray-50 transition-all"
+                className="w-full flex items-center justify-between border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all"
               >
                 <div className="flex items-center gap-3">
                   <Plus size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Add Assignment</span>
+                  <span className="text-sm font-medium text-card-foreground">Add Assignment</span>
                 </div>
                 <ChevronDown size={14} className="text-gray-400" />
               </button>
@@ -146,7 +146,7 @@ export default function TopicDetailsPage() {
             <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Lesson Controls</h3>
             <button 
               onClick={handleAddAnotherLesson}
-              className="w-full flex items-center justify-center gap-2 border border-blue-100 bg-white text-blue-600 py-3 rounded-xl hover:bg-blue-50 transition-all font-bold text-sm mb-3"
+              className="w-full flex items-center justify-center gap-2 border border-blue-100 bg-card text-blue-600 py-3 rounded-xl hover:bg-blue-50 transition-all font-bold text-sm mb-3"
             >
               <Plus size={16} /> Add Another Lesson
             </button>
@@ -162,9 +162,9 @@ export default function TopicDetailsPage() {
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-8">
           {/* TOPIC DETAILS CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50 flex justify-between items-center">
-              <h2 className="text-lg font-bold text-gray-900">Topic Details</h2>
+              <h2 className="text-lg font-bold text-foreground">Topic Details</h2>
             </div>
             <div className="p-8 flex flex-col gap-6">
               <div>
@@ -174,7 +174,7 @@ export default function TopicDetailsPage() {
                   placeholder="Enter topic title..."
                   value={topicTitle}
                   onChange={(e) => setTopicTitle(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-gray-800"
+                  className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
                 />
               </div>
 
@@ -182,7 +182,7 @@ export default function TopicDetailsPage() {
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Topic Content</label>
                 <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
                   {/* TOOLBAR */}
-                  <div className="flex items-center gap-1.5 p-2 bg-gray-50 border-b border-gray-100 overflow-x-auto">
+                  <div className="flex items-center gap-1.5 p-2 bg-muted border-b border-gray-100 overflow-x-auto">
                     <ToolbarButton icon={<Bold size={16} />} />
                     <ToolbarButton icon={<Italic size={16} />} />
                     <div className="w-[1px] h-6 bg-gray-200 mx-1" />
@@ -199,7 +199,7 @@ export default function TopicDetailsPage() {
                     placeholder="Write your topic content here..."
                     value={topicContent}
                     onChange={(e) => setTopicContent(e.target.value)}
-                    className="w-full h-80 p-8 outline-none resize-none font-normal text-gray-600 placeholder-gray-400 leading-relaxed text-sm"
+                    className="w-full h-80 p-8 outline-none resize-none font-normal text-muted-foreground placeholder-gray-400 leading-relaxed text-sm"
                   />
                 </div>
               </div>
@@ -207,9 +207,9 @@ export default function TopicDetailsPage() {
           </div>
 
           {/* TOPIC RESOURCES CARD */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Topic Resources</h2>
+              <h2 className="text-lg font-bold text-foreground">Topic Resources</h2>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-4 gap-4">
@@ -234,7 +234,7 @@ export default function TopicDetailsPage() {
 
 function ToolbarButton({ icon }: { icon: React.ReactNode }) {
   return (
-    <button className="p-2 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-blue-600 transition-all">
+    <button className="p-2 rounded-md hover:bg-card hover:shadow-sm text-gray-400 hover:text-blue-600 transition-all">
       {icon}
     </button>
   );
@@ -244,12 +244,12 @@ function ResourceButton({ icon, label, onClick }: { icon: React.ReactNode, label
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-gray-50/10 hover:bg-white hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
+      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
     >
       <div className="text-gray-300 group-hover:text-blue-500 transition-colors mb-3">
         {icon}
       </div>
-      <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-900 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-bold text-gray-400 group-hover:text-foreground uppercase tracking-widest">{label}</span>
     </button>
   );
 }

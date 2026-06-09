@@ -127,9 +127,9 @@ export default function EditForm({ id }: EditFormProps) {
   if (isFetching) {
     return (
       <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-8 flex flex-col items-center justify-center gap-3">
+        <div className="bg-card rounded-2xl p-8 flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-sm text-gray-500 font-medium">Loading user details...</p>
+          <p className="text-sm text-muted-foreground font-medium">Loading user details...</p>
         </div>
       </div>
     );
@@ -137,55 +137,55 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center p-6 pb-4">
-          <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-xl font-bold text-foreground">Edit User</h2>
+          <button onClick={handleClose} className="text-gray-400 hover:text-muted-foreground">
             <X size={20} />
           </button>
         </div>
         <div className="p-6 pt-0 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name <span className="text-red-500">*</span></label>
             <input
               type="text" value={formData.name}
               onChange={(e) => { setFormData(p => ({ ...p, name: e.target.value })); if(errors.name){setErrors(p=>{const n={...p};delete n.name;return n;})} }}
               onBlur={() => {setTouched(p => ({...p, name: true})); validateField("name", formData.name);}}
-              className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-gray-200"}`}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-border"}`}
             />
             {touched.name && errors.name && <p className={errorTextClass}>{errors.name}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Email Address <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address <span className="text-red-500">*</span></label>
             <input
               type="email" value={formData.email}
               onChange={(e) => { setFormData(p => ({ ...p, email: e.target.value })); if(errors.email){setErrors(p=>{const n={...p};delete n.email;return n;})} }}
               onBlur={() => {setTouched(p => ({...p, email: true})); validateField("email", formData.email);}}
-              className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-gray-200"}`}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-border"}`}
             />
             {touched.email && errors.email && <p className={errorTextClass}>{errors.email}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Password</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"} value={formData.password}
                 onChange={(e) => { setFormData(p => ({ ...p, password: e.target.value })); if(errors.password){setErrors(p=>{const n={...p};delete n.password;return n;})} }}
-                className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none pr-10 border-gray-200 focus:ring-2 focus:ring-blue-100"
+                className="w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none pr-10 border-border focus:ring-2 focus:ring-blue-100"
                 placeholder="••••••••"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-muted-foreground">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
             <p className="text-[10px] text-gray-400 mt-1">Leave blank to keep current password</p>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Select Role <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Select Role <span className="text-red-500">*</span></label>
             <select
               value={formData.role}
               onChange={(e) => { setFormData(p => ({ ...p, role: e.target.value })); if(errors.role){setErrors(p=>{const n={...p};delete n.role;return n;})} }}
-              className={`w-full border bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-gray-200"}`}
+              className={`w-full border bg-card rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-border"}`}
             >
               <option value="">Select a role...</option>
               <option>Institution Representative</option>
@@ -195,18 +195,18 @@ export default function EditForm({ id }: EditFormProps) {
             {touched.role && errors.role && <p className={errorTextClass}>{errors.role}</p>}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">Institution</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Institution</label>
             <input
               type="text"
               value={formData.institution}
               onChange={(e) => { setFormData(p => ({ ...p, institution: e.target.value })); }}
-              className="w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none border-gray-200 focus:ring-2 focus:ring-blue-100"
+              className="w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none border-border focus:ring-2 focus:ring-blue-100"
               placeholder="Enter institution name"
             />
           </div>
         </div>
         <div className="flex justify-end gap-3 p-6 pt-0">
-          <button onClick={handleClose} className="px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">
+          <button onClick={handleClose} className="px-5 py-2 text-sm font-medium text-muted-foreground hover:text-card-foreground">
             Cancel
           </button>
           <button 

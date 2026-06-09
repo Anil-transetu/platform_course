@@ -97,12 +97,12 @@ export default function CreateBatchPage() {
   };
 
   const getInputClass = (field: string) => {
-    const base = "w-full mt-1 border rounded-lg p-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200";
+    const base = "w-full mt-1 border rounded-lg p-3 text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200";
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base;
   };
 
   const getSelectClass = (field: string) => {
-    const base = "w-full mt-1 border rounded-lg p-3 text-gray-800 transition-all duration-200";
+    const base = "w-full mt-1 border rounded-lg p-3 text-card-foreground transition-all duration-200";
     return touched[field] && errors[field] ? `${base} ${inputErrorClass}` : base;
   };
 
@@ -120,19 +120,19 @@ export default function CreateBatchPage() {
 
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
 
-      <div className="bg-white w-[850px] rounded-xl shadow-xl p-8">
+      <div className="bg-card w-[850px] rounded-xl shadow-xl p-8">
 
         {/* HEADER */}
 
         <div className="flex justify-between items-center mb-6">
 
-          <h2 className="text-xl font-semibold text-gray-800">
+          <h2 className="text-xl font-semibold text-card-foreground">
             Create New Batch
           </h2>
 
           <Link
             href="/admin/batches"
-            className="text-gray-700 hover:text-gray-700 text-xl"
+            className="text-card-foreground hover:text-card-foreground text-xl"
           >
             ✕
           </Link>
@@ -147,7 +147,7 @@ export default function CreateBatchPage() {
           {/* BATCH NAME */}
 
           <div>
-            <label className="text-sm text-gray-600 font-medium">
+            <label className="text-sm text-muted-foreground font-medium">
               Batch Name <span className="text-red-400">*</span>
             </label>
 
@@ -168,7 +168,7 @@ export default function CreateBatchPage() {
           <div className="grid grid-cols-2 gap-4">
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Select Institution <span className="text-red-400">*</span>
               </label>
 
@@ -186,7 +186,7 @@ export default function CreateBatchPage() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Select Course <span className="text-red-400">*</span>
               </label>
 
@@ -211,7 +211,7 @@ export default function CreateBatchPage() {
           <div className="grid grid-cols-2 gap-4">
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Instructor <span className="text-red-400">*</span>
               </label>
 
@@ -227,14 +227,14 @@ export default function CreateBatchPage() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Enroll Students
               </label>
 
               <input
                 type="text"
                 placeholder="Search by name or ID..."
-                className="w-full mt-1 border rounded-lg p-3 text-gray-800"
+                className="w-full mt-1 border rounded-lg p-3 text-card-foreground"
               />
             </div>
 
@@ -246,7 +246,7 @@ export default function CreateBatchPage() {
           <div className="grid grid-cols-2 gap-4">
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 Start Date <span className="text-red-400">*</span>
               </label>
 
@@ -261,7 +261,7 @@ export default function CreateBatchPage() {
             </div>
 
             <div>
-              <label className="text-sm text-gray-600 font-medium">
+              <label className="text-sm text-muted-foreground font-medium">
                 End Date <span className="text-red-400">*</span>
               </label>
 
@@ -295,7 +295,7 @@ export default function CreateBatchPage() {
 
             <Link
               href="/admin/batches"
-              className="px-5 py-2 border rounded-lg text-gray-700 hover:bg-gray-100"
+              className="px-5 py-2 border rounded-lg text-card-foreground hover:bg-accent"
             >
               Cancel
             </Link>

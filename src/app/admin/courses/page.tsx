@@ -107,15 +107,15 @@ export default function CoursesPage() {
   );
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen text-gray-800">
+    <div className="p-8 bg-gray-100 min-h-screen text-card-foreground">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-foreground">
             Course Management
           </h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Manage and monitor all courses and domains
           </p>
         </div>
@@ -123,7 +123,7 @@ export default function CoursesPage() {
         <div className="flex gap-3">
           <button 
             onClick={() => setIsDomainOpen(true)}
-            className="flex items-center gap-2 border px-4 py-2 rounded-lg bg-white shadow hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 border px-4 py-2 rounded-lg bg-card shadow hover:bg-muted transition-colors"
           >
             <Plus size={16} /> Create New Domain
           </button>
@@ -144,7 +144,7 @@ export default function CoursesPage() {
       </div>
 
       {/* TABLE CONTAINER */}
-      <div className="bg-white rounded-xl shadow p-4">
+      <div className="bg-card rounded-xl shadow p-4">
 
         {/* TABS */}
         <div className="flex gap-6 border-b mb-4">
@@ -153,7 +153,7 @@ export default function CoursesPage() {
             className={`pb-2 font-medium transition-all ${
               activeTab === "courses"
                 ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-muted-foreground hover:text-card-foreground"
             }`}
           >
             Courses
@@ -164,7 +164,7 @@ export default function CoursesPage() {
             className={`pb-2 font-medium transition-all ${
               activeTab === "domains"
                 ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-muted-foreground hover:text-card-foreground"
             }`}
           >
             Domains
@@ -191,7 +191,7 @@ export default function CoursesPage() {
         {/* TABLE */}
         {activeTab === "courses" ? (
           <table className="w-full text-sm">
-            <thead className="text-gray-500 border-b">
+            <thead className="text-muted-foreground border-b">
               <tr>
                 <th className="text-left p-3">ID</th>
                 <th className="text-left p-3">Course Name</th>
@@ -205,12 +205,12 @@ export default function CoursesPage() {
 
             <tbody>
               {filteredCourses.map((course) => (
-                <tr key={course.id} className="border-t hover:bg-gray-50">
+                <tr key={course.id} className="border-t hover:bg-muted">
                   <td className="p-3">{course.id}</td>
-                  <td className="p-3 font-medium text-gray-900">{course.name}</td>
-                  <td className="p-3 text-gray-600">{course.category}</td>
+                  <td className="p-3 font-medium text-foreground">{course.name}</td>
+                  <td className="p-3 text-muted-foreground">{course.category}</td>
                   <td className="p-3">{course.modules} Modules</td>
-                  <td className="p-3 text-gray-600">{course.updated}</td>
+                  <td className="p-3 text-muted-foreground">{course.updated}</td>
                   <td className="p-3">
                     <span className={`px-2 py-1 text-xs rounded-full font-medium ${
                       course.status === "Published"
@@ -227,7 +227,7 @@ export default function CoursesPage() {
           </table>
         ) : (
           <table className="w-full text-sm">
-            <thead className="text-gray-500 border-b">
+            <thead className="text-muted-foreground border-b">
               <tr>
                 <th className="text-left p-3">ID</th>
                 <th className="text-left p-3">Domain Name</th>
@@ -241,12 +241,12 @@ export default function CoursesPage() {
 
             <tbody>
               {filteredDomains.map((domain) => (
-                <tr key={domain.id} className="border-t hover:bg-gray-50">
+                <tr key={domain.id} className="border-t hover:bg-muted">
                   <td className="p-3">{domain.id}</td>
-                  <td className="p-3 font-medium text-gray-900">{domain.name}</td>
-                  <td className="p-3 text-gray-600">{domain.category}</td>
+                  <td className="p-3 font-medium text-foreground">{domain.name}</td>
+                  <td className="p-3 text-muted-foreground">{domain.category}</td>
                   <td className="p-3">{domain.courses} Courses</td>
-                  <td className="p-3 text-gray-600">{domain.updated}</td>
+                  <td className="p-3 text-muted-foreground">{domain.updated}</td>
                   <td className="p-3">
                     <span className="px-2 py-1 text-xs rounded-full font-medium bg-green-100 text-green-700">
                       {domain.status}
@@ -261,7 +261,7 @@ export default function CoursesPage() {
 
         {/* PAGINATION */}
         <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             Rows per page
             <select className="ml-2 border px-2 py-1 rounded">
               <option>10</option>
@@ -270,11 +270,11 @@ export default function CoursesPage() {
           </div>
 
           <div className="flex gap-2 text-sm font-medium">
-            <button className="px-3 py-1 border rounded text-gray-500 hover:bg-gray-50">Previous</button>
+            <button className="px-3 py-1 border rounded text-muted-foreground hover:bg-muted">Previous</button>
             <button className="px-3 py-1 bg-blue-600 text-white rounded shadow-sm">1</button>
-            <button className="px-3 py-1 border rounded text-gray-700 hover:bg-gray-50">2</button>
-            <button className="px-3 py-1 border rounded text-gray-700 hover:bg-gray-50">3</button>
-            <button className="px-3 py-1 border rounded text-gray-700 hover:bg-gray-50">Next</button>
+            <button className="px-3 py-1 border rounded text-card-foreground hover:bg-muted">2</button>
+            <button className="px-3 py-1 border rounded text-card-foreground hover:bg-muted">3</button>
+            <button className="px-3 py-1 border rounded text-card-foreground hover:bg-muted">Next</button>
           </div>
         </div>
       </div>

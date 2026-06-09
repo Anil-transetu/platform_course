@@ -163,7 +163,7 @@ export default function DataTable<T extends Record<string, unknown>>({
     <div className="flex flex-col gap-6 h-full overflow-hidden">
       {/* SEARCH & FILTERS BAR */}
       {(search?.enabled || (filters && filters.length > 0)) && (
-        <div className="bg-white p-4 rounded-lg border border-gray-200 flex gap-4 flex-shrink-0 flex-wrap">
+        <div className="bg-card p-4 rounded-lg border border-border flex gap-4 flex-shrink-0 flex-wrap">
           {/* SEARCH INPUT */}
           {search?.enabled && (
             <div className="flex-1 min-w-[200px]">
@@ -174,7 +174,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   placeholder={search.placeholder || "Search..."}
                   value={search.value}
                   onChange={(e) => search.onChange(e.target.value)}
-                  className="pl-10 bg-white border-gray-300"
+                  className="pl-10 bg-card border-border"
                 />
               </div>
             </div>
@@ -190,7 +190,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       value={Array.isArray(filter.value) ? "" : (filter.value || "")}
                       onValueChange={(val) => filter.onChange(val)}
                     >
-                      <SelectTrigger className="w-[150px] bg-white border-gray-300">
+                      <SelectTrigger className="w-[150px] bg-card border-border">
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -214,7 +214,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         filter.onChange(val ? val.split(",") : [])
                       }
                     >
-                      <SelectTrigger className="w-[150px] bg-white border-gray-300">
+                      <SelectTrigger className="w-[150px] bg-card border-border">
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -233,7 +233,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       placeholder={filter.placeholder || filter.label}
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-[150px] bg-white border-gray-300"
+                      className="w-[150px] bg-card border-border"
                     />
                   )}
 
@@ -242,7 +242,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       type="date"
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-[150px] bg-white border-gray-300"
+                      className="w-[150px] bg-card border-border"
                     />
                   )}
 
@@ -268,18 +268,18 @@ export default function DataTable<T extends Record<string, unknown>>({
       )}
 
       {/* TABLE CONTAINER */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden flex-1 min-h-0">
+      <div className="bg-card rounded-lg shadow-sm border border-border flex flex-col h-full overflow-hidden flex-1 min-h-0">
         {/* TABLE */}
         <div className={`overflow-auto ${bodyHeight}`}>
           <Table className="border-collapse">
-            <TableHeader className="sticky top-0 bg-gray-50 border-b border-gray-200">
-              <TableRow className="border-b border-gray-200 hover:bg-transparent">
+            <TableHeader className="sticky top-0 bg-muted border-b border-border">
+              <TableRow className="border-b border-border hover:bg-transparent">
                 {columns.map((column) => (
                   <TableHead
                     key={String(column.key)}
-                    className={`font-semibold text-gray-700 bg-gray-50 ${
+                    className={`font-semibold text-card-foreground bg-muted ${
                       column.width || ""
-                    } ${column.sortable ? "cursor-pointer hover:bg-gray-100" : ""}`}
+                    } ${column.sortable ? "cursor-pointer hover:bg-accent" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       {column.label}
@@ -292,7 +292,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </div>
                   </TableHead>
                 ))}
-                {actions && <TableHead className="text-center font-semibold text-gray-700 bg-gray-50">Actions</TableHead>}
+                {actions && <TableHead className="text-center font-semibold text-card-foreground bg-muted">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -304,7 +304,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   >
                     <div className="flex justify-center items-center gap-2">
                       <div className="h-4 w-4 bg-blue-600 rounded-full animate-bounce"></div>
-                      <span className="text-gray-600">Loading...</span>
+                      <span className="text-muted-foreground">Loading...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -322,7 +322,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       key={rowId}
                       className={`border-b border-gray-100 transition-colors ${
                         actions || onRowClick
-                          ? "cursor-pointer hover:bg-gray-50"
+                          ? "cursor-pointer hover:bg-muted"
                           : ""
                       }`}
                       onClick={() => onRowClick?.(row)}
@@ -331,7 +331,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       role={actions || onRowClick ? "button" : undefined}
                     >
                       {columns.map((column) => (
-                        <TableCell key={String(column.key)} className="text-gray-700">
+                        <TableCell key={String(column.key)} className="text-card-foreground">
                           {column.render
                             ? column.render(row[column.key], row)
                             : (row[column.key] as ReactNode)}
@@ -349,7 +349,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 <TableRow>
                   <TableCell
                     colSpan={columns.length + (actions ? 1 : 0)}
-                    className="text-center py-8 text-gray-500"
+                    className="text-center py-8 text-muted-foreground"
                   >
                     {emptyStateMessage}
                   </TableCell>
@@ -361,14 +361,14 @@ export default function DataTable<T extends Record<string, unknown>>({
 
         {/* TABLE FOOTER - Fixed Pagination */}
         {showPagination && (
-          <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+          <div className="flex-shrink-0 bg-card border-t border-border px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">Rows per page:</span>
+              <span className="text-sm font-medium text-card-foreground">Rows per page:</span>
               <Select
                 value={String(rowsPerPage)}
                 onValueChange={(val) => onRowsPerPageChange(Number(val))}
               >
-                <SelectTrigger className="w-[70px] bg-white border-gray-300">
+                <SelectTrigger className="w-[70px] bg-card border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -379,7 +379,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </SelectContent>
               </Select>
               {paginationInfo && (
-                <span className="text-sm text-gray-600 ml-4">
+                <span className="text-sm text-muted-foreground ml-4">
                   {paginationInfo}
                 </span>
               )}
@@ -389,7 +389,7 @@ export default function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className={`text-sm ${currentPage === 1 ? "text-gray-300" : "text-gray-700 hover:underline"}`}
+                className={`text-sm ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:underline"}`}
                 aria-label="Previous page"
               >
                 Previous
@@ -415,7 +415,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         className={`inline-flex items-center justify-center w-9 h-9 text-sm font-medium ${
                           isActive
                             ? "bg-blue-600 text-white rounded-md shadow"
-                            : "text-gray-700"
+                            : "text-card-foreground"
                         }`}
                       >
                         {p}
@@ -426,7 +426,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                   // show ellipsis where appropriate
                   if (p === currentPage - 2 || p === currentPage + 2) {
                     return (
-                      <span key={`e-${p}`} className="px-2 text-gray-500">
+                      <span key={`e-${p}`} className="px-2 text-muted-foreground">
                         …
                       </span>
                     );
@@ -439,7 +439,7 @@ export default function DataTable<T extends Record<string, unknown>>({
               <button
                 onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className={`text-sm ${currentPage === totalPages ? "text-gray-300" : "text-gray-700 hover:underline"}`}
+                className={`text-sm ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:underline"}`}
                 aria-label="Next page"
               >
                 Next

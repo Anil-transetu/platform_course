@@ -42,6 +42,20 @@ module.exports = {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
+        sidebar: {
+          DEFAULT: "var(--sidebar)",
+          foreground: "var(--sidebar-foreground)",
+          primary: {
+            DEFAULT: "var(--sidebar-primary)",
+            foreground: "var(--sidebar-primary-foreground)",
+          },
+          accent: {
+            DEFAULT: "var(--sidebar-accent)",
+            foreground: "var(--sidebar-accent-foreground)",
+          },
+          border: "var(--sidebar-border)",
+          ring: "var(--sidebar-ring)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -297,14 +297,14 @@ export default function UsersPage() {
   const data = filtered.slice(start, start + rowsPerPage);
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen text-gray-900 w-full relative">
+    <div className="p-8 bg-muted min-h-screen text-foreground w-full relative">
       {/* HEADER */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">
             User Management <span className="text-[10px] font-normal text-gray-300">v1.1</span>
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             Oversee administrators and institution representatives
           </p>
         </div>
@@ -325,15 +325,15 @@ export default function UsersPage() {
         <StatsCard title="Total Institutions" value={12} icon={<Building size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Total institutions linked to registered users" />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-card rounded-2xl shadow-sm border border-gray-100 p-6">
         {/* TABS & FILTERS */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
           
-          <div className="flex items-center gap-6 border-b border-gray-200">
+          <div className="flex items-center gap-6 border-b border-border">
             <button
               onClick={() => { setActiveTab("accepted"); setCurrentPage(1); }}
               className={`pb-2.5 font-medium text-sm transition-colors border-b-2
-                ${activeTab === "accepted" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}
+                ${activeTab === "accepted" ? "border-blue-600 text-blue-600" : "border-transparent text-muted-foreground hover:text-card-foreground"}
               `}
             >
               Accepted Requests
@@ -341,7 +341,7 @@ export default function UsersPage() {
             <button
               onClick={() => { setActiveTab("pending"); setCurrentPage(1); }}
               className={`pb-2.5 font-medium text-sm transition-colors border-b-2
-                ${activeTab === "pending" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}
+                ${activeTab === "pending" ? "border-blue-600 text-blue-600" : "border-transparent text-muted-foreground hover:text-card-foreground"}
               `}
             >
               Pending
@@ -358,19 +358,19 @@ export default function UsersPage() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all placeholder-gray-400"
+                className="w-full pl-9 pr-4 py-2 bg-muted border border-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all placeholder-gray-400"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 whitespace-nowrap">Role:</span>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Role:</span>
               <select
                 value={roleFilter}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
                   setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-transparent border border-gray-200 text-sm rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                className="bg-transparent border border-border text-sm rounded-lg px-3 py-2 text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
               >
                 {roles.map((r, i) => (
                   <option key={i} value={r}>{r}</option>
@@ -383,12 +383,12 @@ export default function UsersPage() {
         {/* TABLE */}
         <div className="overflow-x-auto min-h-[300px] relative">
           {isFetching && (
-            <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
+            <div className="absolute inset-0 bg-card/50 flex items-center justify-center z-10 backdrop-blur-[1px]">
                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
             </div>
           )}
           <table className="w-full text-sm text-left">
-            <thead className="text-gray-500 font-medium border-b border-gray-100">
+            <thead className="text-muted-foreground font-medium border-b border-gray-100">
               <tr>
                 <th className="pb-4 px-4 font-semibold text-xs tracking-wider uppercase">USER ID</th>
                 <th className="pb-4 px-4 font-semibold text-xs tracking-wider uppercase">USER</th>
@@ -402,8 +402,8 @@ export default function UsersPage() {
 
             <tbody>
               {data.map((u) => (
-                <tr key={u.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
-                  <td className="py-4 px-4 text-gray-500 font-medium">{u.id}</td>
+                <tr key={u.id} className="border-b border-gray-50 hover:bg-muted transition-colors group">
+                  <td className="py-4 px-4 text-muted-foreground font-medium">{u.id}</td>
 
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
@@ -411,15 +411,15 @@ export default function UsersPage() {
                         {u.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">{u.name}</div>
+                        <div className="font-medium text-foreground">{u.name}</div>
                         <div className="text-gray-400 text-xs">{u.email}</div>
                       </div>
                     </div>
                   </td>
 
-                  <td className="py-4 px-4 text-gray-700 font-medium">{u.role}</td>
+                  <td className="py-4 px-4 text-card-foreground font-medium">{u.role}</td>
 
-                  <td className="py-4 px-4 text-gray-500">
+                  <td className="py-4 px-4 text-muted-foreground">
                     {activeTab === "pending" ? `Requested: ${u.joinedDate}` : u.joinedDate}
                   </td>
 
@@ -427,13 +427,13 @@ export default function UsersPage() {
                   <td className="py-4 px-4 text-center relative">
                     <button
                       onClick={() => setOpenMenu(openMenu === u.id ? null : u.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 hover:bg-accent rounded-lg transition-colors"
                     >
                       <MoreVertical size={16} className="text-gray-400" />
                     </button>
 
                     {openMenu === u.id && (
-                      <div className="absolute right-6 top-10 mt-1 bg-white border border-gray-100 rounded-lg shadow-lg w-32 py-1 z-10 animate-in fade-in zoom-in-95 duration-100 block">
+                      <div className="absolute right-6 top-10 mt-1 bg-card border border-gray-100 rounded-lg shadow-lg w-32 py-1 z-10 animate-in fade-in zoom-in-95 duration-100 block">
                          {activeTab === "pending" ? (
                            <>
                               <button
@@ -456,18 +456,18 @@ export default function UsersPage() {
                                   handleViewUser(u.id);
                                   setOpenMenu(null);
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                className="w-full text-left px-4 py-2 text-sm text-card-foreground hover:bg-muted flex items-center gap-2"
                               >
-                                <Eye size={14} className="text-gray-500" /> View Details
+                                <Eye size={14} className="text-muted-foreground" /> View Details
                               </button>
                               <button
                                 onClick={() => {
                                   setOpenMenu(null);
                                   router.push(`/admin/users/${u.id}?mode=edit`);
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                className="w-full text-left px-4 py-2 text-sm text-card-foreground hover:bg-muted flex items-center gap-2"
                               >
-                                <Pencil size={14} className="text-gray-500" /> Edit
+                                <Pencil size={14} className="text-muted-foreground" /> Edit
                               </button>
                               <button
                                 onClick={() => {
@@ -487,7 +487,7 @@ export default function UsersPage() {
               ))}
               {data.length === 0 && (
                 <tr>
-                   <td colSpan={5} className="py-8 text-center text-gray-500">
+                   <td colSpan={5} className="py-8 text-center text-muted-foreground">
                       No users found.
                    </td>
                 </tr>
@@ -497,7 +497,7 @@ export default function UsersPage() {
         </div>
 
         {/* PAGINATION */}
-        <div className="flex justify-between items-center mt-6 text-sm text-gray-500">
+        <div className="flex justify-between items-center mt-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>Rows per page</span>
             <select
@@ -506,7 +506,7 @@ export default function UsersPage() {
                  setRowsPerPage(Number(e.target.value));
                  setCurrentPage(1);
                }}
-               className="border border-gray-200 rounded px-2 py-1 bg-transparent"
+               className="border border-border rounded px-2 py-1 bg-transparent"
              >
                <option>5</option>
                <option>10</option>
@@ -518,7 +518,7 @@ export default function UsersPage() {
             <button
                onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
                disabled={currentPage === 1}
-               className="text-gray-500 hover:text-gray-800 disabled:opacity-50"
+               className="text-muted-foreground hover:text-card-foreground disabled:opacity-50"
             >
                Previous
             </button>
@@ -532,7 +532,7 @@ export default function UsersPage() {
                      className={`w-7 h-7 rounded flex items-center justify-center font-medium transition-colors ${
                        currentPage === p
                          ? "bg-blue-600 text-white"
-                         : "text-gray-600 hover:bg-gray-100"
+                         : "text-muted-foreground hover:bg-accent"
                      }`}
                    >
                      {p}
@@ -543,7 +543,7 @@ export default function UsersPage() {
             <button
                onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
                disabled={currentPage >= totalPages}
-               className="text-gray-500 hover:text-gray-800 disabled:opacity-50"
+               className="text-muted-foreground hover:text-card-foreground disabled:opacity-50"
             >
                Next
             </button>
@@ -554,59 +554,59 @@ export default function UsersPage() {
       {/* CREATE USER MODAL */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 pb-4">
-              <h2 className="text-xl font-bold text-gray-900">Create New User</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-xl font-bold text-foreground">Create New User</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-gray-400 hover:text-muted-foreground">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 pt-0 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name <span className="text-red-500">*</span></label>
                 <input
                   type="text" value={formData.name}
                   onChange={(e) => { setFormData(p => ({ ...p, name: e.target.value })); if(errors.name){setErrors(p=>{const n={...p};delete n.name;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, name: true})); validateField("name", formData.name, false);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-border"}`}
                   placeholder="e.g. John Doe"
                 />
                 {touched.name && errors.name && <p className={errorTextClass}>{errors.name}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Email Address <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address <span className="text-red-500">*</span></label>
                 <input
                   type="email" value={formData.email}
                   onChange={(e) => { setFormData(p => ({ ...p, email: e.target.value })); if(errors.email){setErrors(p=>{const n={...p};delete n.email;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, email: true})); validateField("email", formData.email, false);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-border"}`}
                   placeholder="john.doe@example.com"
                 />
                 {touched.email && errors.email && <p className={errorTextClass}>{errors.email}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Initial Password <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Initial Password <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"} value={formData.password}
                     onChange={(e) => { setFormData(p => ({ ...p, password: e.target.value })); if(errors.password){setErrors(p=>{const n={...p};delete n.password;return n;})} }}
                     onBlur={() => {setTouched(p => ({...p, password: true})); validateField("password", formData.password, false);}}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 pr-10 ${touched.password && errors.password ? inputErrorClass : "border-gray-200"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 pr-10 ${touched.password && errors.password ? inputErrorClass : "border-border"}`}
                     placeholder="••••••••"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-muted-foreground">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
                 {touched.password && errors.password && <p className={errorTextClass}>{errors.password}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Select Role <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Select Role <span className="text-red-500">*</span></label>
                 <select
                   value={formData.role}
                   onChange={(e) => { setFormData(p => ({ ...p, role: e.target.value })); if(errors.role){setErrors(p=>{const n={...p};delete n.role;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, role: true})); validateField("role", formData.role, false);}}
-                  className={`w-full border bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border bg-card rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-border"}`}
                 >
                   <option value="">Select a role...</option>
                   <option>Institution Representative</option>
@@ -616,20 +616,20 @@ export default function UsersPage() {
                 {touched.role && errors.role && <p className={errorTextClass}>{errors.role}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Institution <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Institution <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData.institution}
                   onChange={(e) => { setFormData(p => ({ ...p, institution: e.target.value })); if(errors.institution){setErrors(p=>{const n={...p};delete n.institution;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, institution: true})); validateField("institution", formData.institution, false);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.institution && errors.institution ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.institution && errors.institution ? inputErrorClass : "border-border"}`}
                   placeholder="Enter institution name"
                 />
                 {touched.institution && errors.institution && <p className={errorTextClass}>{errors.institution}</p>}
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 pt-0">
-              <button onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">
+              <button onClick={() => setIsCreateModalOpen(false)} className="px-5 py-2 text-sm font-medium text-muted-foreground hover:text-card-foreground">
                 Cancel
               </button>
               <button 
@@ -653,45 +653,45 @@ export default function UsersPage() {
       {/* EDIT USER MODAL */}
       {editUser && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 pb-4">
-              <h2 className="text-xl font-bold text-gray-900">Edit User</h2>
-              <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-xl font-bold text-foreground">Edit User</h2>
+              <button onClick={() => setEditUser(null)} className="text-gray-400 hover:text-muted-foreground">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 pt-0 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Full Name <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Full Name <span className="text-red-500">*</span></label>
                 <input
                   type="text" value={formData.name}
                   onChange={(e) => { setFormData(p => ({ ...p, name: e.target.value })); if(errors.name){setErrors(p=>{const n={...p};delete n.name;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, name: true})); validateField("name", formData.name, true);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.name && errors.name ? inputErrorClass : "border-border"}`}
                 />
                 {touched.name && errors.name && <p className={errorTextClass}>{errors.name}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Email Address <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Email Address <span className="text-red-500">*</span></label>
                 <input
                   type="email" value={formData.email}
                   onChange={(e) => { setFormData(p => ({ ...p, email: e.target.value })); if(errors.email){setErrors(p=>{const n={...p};delete n.email;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, email: true})); validateField("email", formData.email, true);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.email && errors.email ? inputErrorClass : "border-border"}`}
                 />
                 {touched.email && errors.email && <p className={errorTextClass}>{errors.email}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Password</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"} value={formData.password}
                     onChange={(e) => { setFormData(p => ({ ...p, password: e.target.value })); if(errors.password){setErrors(p=>{const n={...p};delete n.password;return n;})} }}
                     onBlur={() => {setTouched(p => ({...p, password: true})); validateField("password", formData.password, true);}}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 pr-10 ${touched.password && errors.password ? inputErrorClass : "border-gray-200"}`}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 pr-10 ${touched.password && errors.password ? inputErrorClass : "border-border"}`}
                     placeholder="••••••••"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-muted-foreground">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
@@ -699,12 +699,12 @@ export default function UsersPage() {
                 {touched.password && errors.password && <p className={errorTextClass}>{errors.password}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Select Role <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Select Role <span className="text-red-500">*</span></label>
                 <select
                   value={formData.role}
                   onChange={(e) => { setFormData(p => ({ ...p, role: e.target.value })); if(errors.role){setErrors(p=>{const n={...p};delete n.role;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, role: true})); validateField("role", formData.role, true);}}
-                  className={`w-full border bg-white rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border bg-card rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.role && errors.role ? inputErrorClass : "border-border"}`}
                 >
                   <option value="">Select a role...</option>
                   <option>Institution Representative</option>
@@ -714,20 +714,20 @@ export default function UsersPage() {
                 {touched.role && errors.role && <p className={errorTextClass}>{errors.role}</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">Institution <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">Institution <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={formData.institution}
                   onChange={(e) => { setFormData(p => ({ ...p, institution: e.target.value })); if(errors.institution){setErrors(p=>{const n={...p};delete n.institution;return n;})} }}
                   onBlur={() => {setTouched(p => ({...p, institution: true})); validateField("institution", formData.institution, true);}}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-100 ${touched.institution && errors.institution ? inputErrorClass : "border-gray-200"}`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-blue-100 ${touched.institution && errors.institution ? inputErrorClass : "border-border"}`}
                   placeholder="Enter institution name"
                 />
                 {touched.institution && errors.institution && <p className={errorTextClass}>{errors.institution}</p>}
               </div>
             </div>
             <div className="flex justify-end gap-3 p-6 pt-0">
-              <button onClick={() => setEditUser(null)} className="px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">
+              <button onClick={() => setEditUser(null)} className="px-5 py-2 text-sm font-medium text-muted-foreground hover:text-card-foreground">
                 Cancel
               </button>
               <button 
@@ -751,18 +751,18 @@ export default function UsersPage() {
       {/* CONFIRM DELETE MODAL */}
       {userToDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 pb-4">
-              <h2 className="text-xl font-bold text-gray-900">Confirm Delete</h2>
-              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-xl font-bold text-foreground">Confirm Delete</h2>
+              <button onClick={() => setUserToDelete(null)} className="text-gray-400 hover:text-muted-foreground">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 pt-0">
-              <p className="text-sm text-gray-600">Are you sure you want to delete user {userToDelete.name}?</p>
+              <p className="text-sm text-muted-foreground">Are you sure you want to delete user {userToDelete.name}?</p>
             </div>
             <div className="flex justify-center gap-3 p-6 pt-0">
-              <button onClick={() => setUserToDelete(null)} className="px-6 py-2 border border-gray-200 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-50 shadow-sm transition-colors">
+              <button onClick={() => setUserToDelete(null)} className="px-6 py-2 border border-border text-sm font-medium text-card-foreground bg-card rounded-lg hover:bg-muted shadow-sm transition-colors">
                 Cancel
               </button>
               <button onClick={handleDeleteSubmit} className="px-6 py-2 text-sm font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-sm transition-colors flex items-center gap-2">
@@ -775,10 +775,10 @@ export default function UsersPage() {
       {/* VIEW USER MODAL */}
       {isViewModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">User Details</h2>
-              <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-xl font-bold text-foreground">User Details</h2>
+              <button onClick={() => setIsViewModalOpen(false)} className="text-gray-400 hover:text-muted-foreground">
                 <X size={20} />
               </button>
             </div>
@@ -786,7 +786,7 @@ export default function UsersPage() {
               {isViewing ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-3">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-                  <p className="text-sm text-gray-500">Fetching user details...</p>
+                  <p className="text-sm text-muted-foreground">Fetching user details...</p>
                 </div>
               ) : viewUser ? (
                 <div className="space-y-4">
@@ -797,34 +797,34 @@ export default function UsersPage() {
                       </span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{viewUser.full_name || viewUser.name || "N/A"}</h3>
-                      <p className="text-sm text-gray-500">{viewUser.role}</p>
+                      <h3 className="text-lg font-bold text-foreground">{viewUser.full_name || viewUser.name || "N/A"}</h3>
+                      <p className="text-sm text-muted-foreground">{viewUser.role}</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-4 text-sm">
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Email</p>
-                      <p className="text-gray-900 font-medium">{viewUser.email}</p>
+                      <p className="text-foreground font-medium">{viewUser.email}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">User ID</p>
-                      <p className="text-gray-900 font-medium">{viewUser.id}</p>
+                      <p className="text-foreground font-medium">{viewUser.id}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Institution</p>
-                      <p className="text-gray-900 font-medium">{viewUser.institution || "N/A"}</p>
+                      <p className="text-foreground font-medium">{viewUser.institution || "N/A"}</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Created At</p>
-                      <p className="text-gray-900 font-medium">
+                      <p className="text-foreground font-medium">
                         {viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : "N/A"}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Status</p>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        viewUser.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        viewUser.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-card-foreground"
                       }`}>
                         {viewUser.status || "N/A"}
                       </span>
@@ -832,13 +832,13 @@ export default function UsersPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-4">No user data found.</p>
+                <p className="text-center text-muted-foreground py-4">No user data found.</p>
               )}
             </div>
             <div className="p-6 pt-0 flex justify-end">
               <button 
                 onClick={() => setIsViewModalOpen(false)} 
-                className="px-6 py-2 bg-gray-100 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-6 py-2 bg-gray-100 text-sm font-medium text-card-foreground rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Close
               </button>

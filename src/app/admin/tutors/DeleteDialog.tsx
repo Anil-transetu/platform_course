@@ -44,13 +44,13 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
     router.push("/admin/tutors");
   };
 
-  if (!tutor) return <p className="p-6 text-gray-700">Loading tutor...</p>;
+  if (!tutor) return <p className="p-6 text-card-foreground">Loading tutor...</p>;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-md text-center space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
+      <div className="bg-card rounded-lg shadow-md p-6 w-full max-w-md text-center space-y-6">
         {/* Header */}
-        <h1 className="text-xl font-semibold text-gray-900">
+        <h1 className="text-xl font-semibold text-foreground">
           Are you sure you want to delete{" "}
           <span className="text-red-600">{tutor.name}</span>?
         </h1>
@@ -63,7 +63,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
             onChange={handleCheckboxChange}
             className="w-4 h-4"
           />
-          <span className="text-gray-700 text-sm">
+          <span className="text-card-foreground text-sm">
             Tutor is associated with any batch
           </span>
         </label>
@@ -72,7 +72,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
         <div className="flex justify-between mt-6">
           <button
             onClick={() => router.push("/admin/tutors")}
-            className="flex-1 mr-2 px-6 py-2 rounded-lg font-medium border border-gray-300 text-gray-900 hover:bg-gray-100"
+            className="flex-1 mr-2 px-6 py-2 rounded-lg font-medium border border-border text-foreground hover:bg-accent"
           >
             Cancel
           </button>

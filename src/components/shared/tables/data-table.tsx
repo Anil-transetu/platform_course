@@ -139,7 +139,7 @@ export function DataTable<TData, TValue>({
     <div className="w-full flex flex-col h-full">
       <div className="rounded-none border-none flex-1 overflow-y-auto relative">
         <Table>
-          <TableHeader className="bg-slate-50/50 sticky top-0 z-20">
+          <TableHeader className="bg-muted/50 sticky top-0 z-20">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
                 {headerGroup.headers.map((header) => (
@@ -159,8 +159,8 @@ export function DataTable<TData, TValue>({
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-20 text-center">
-                  <div className="flex items-center justify-center gap-2 text-slate-500 font-medium">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground font-medium">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-blue-600" />
                     Loading...
                   </div>
                 </TableCell>
@@ -191,11 +191,11 @@ export function DataTable<TData, TValue>({
                   {emptyState ? emptyState : (
                     <div className="flex flex-col items-center justify-center space-y-3 h-full w-full">
                       <div className="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center">
-                        <Search className="h-6 w-6 text-slate-400" />
+                        <Search className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div className="space-y-1 text-center">
-                        <p className="text-base font-bold text-slate-900">No records found</p>
-                        <p className="text-sm text-slate-500">Try adjusting your search or filters to find what you're looking for.</p>
+                        <p className="text-base font-bold text-foreground">No records found</p>
+                        <p className="text-sm text-muted-foreground">Try adjusting your search or filters to find what you're looking for.</p>
                       </div>
                     </div>
                   )}
@@ -207,8 +207,8 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination Container */}
-      <div className="sticky bottom-0 z-20 bg-white border-t border-slate-100 flex items-center justify-between px-8 py-4">
-        <div className="flex items-center gap-3 text-sm font-medium text-slate-500">
+      <div className="sticky bottom-0 z-20 bg-card border-t border-slate-100 flex items-center justify-between px-8 py-4">
+        <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
           <span>Rows per page:</span>
           <Select
             value={currentPagination.pageSize.toString()}
@@ -219,7 +219,7 @@ export function DataTable<TData, TValue>({
               });
             }}
           >
-            <SelectTrigger className="h-10 w-[80px] rounded-xl bg-white border-slate-200 font-medium">
+            <SelectTrigger className="h-10 w-[80px] rounded-xl bg-card border-border font-medium">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-100 bg-gray-100 shadow-xl">
@@ -235,7 +235,7 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center gap-2 ">
           <Button
             variant="ghost"
-            className="h-10 px-4 rounded-xl text-slate-400 hover:text-slate-900 font-bold"
+            className="h-10 px-4 rounded-xl text-muted-foreground hover:text-foreground font-bold"
             onClick={() =>
               handlePaginationChange({
                 pageIndex: Math.max(0, currentPagination.pageIndex - 1),
@@ -254,7 +254,7 @@ export function DataTable<TData, TValue>({
                 variant={currentPagination.pageIndex + 1 === page ? "default" : "ghost"}
                 className={cn(
                   "h-10 w-10 rounded-xl font-bold",
-                  currentPagination.pageIndex + 1 === page ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                  currentPagination.pageIndex + 1 === page ? "bg-blue-600 text-white" : "text-muted-foreground hover:bg-muted"
                 )}
                 onClick={() => handlePaginationChange({ ...currentPagination, pageIndex: page - 1 })}
               >
@@ -265,7 +265,7 @@ export function DataTable<TData, TValue>({
 
           <Button
             variant="outline"
-            className="h-10 px-4 rounded-lg border-slate-200 bg-gray-300 font-bold hover:bg-slate-50 ml-2"
+            className="h-10 px-4 rounded-lg border-border bg-gray-300 font-bold hover:bg-muted ml-2"
             onClick={() =>
               handlePaginationChange({
                 pageIndex: currentPagination.pageIndex + 1,

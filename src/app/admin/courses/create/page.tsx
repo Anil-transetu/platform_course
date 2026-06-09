@@ -91,14 +91,14 @@ export default function CreateCoursePage() {
   };
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen text-gray-800">
+    <div className="p-8 bg-muted min-h-screen text-card-foreground">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-10">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
           Create New Course
         </h1>
         <div className="flex gap-3">
-          <button className="px-6 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 transition-all flex items-center gap-2 text-sm">
+          <button className="px-6 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all flex items-center gap-2 text-sm">
             Preview
           </button>
           <button
@@ -117,7 +117,7 @@ export default function CreateCoursePage() {
       </div>
 
       {/* FORM SECTION */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
+      <div className="bg-card rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">
@@ -128,7 +128,7 @@ export default function CreateCoursePage() {
               value={title}
               onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
               onBlur={() => handleBlur("title", title)}
-              className={getInputClass("title", "w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-800 placeholder-gray-400 font-medium")}
+              className={getInputClass("title", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Enter course title..."
             />
             <ErrorMsg field="title" />
@@ -142,7 +142,7 @@ export default function CreateCoursePage() {
               <select
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-800 font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground font-medium appearance-none cursor-pointer"
               >
                 <option>Web Development</option>
                 <option>Data Science</option>
@@ -162,7 +162,7 @@ export default function CreateCoursePage() {
               value={tags}
               onChange={(e) => handleFieldChange("tags", e.target.value, setTags)}
               onBlur={() => handleBlur("tags", tags)}
-              className={getInputClass("tags", "w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-gray-800 placeholder-gray-400 font-medium")}
+              className={getInputClass("tags", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Add tags separated by comma..."
             />
             <ErrorMsg field="tags" />
@@ -179,15 +179,15 @@ export default function CreateCoursePage() {
       </div>
 
       {/* CURRICULUM SECTION */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dashed border-gray-200 flex flex-col items-center justify-center p-20 min-h-[400px]">
+      <div className="bg-card rounded-2xl shadow-sm border border-dashed border-border flex flex-col items-center justify-center p-20 min-h-[400px]">
         <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
           <LayoutGrid className="text-blue-500" size={32} />
         </div>
         
-        <h2 className="text-xl font-bold text-gray-900 mb-2">
+        <h2 className="text-xl font-bold text-foreground mb-2">
           Start your curriculum
         </h2>
-        <p className="text-gray-500 text-center max-w-sm mb-10 leading-relaxed font-normal">
+        <p className="text-muted-foreground text-center max-w-sm mb-10 leading-relaxed font-normal">
           Your course curriculum is currently empty. Start by adding your first module to organize lessons and resources.
         </p>
 

@@ -50,14 +50,14 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-xl shadow-2xl relative my-8">
+      <div className="bg-card w-full max-w-4xl rounded-xl shadow-2xl relative my-8">
         
         {/* HEADER */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">
+          <h2 className="text-xl font-bold text-foreground">
             Create New Assignment
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
+          <button onClick={onClose} className="text-gray-400 hover:text-muted-foreground transition">
             <X size={20} />
           </button>
         </div>
@@ -76,22 +76,22 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
 
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Assignment Title</label>
+                <label className="block text-sm font-medium text-card-foreground mb-1.5">Assignment Title</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Introduction to Web Ethics"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                  className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Domains</label>
+                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Domains</label>
                   <select 
                     multiple
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-gray-500 h-24"
+                    className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-muted-foreground h-24"
                     onChange={(e) => setDomain(e.target.value)}
                   >
                     <option>Web Development</option>
@@ -101,10 +101,10 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
                   <p className="text-[10px] text-gray-400 mt-1 uppercase font-medium tracking-wide">Hold Ctrl/Cmd to select multiple</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Tags</label>
+                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Tags</label>
                   <select 
                     multiple
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-gray-500 h-24"
+                    className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-muted-foreground h-24"
                     onChange={(e) => setTags(e.target.value)}
                   >
                     <option>FRONTEND</option>
@@ -116,15 +116,15 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-                <div className="border border-gray-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition">
-                  <div className="bg-gray-50/50 border-b border-gray-200 px-3 py-2 flex items-center gap-1">
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Bold size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Italic size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><List size={14} /></button>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><LinkIcon size={14} /></button>
+                <label className="block text-sm font-medium text-card-foreground mb-1.5">Description</label>
+                <div className="border border-border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition">
+                  <div className="bg-muted/50 border-b border-border px-3 py-2 flex items-center gap-1">
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Bold size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Italic size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><List size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><LinkIcon size={14} /></button>
                     <div className="flex-1"></div>
-                    <button className="p-1.5 text-gray-500 hover:bg-gray-200 rounded transition"><Code size={14} /></button>
+                    <button className="p-1.5 text-muted-foreground hover:bg-gray-200 rounded transition"><Code size={14} /></button>
                   </div>
                   <textarea
                     value={description}
@@ -162,7 +162,7 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
                       value={c.name}
                       onChange={(e) => handleUpdateCriteria(i, "name", e.target.value)}
                       placeholder="e.g. Code Quality and Best Practices"
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full border border-border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                   <div className="col-span-2">
@@ -170,7 +170,7 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
                       type="text"
                       value={c.marks}
                       onChange={(e) => handleUpdateCriteria(i, "marks", e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                      className="w-full border border-border rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                   </div>
                 </div>
@@ -188,10 +188,10 @@ export default function CreateAssignmentModal({ isOpen, onClose, onSubmit }: Cre
         </div>
 
         {/* FOOTER */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-xl">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-muted/50 rounded-b-xl">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition"
+            className="px-6 py-2.5 border border-border text-card-foreground font-medium rounded-lg hover:bg-accent transition"
           >
             Cancel
           </button>

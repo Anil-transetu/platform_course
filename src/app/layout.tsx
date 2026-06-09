@@ -1,9 +1,12 @@
 import "./globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata = {
   title: "Admin Dashboard",
@@ -16,11 +19,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", geist.variable)}>
-      <body className="bg-gray-50 text-gray-900 m-0 p-0">
-        <QueryProvider>
-          {children}
-        </QueryProvider>
+    <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+      <body className="bg-background text-foreground m-0 p-0 antialiased min-h-screen" suppressHydrationWarning>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <TooltipProvider>
+              {children}
+            </TooltipProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
