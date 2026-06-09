@@ -1,166 +1,77 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useRef } from "react";
 import { 
   ChevronRight, 
-  FileText, 
-  Plus, 
-  ChevronDown, 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Link as LinkIcon, 
-  Image as ImageIcon,
-  Code,
   FileUp,
   Video,
   Globe,
-  Target
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ResourceModals from "@/components/modals/ResourceModals";
+import { useCourseStore } from "@/store/useCourseStore";
+import CourseSidebar from "@/components/admin/courses/CourseSidebar";
+import { RichTextEditor, RichTextEditorRef } from "@/components/ui/RichTextEditor/RichTextEditor";
 
 export default function TopicDetailsPage() {
   const router = useRouter();
-  const [topicTitle, setTopicTitle] = useState("");
-  const [topicContent, setTopicContent] = useState("");
+
+  const { course, activeModuleId, activeLessonId, activeTopicId, updateTopic } = useCourseStore();
+  
+  const activeModule = course.modules.find(m => m.id === activeModuleId);
+  const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
+  const activeTopic = activeLesson?.topics.find(t => t.id === activeTopicId);
+
+  const topicTitle = activeTopic?.title || "";
+  const topicContent = activeTopic?.content || "";
+
+  const setTopicTitle = (val: string) => {
+    if (activeModuleId && activeLessonId && activeTopicId) {
+      updateTopic(activeModuleId, activeLessonId, activeTopicId, { title: val });
+    }
+  };
+  
+  const setTopicContent = (val: string) => {
+    if (activeModuleId && activeLessonId && activeTopicId) {
+      updateTopic(activeModuleId, activeLessonId, activeTopicId, { content: val });
+    }
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"pdf" | "image" | "video" | "url" | null>(null);
+
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   const openModal = (type: "pdf" | "image" | "video" | "url") => {
     setModalType(type);
     setIsModalOpen(true);
   };
 
-  const handleAddAnotherTopic = useCallback(() => {
-    // In a real app, we might save the current topic first
-    setTopicTitle("");
-    setTopicContent("");
-    alert("Topic cleared! You can now add another topic to this lesson.");
-  }, []);
-
-  const handleAddAnotherLesson = () => {
-    router.push("/admin/courses/create/lesson");
+  const handleAttach = (type: string, payload: any) => {
+    if (type === 'image') editorRef.current?.insertImage(payload.url);
+    if (type === 'video') editorRef.current?.insertVideo(payload.url);
+    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title);
   };
 
-  const handleAddAnotherModule = () => {
-    router.push("/admin/courses/create/module");
-  };
-
-  const handleAddQuiz = () => {
-    router.push("/admin/quizzes/new");
-  };
-
-  const handleAddAssignment = () => {
-    router.push("/admin/assignments"); // We don't have a /new yet, so sending to list
-  };
+  if (!activeTopic) {
+    return (
+      <div className="bg-muted min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-gray-500">No active topic selected.</p>
+        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline">Go back to Course</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-muted min-h-screen">
-      {/* TOP HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 shadow-sm">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
-          <Link href="/admin/courses/create" className="text-gray-400 hover:text-blue-600 transition-colors">Create New Course</Link>
-          <ChevronRight size={12} className="text-gray-300" />
-          <Link href="/admin/courses/create/module" className="text-gray-400 hover:text-blue-600 transition-colors">MODULE 1</Link>
-          <ChevronRight size={12} className="text-gray-300" />
-          <Link href="/admin/courses/create/lesson" className="text-gray-400 hover:text-blue-600 transition-colors">Foundations of User Experience</Link>
-          <ChevronRight size={12} className="text-gray-300" />
-          <span className="text-foreground">New Topic</span>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/admin/courses/create/lesson">
-            <button className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs">
-              Back to Lesson
-            </button>
-          </Link>
-          <button className="px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs">
-            Save
-          </button>
-        </div>
-      </div>
-
-      <div className="flex p-8 gap-8">
+    <div className="flex-1 overflow-y-auto">
+      <div className="flex p-8 gap-8 items-start min-h-full">
         {/* LEFT SIDEBAR */}
-        <div className="w-80 flex flex-col gap-8">
-          {/* TOPIC STRUCTURE */}
-          <div>
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Topic Structure</h3>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 px-1">
-                <input type="checkbox" className="w-3 h-3 rounded border-border text-blue-600" />
-                <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">MODULE 1: FOUNDATIONS</span>
-              </div>
-              <div className="flex flex-col ml-4 border-l-2 border-gray-100 pl-4 gap-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="text-gray-300" size={14} />
-                  <span className="text-xs font-bold text-gray-400 truncate tracking-tight">LESSON 1: FOUNDATIONS</span>
-                </div>
-                <div className="bg-card border-blue-500 border-l-4 rounded-r-xl shadow-sm p-3 flex items-center gap-3">
-                  <Target className="text-blue-600" size={16} />
-                  <span className="text-sm font-bold text-foreground truncate tracking-tight">Topic: {topicTitle || "[New Topic]"}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ADD CONTENT TO LESSON */}
-          <div>
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Add Content to Lesson</h3>
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={handleAddQuiz}
-                className="w-full flex items-center justify-between border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Plus size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium text-card-foreground">Add Quiz</span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400" />
-              </button>
-
-              <button 
-                onClick={handleAddAssignment}
-                className="w-full flex items-center justify-between border border-border bg-card px-4 py-3 rounded-xl hover:bg-muted transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <Plus size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium text-card-foreground">Add Assignment</span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400" />
-              </button>
-
-              <button 
-                onClick={handleAddAnotherTopic}
-                className="w-full flex items-center justify-center gap-2 border border-blue-100 bg-blue-50/20 text-blue-600 py-3 rounded-xl hover:bg-blue-50 transition-all mt-4 font-bold text-sm"
-              >
-                <Plus size={16} /> Add Another Topic
-              </button>
-            </div>
-          </div>
-
-          {/* LESSON CONTROLS */}
-          <div>
-            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Lesson Controls</h3>
-            <button 
-              onClick={handleAddAnotherLesson}
-              className="w-full flex items-center justify-center gap-2 border border-blue-100 bg-card text-blue-600 py-3 rounded-xl hover:bg-blue-50 transition-all font-bold text-sm mb-3"
-            >
-              <Plus size={16} /> Add Another Lesson
-            </button>
-            <button 
-              onClick={handleAddAnotherModule}
-              className="w-full flex items-center justify-center gap-2 border border-dashed border-blue-200 bg-blue-50/10 text-blue-600 py-3 rounded-xl hover:bg-blue-50 transition-all font-bold text-sm"
-            >
-              <Plus size={16} /> Add Another Module
-            </button>
-          </div>
-        </div>
+        <CourseSidebar />
 
         {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-8">
+        <div className="flex-1 flex flex-col gap-8 min-w-0">
           {/* TOPIC DETAILS CARD */}
           <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="p-8 border-b border-gray-50 flex justify-between items-center">
@@ -180,28 +91,12 @@ export default function TopicDetailsPage() {
 
               <div>
                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Topic Content</label>
-                <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-                  {/* TOOLBAR */}
-                  <div className="flex items-center gap-1.5 p-2 bg-muted border-b border-gray-100 overflow-x-auto">
-                    <ToolbarButton icon={<Bold size={16} />} />
-                    <ToolbarButton icon={<Italic size={16} />} />
-                    <div className="w-[1px] h-6 bg-gray-200 mx-1" />
-                    <ToolbarButton icon={<List size={16} />} />
-                    <ToolbarButton icon={<ListOrdered size={16} />} />
-                    <div className="w-[1px] h-6 bg-gray-200 mx-1" />
-                    <ToolbarButton icon={<LinkIcon size={16} />} />
-                    <ToolbarButton icon={<ImageIcon size={16} />} />
-                    <ToolbarButton icon={<Code size={16} />} />
-                    <span className="ml-auto text-[10px] font-bold text-gray-300 uppercase tracking-widest pr-2">Markdown Editor</span>
-                  </div>
-                  {/* TEXTAREA */}
-                  <textarea 
-                    placeholder="Write your topic content here..."
-                    value={topicContent}
-                    onChange={(e) => setTopicContent(e.target.value)}
-                    className="w-full h-80 p-8 outline-none resize-none font-normal text-muted-foreground placeholder-gray-400 leading-relaxed text-sm"
-                  />
-                </div>
+                <RichTextEditor
+                  ref={editorRef}
+                  value={topicContent}
+                  onChange={(html) => setTopicContent(html)}
+                  placeholder="Write your topic content here..."
+                />
               </div>
             </div>
           </div>
@@ -212,7 +107,7 @@ export default function TopicDetailsPage() {
               <h2 className="text-lg font-bold text-foreground">Topic Resources</h2>
             </div>
             <div className="p-8">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <ResourceButton icon={<FileUp size={24} />} label="Attach PDF" onClick={() => openModal("pdf")} />
                 <ResourceButton icon={<ImageIcon size={24} />} label="Upload Image" onClick={() => openModal("image")} />
                 <ResourceButton icon={<Video size={24} />} label="Embed Video" onClick={() => openModal("video")} />
@@ -223,20 +118,14 @@ export default function TopicDetailsPage() {
         </div>
       </div>
 
+
       <ResourceModals 
         isOpen={isModalOpen} 
         type={modalType} 
         onClose={() => setIsModalOpen(false)} 
+        onAttach={handleAttach}
       />
     </div>
-  );
-}
-
-function ToolbarButton({ icon }: { icon: React.ReactNode }) {
-  return (
-    <button className="p-2 rounded-md hover:bg-card hover:shadow-sm text-gray-400 hover:text-blue-600 transition-all">
-      {icon}
-    </button>
   );
 }
 

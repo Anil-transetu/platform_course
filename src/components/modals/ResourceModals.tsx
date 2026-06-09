@@ -9,9 +9,10 @@ interface ResourceModalsProps {
   isOpen: boolean;
   type: ModalType;
   onClose: () => void;
+  onAttach?: (type: string, payload: any) => void;
 }
 
-export default function ResourceModals({ isOpen, type, onClose }: ResourceModalsProps) {
+export default function ResourceModals({ isOpen, type, onClose, onAttach }: ResourceModalsProps) {
   const [isRendered, setIsRendered] = useState(false);
 
   useEffect(() => {
@@ -30,13 +31,13 @@ export default function ResourceModals({ isOpen, type, onClose }: ResourceModals
   const getModalContent = () => {
     switch (type) {
       case "pdf":
-        return <PdfModalContent onClose={onClose} />;
+        return <PdfModalContent onClose={onClose} onAttach={onAttach} />;
       case "image":
-        return <ImageModalContent onClose={onClose} />;
+        return <ImageModalContent onClose={onClose} onAttach={onAttach} />;
       case "video":
-        return <VideoModalContent onClose={onClose} />;
+        return <VideoModalContent onClose={onClose} onAttach={onAttach} />;
       case "url":
-        return <UrlModalContent onClose={onClose} />;
+        return <UrlModalContent onClose={onClose} onAttach={onAttach} />;
       default:
         return null;
     }
@@ -59,7 +60,7 @@ export default function ResourceModals({ isOpen, type, onClose }: ResourceModals
 }
 
 /* PDF MODAL */
-function PdfModalContent({ onClose }: { onClose: () => void }) {
+function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,8 +77,10 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
       alert("Please select a PDF file first.");
       return;
     }
-    console.log("Attaching PDF:", { title, file });
-    alert(`PDF "${title}" attached successfully!`);
+    const objectUrl = URL.createObjectURL(file);
+    if (onAttach) {
+      onAttach("link", { url: objectUrl, title });
+    }
     onClose();
   };
 
@@ -145,7 +148,7 @@ function PdfModalContent({ onClose }: { onClose: () => void }) {
 }
 
 /* IMAGE MODAL */
-function ImageModalContent({ onClose }: { onClose: () => void }) {
+function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,8 +165,10 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
       alert("Please select an image first.");
       return;
     }
-    console.log("Uploading Image:", { title, file });
-    alert(`Image "${title}" uploaded successfully!`);
+    const objectUrl = URL.createObjectURL(file);
+    if (onAttach) {
+      onAttach("image", { url: objectUrl, title });
+    }
     onClose();
   };
 
@@ -228,7 +233,7 @@ function ImageModalContent({ onClose }: { onClose: () => void }) {
 }
 
 /* VIDEO MODAL */
-function VideoModalContent({ onClose }: { onClose: () => void }) {
+function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -246,8 +251,15 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
       alert("Please enter a video URL or select a video file first.");
       return;
     }
-    console.log("Attaching Video:", { title, url, file });
-    alert(`Video "${title}" attached successfully!`);
+    
+    let videoUrl = url;
+    if (file && !url) {
+      videoUrl = URL.createObjectURL(file);
+    }
+
+    if (onAttach) {
+      onAttach("video", { url: videoUrl, title });
+    }
     onClose();
   };
 
@@ -337,7 +349,7 @@ function VideoModalContent({ onClose }: { onClose: () => void }) {
 }
 
 /* URL MODAL */
-function UrlModalContent({ onClose }: { onClose: () => void }) {
+function UrlModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
 
@@ -346,8 +358,9 @@ function UrlModalContent({ onClose }: { onClose: () => void }) {
       alert("Please enter a URL first.");
       return;
     }
-    console.log("Adding Link:", { title, url });
-    alert(`Link "${title}" added successfully!`);
+    if (onAttach) {
+      onAttach("link", { url, title });
+    }
     onClose();
   };
 

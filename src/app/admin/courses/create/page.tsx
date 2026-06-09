@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, LayoutGrid, ChevronDown } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
+import { useCourseStore } from "@/store/useCourseStore";
 
 export default function CreateCoursePage() {
-  const [title, setTitle] = useState("Advanced Full-Stack Development");
-  const [domain, setDomain] = useState("Web Development");
-  const [tags, setTags] = useState("React, Node.js, API, Tailwind");
+  const router = useRouter();
+  const { course, setCourseDetails, addModule } = useCourseStore();
+  const { title, domain, tags } = course;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -39,8 +40,11 @@ export default function CreateCoursePage() {
     validateField(field, value);
   };
 
-  const handleFieldChange = (field: string, value: string, setter: (v: string) => void) => {
-    setter(value);
+  const handleFieldChange = (field: string, value: string) => {
+    if (field === 'title') setCourseDetails(value, domain, tags);
+    if (field === 'domain') setCourseDetails(title, value, tags);
+    if (field === 'tags') setCourseDetails(title, domain, value);
+    
     if (errors[field]) {
       setErrors((prev) => { const n = { ...prev }; delete n[field]; return n; });
     }
@@ -91,30 +95,8 @@ export default function CreateCoursePage() {
   };
 
   return (
-    <div className="p-8 bg-muted min-h-screen text-card-foreground">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-10">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">
-          Create New Course
-        </h1>
-        <div className="flex gap-3">
-          <button className="px-6 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all flex items-center gap-2 text-sm">
-            Preview
-          </button>
-          <button
-            onClick={handleSaveDraft}
-            className="px-6 py-2 rounded-lg bg-blue-50 text-blue-600 font-semibold shadow-sm hover:bg-blue-100 transition-all text-sm"
-          >
-            Save Draft
-          </button>
-          <button
-            onClick={handlePublish}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:shadow-lg transition-all text-sm"
-          >
-            Publish Course
-          </button>
-        </div>
-      </div>
+    <div className="flex-1 overflow-y-auto p-8">
+      <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
       {/* FORM SECTION */}
       <div className="bg-card rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
@@ -126,7 +108,7 @@ export default function CreateCoursePage() {
             <input
               type="text"
               value={title}
-              onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
+              onChange={(e) => handleFieldChange("title", e.target.value)}
               onBlur={() => handleBlur("title", title)}
               className={getInputClass("title", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Enter course title..."
@@ -141,7 +123,7 @@ export default function CreateCoursePage() {
             <div className="relative">
               <select
                 value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                onChange={(e) => handleFieldChange("domain", e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground font-medium appearance-none cursor-pointer"
               >
                 <option>Web Development</option>
@@ -160,7 +142,7 @@ export default function CreateCoursePage() {
             <input
               type="text"
               value={tags}
-              onChange={(e) => handleFieldChange("tags", e.target.value, setTags)}
+              onChange={(e) => handleFieldChange("tags", e.target.value)}
               onBlur={() => handleBlur("tags", tags)}
               className={getInputClass("tags", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Add tags separated by comma..."
@@ -191,11 +173,18 @@ export default function CreateCoursePage() {
           Your course curriculum is currently empty. Start by adding your first module to organize lessons and resources.
         </p>
 
-        <Link href="/admin/courses/create/module">
-          <button className="flex items-center gap-3 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all">
-            <Plus size={20} className="stroke-[3px]" /> Add First Module
-          </button>
-        </Link>
+        <button 
+          onClick={() => {
+            if (course.modules.length === 0) {
+              addModule();
+            }
+            router.push("/admin/courses/create/module");
+          }}
+          className="flex items-center gap-3 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+        >
+          <Plus size={20} className="stroke-[3px]" /> {course.modules.length === 0 ? "Add First Module" : "Continue to Modules"}
+        </button>
+      </div>
       </div>
     </div>
   );
