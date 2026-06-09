@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Student } from "@/features/admin/students/api/student-api";
+import { Student } from "@/types/student";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
 
