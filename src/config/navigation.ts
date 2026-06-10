@@ -82,4 +82,45 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
       { label: "Attendance", href: "/student/attendance", icon: CalendarCheck },
     ],
   }
+  ,
+  TUTOR: {
+    brand: {
+      title: "Tutor Portal",
+      subtitle: "Teaching Dashboard",
+      logoIcon: undefined,
+      theme: {
+        background: "#0b1221",
+        foreground: "#f8fafc",
+        border: "#1f2937",
+        accent: "#0ea5e9",
+        accentForeground: "#ffffff",
+      },
+    },
+    mainNav: [
+      { label: "Dashboard", href: "/tutor/dashboard", icon: LayoutDashboard },
+      { label: "My Courses", href: "/tutor/courses", icon: BookOpen },
+      { label: "Students", href: "/tutor/students", icon: Users },
+      { label: "Assignments", href: "/tutor/assignments", icon: FileEdit },
+    ],
+  },
+  INSTITUTION: {
+    brand: {
+      title: "Institution",
+      subtitle: "Organization Portal",
+      logoIcon: undefined,
+      theme: {
+        background: "#0b1221",
+        foreground: "#f8fafc",
+        border: "#1f2937",
+        accent: "#7c3aed",
+        accentForeground: "#ffffff",
+      },
+    },
+    mainNav: [
+      { label: "Overview", href: "/institution/overview", icon: LayoutDashboard },
+      { label: "Departments", href: "/institution/departments", icon: Building2 },
+      { label: "Users", href: "/institution/users", icon: User },
+      { label: "Reports", href: "/institution/reports", icon: FileText },
+    ],
+  },
 };

@@ -22,6 +22,7 @@ export default function RolesSidebar({ role }: RolesSidebarProps) {
   const LogoIcon = brand.logoIcon;
 
   return (
+    <>
     <Sidebar
       collapsible="icon"
       style={{
@@ -96,5 +97,26 @@ export default function RolesSidebar({ role }: RolesSidebarProps) {
         <NavUser />
       </SidebarFooter>
     </Sidebar>
+    
+    {/* Global Floating Trigger for Mobile/Tablet (Rendered outside the Sidebar so it isn't unmounted when the mobile Sheet closes) */}
+    <div className="fixed top-3 left-3 z-50 lg:hidden">
+      <SidebarTrigger
+        className="
+          h-10 w-10
+          rounded-xl
+          bg-slate-900
+          border border-white/10
+          text-white/90
+          shadow-lg
+          hover:bg-slate-800
+          hover:border-white/20
+          hover:scale-105
+          active:scale-95
+          flex items-center justify-center
+          transition-all duration-300
+        "
+      />
+    </div>
+    </>
   );
 }
