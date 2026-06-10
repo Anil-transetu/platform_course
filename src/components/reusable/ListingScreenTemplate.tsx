@@ -31,6 +31,11 @@ interface ListingScreenTemplateProps {
   buttonOnclick?: () => void;
 
   /**
+   * Optional extra buttons/elements to render in the header
+   */
+  extraActions?: React.ReactNode;
+
+  /**
    * Page content (table + filters)
    */
   children: React.ReactNode;
@@ -46,6 +51,7 @@ export default function ListingScreenTemplate({
   buttonLabel = "Add New",
   buttonRequired = false,
   buttonOnclick,
+  extraActions,
   children,
 }: ListingScreenTemplateProps) {
   return (
@@ -59,15 +65,18 @@ export default function ListingScreenTemplate({
           )}
         </div>
 
-        {buttonRequired && (
-          <Button
-            onClick={buttonOnclick}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-2.5 h-auto gap-2 flex items-center"
-          >
-            <Plus size={18} />
-            {buttonLabel}
-          </Button>
-        )}
+        <div className="flex items-center gap-3">
+          {extraActions}
+          {buttonRequired && (
+            <Button
+              onClick={buttonOnclick}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-2.5 h-auto gap-2 flex items-center"
+            >
+              <Plus size={18} />
+              {buttonLabel}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Content Area */}

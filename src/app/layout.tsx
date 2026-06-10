@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
-      <body className="bg-background text-foreground m-0 p-0 antialiased min-h-screen">
+      <body className="bg-background text-foreground m-0 p-0 antialiased min-h-screen" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
