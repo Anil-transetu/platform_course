@@ -11,6 +11,7 @@ export interface InstitutionContact {
 }
 
 export interface Institution {
+  [key: string]: any;
   id: string | number;
   batch_id?: string | number;
   name: string;
