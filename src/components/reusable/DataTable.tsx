@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, X, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -228,11 +228,10 @@ export default function DataTable<T extends Record<string, unknown>>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length + (actions ? 1 : 0)}
-                  className="text-center py-8"
+                  className="h-64"
                 >
-                  <div className="flex justify-center items-center gap-2">
-                    <div className="h-4 w-4 bg-blue-600 rounded-full animate-bounce"></div>
-                    <span className="text-muted-foreground">Loading...</span>
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                   </div>
                 </TableCell>
               </TableRow>
