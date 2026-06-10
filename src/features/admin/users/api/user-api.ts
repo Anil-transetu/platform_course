@@ -152,9 +152,16 @@ export async function createUser(data: Record<string, unknown>) {
   const payload: Record<string, unknown> = {
     full_name: data.name,
     email: data.email,
-    password: data.password,
     role: apiRole,
   };
+
+  if (data.password) {
+    payload.password = data.password;
+  }
+
+  if (apiRole === "institution_rep" && data.institution_id) {
+    payload.institution_id = data.institution_id;
+  }
 
   Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
@@ -181,6 +188,10 @@ export async function updateUser(id: string | number, data: Record<string, unkno
     email: data.email,
     role: apiRole,
   };
+
+  if (apiRole === "institution_rep" && data.institution_id) {
+    payload.institution_id = data.institution_id;
+  }
 
   if (data.password && (data.password as string).trim() !== "") {
     payload.password = data.password;
