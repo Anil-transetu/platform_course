@@ -10,6 +10,53 @@ import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
 import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function CoursePageSkeleton() {
+  return (
+    <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="p-5 rounded-2xl bg-white border border-gray-100 flex items-center shadow-sm">
+            <div className="flex-1">
+              <Skeleton className="h-4 w-28 mb-2" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+            <Skeleton className="w-12 h-12 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-6 border-b border-gray-200">
+        <Skeleton className="h-6 w-20 mb-2" />
+        <Skeleton className="h-6 w-20 mb-2" />
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col flex-1">
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <Skeleton className="h-10 w-[300px] rounded-lg" />
+          <Skeleton className="h-10 w-[200px] rounded-lg" />
+        </div>
+        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-100 bg-gray-50/80">
+          <Skeleton className="h-4 w-16 col-span-1" />
+          <Skeleton className="h-4 w-32 col-span-2" />
+          <Skeleton className="h-4 w-24 col-span-1" />
+          <Skeleton className="h-4 w-24 col-span-1" />
+          <Skeleton className="h-4 w-20 col-span-1" />
+        </div>
+        <div className="divide-y divide-gray-100">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="grid grid-cols-6 gap-4 p-4 items-center">
+              <div className="col-span-1"><Skeleton className="h-4 w-16" /></div>
+              <div className="col-span-2"><Skeleton className="h-4 w-40" /></div>
+              <div className="col-span-1"><Skeleton className="h-4 w-24" /></div>
+              <div className="col-span-1"><Skeleton className="h-4 w-24" /></div>
+              <div className="col-span-1"><Skeleton className="h-6 w-20 rounded-lg" /></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -89,6 +136,27 @@ export default function CoursesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+
+  // Simulate initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Simulate fetching on filter/tab changes
+  useEffect(() => {
+    if (isLoading) return;
+    setIsFetching(true);
+    const timer = setTimeout(() => {
+      setIsFetching(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, activeTab, statusFilter, isLoading]);
 
   // Reset page & filters when switching tabs
   useEffect(() => {
@@ -200,7 +268,10 @@ export default function CoursesPage() {
       buttonOnclick={() => {}}
       extraActions={extraHeaderActions}
     >
-      <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+      {isLoading ? (
+        <CoursePageSkeleton />
+      ) : (
+        <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
         {/* CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
           <StatsCard title="Total Courses" value={coursesData.length} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
@@ -237,6 +308,7 @@ export default function CoursesPage() {
           <DataTable<any>
             data={visibleData}
             columns={activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()}
+            loading={isLoading || isFetching}
             rowKey={(item) => String(item.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -262,6 +334,7 @@ export default function CoursesPage() {
           />
         </div>
       </div>
+      )}
 
       <CreateDomainModal isOpen={isDomainOpen} onClose={() => setIsDomainOpen(false)} onSubmit={handleCreateDomain} />
       
