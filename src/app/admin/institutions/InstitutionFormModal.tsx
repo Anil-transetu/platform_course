@@ -4,6 +4,7 @@ import { useCreateInstitution, useUpdateInstitution } from "@/features/admin/ins
 import { Institution, InstitutionContact } from "@/features/admin/institutions/api/institution-api";
 import { Modal } from "@/components/ui/modal";
 import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -55,8 +56,30 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = "Institution name is required";
-    if (!form.email.trim()) e.email = "Email is required";
+    const nameStr = form.name.trim();
+    if (!nameStr) {
+      e.name = "Institution name is required";
+    } else if (nameStr.length < 3) {
+      e.name = "Institution name must be at least 3 characters long";
+    } else if (!/^[a-zA-Z0-9\s.,&'-]+$/.test(nameStr)) {
+      e.name = "Name can only contain letters, numbers, and basic punctuation";
+    }
+
+    const emailStr = form.email.trim();
+    if (!emailStr) {
+      e.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
+      e.email = "Please enter a valid email address";
+    }
+
+    const locStr = form.location.trim();
+    if (!locStr) {
+      e.location = "Location is required";
+    } else if (locStr.length < 3) {
+      e.location = "Location must be at least 3 characters long";
+    } else if (!/^[a-zA-Z0-9\s.,&'-]+$/.test(locStr)) {
+      e.location = "Location can only contain letters, numbers, and basic punctuation";
+    }
     
     // Optional basic validation for contacts could be added here
     setErrors(e);
@@ -90,21 +113,31 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
   const handleSubmit = () => {
     if (!validate()) return;
     
-    const payload = { ...form };
+    const payload: any = { ...form };
+    payload.address = form.location;
+    delete payload.location;
 
     if (mode === "add") {
       createMutation.mutate(payload, {
         onSuccess: () => {
+          toast.success("Institution registered successfully!");
           onClose();
         },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to register institution");
+        }
       });
     } else if (institution) {
       updateMutation.mutate(
         { id: institution.id, data: payload },
         {
           onSuccess: () => {
+            toast.success("Institution updated successfully!");
             onClose();
           },
+          onError: (err: any) => {
+            toast.error(err.message || "Failed to update institution");
+          }
         }
       );
     }
@@ -119,12 +152,12 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
       title={mode === "add" ? "Register New Institution" : "Edit Institution Details"}
       size="lg"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              INSTITUTION NAME
+              INSTITUTION NAME <span className="text-red-500">*</span>
             </label>
             <input
               value={form.name}
@@ -140,7 +173,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-                OFFICIAL EMAIL ADDRESS
+                OFFICIAL EMAIL ADDRESS <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
@@ -155,14 +188,17 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-                LOCATION
+                LOCATION <span className="text-red-500">*</span>
               </label>
               <input
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="e.g. London, UK"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
+                  errors.location ? "border-red-500" : "border-gray-200"
+                }`}
               />
+              {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
             </div>
           </div>
         </div>

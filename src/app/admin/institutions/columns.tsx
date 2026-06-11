@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Institution, InstitutionContact } from "@/features/admin/institutions/api/institution-api";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
+import { Eye, ChevronDown, ChevronUp } from "lucide-react";
 
 const getInitials = (name: string) => {
   return name?.charAt(0).toUpperCase() || "I";
@@ -44,12 +45,12 @@ export function buildInstitutionColumns(): Column<Institution>[] {
       render: (value, row) => (
         <div className="flex items-center gap-2">
           <div className={cn(
-            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold",
+            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
             getAvatarColor(row.id)
           )}>
             {getInitials(row.name)}
           </div>
-          <span className="font-semibold text-slate-900 text-sm">
+          <span className="font-semibold text-slate-900 text-sm truncate max-w-[200px]" title={row.name}>
             {row.name}
           </span>
         </div>
@@ -59,7 +60,7 @@ export function buildInstitutionColumns(): Column<Institution>[] {
       key: "email",
       label: "Email Address",
       render: (value, row) => (
-        <div className="text-slate-600 font-medium text-sm truncate max-w-[180px]">
+        <div className="text-slate-600 font-medium text-sm truncate max-w-[180px]" title={row.email}>
           {row.email}
         </div>
       ),
@@ -67,28 +68,34 @@ export function buildInstitutionColumns(): Column<Institution>[] {
     {
       key: "contacts",
       label: "Point of Contact",
-      render: (value, row) => {
+      render: (value, row, isExpanded, toggleExpand) => {
         const contacts = row.contacts || [];
         if (contacts.length === 0) return <span className="text-slate-400 text-sm">-</span>;
-        const mainContact = contacts[0];
         return (
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-slate-900">{mainContact.name}</span>
-            {contacts.length > 1 && (
-              <span className="text-xs text-slate-500">+{contacts.length - 1} more</span>
-            )}
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand?.();
+            }}
+            className="flex items-center justify-center gap-1 bg-blue-50 text-blue-600 px-2.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Eye size={14} />
+            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
         );
       },
     },
     {
       key: "location",
       label: "Location",
-      render: (value, row) => (
-        <div className="text-slate-600 font-medium text-sm">
-          {row.location || row.address || "-"}
-        </div>
-      ),
+      render: (value, row) => {
+        const loc = (row.address || row.location || "").trim();
+        return (
+          <div className="text-slate-600 font-medium text-sm truncate max-w-[150px]" title={loc || "N/A"}>
+            {loc || "N/A"}
+          </div>
+        );
+      },
     },
     {
       key: "status",

@@ -12,10 +12,10 @@ import {
 /**
  * Fetch all institutions with search and filter
  */
-export function useInstitutions(search?: string, statusFilter?: string) {
+export function useInstitutions(page: number = 1, limit: number = 50, search?: string, statusFilter?: string) {
   return useQuery({
-    queryKey: ["institutions", { search, statusFilter }],
-    queryFn: () => fetchInstitutions(search, statusFilter),
+    queryKey: ["institutions", { page, limit, search, statusFilter }],
+    queryFn: () => fetchInstitutions(page, limit, search, statusFilter),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
