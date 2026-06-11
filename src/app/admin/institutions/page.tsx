@@ -146,7 +146,7 @@ export default function InstitutionsPage() {
   const { data: stats } = useInstitutionStats();
 
   const institutionsList = Array.isArray(institutionsData) ? institutionsData : institutionsData?.data || [];
-  const apiTotal = !Array.isArray(institutionsData) ? (institutionsData?.pagination?.total ?? institutionsData?.total) : undefined;
+  const apiTotal = !Array.isArray(institutionsData) ? institutionsData?.total : undefined;
   const totalCount = apiTotal !== undefined ? apiTotal : institutionsList.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
