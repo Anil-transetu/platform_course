@@ -5,7 +5,6 @@ import { User } from "@/types/user";
 import { buildUserColumns } from "./columns";
 import UserFormModal from "./UserFormModal";
 import UserDeleteDialog from "./UserDeleteDialog";
-import UserViewModal from "./UserViewModal";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import StatsCard from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
@@ -16,18 +15,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Eye, Check, X } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 
 function ActionMenu({ 
   onEdit, 
   onDelete, 
-  onView, 
   isPending 
 }: { 
   onEdit: () => void; 
   onDelete: () => void; 
-  onView: () => void;
   isPending: boolean;
 }) {
   return (
@@ -67,16 +64,6 @@ function ActionMenu({
           </>
         ) : (
           <>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onView();
-              }}
-              className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
-            >
-              <Eye size={14} className="text-gray-400" />
-              View Details
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -122,13 +109,6 @@ export default function UsersPage() {
     open: false,
     user: null,
   });
-  const [viewModal, setViewModal] = useState<{
-    open: boolean;
-    userId: string | number | null;
-  }>({
-    open: false,
-    userId: null,
-  });
 
   // Filters & Pagination state
   const [activeTab, setActiveTab] = useState<"accepted" | "pending">("accepted");
@@ -152,11 +132,11 @@ export default function UsersPage() {
   }, [debouncedSearch, roleFilter, activeTab, rowsPerPage]);
 
   // Data fetching hooks
-  // We don't pass page/limit to useUsers because the User API doesn't provide a reliable total count.
-  // By fetching all matching users (or a high limit), we can accurately determine totalCount and paginate locally.
-  const { data: usersData, isLoading } = useUsers(
-    1,
-    1000,
+  // We pass page and limit to useUsers to enable server-side pagination.
+  // The API uses these params to fetch the appropriate page.
+  const { data: usersData, isLoading, isFetching } = useUsers(
+    page,
+    rowsPerPage,
     debouncedSearch || undefined,
     roleFilter,
     activeTab === "accepted" ? "active" : "pending"
@@ -166,8 +146,12 @@ export default function UsersPage() {
 
   const usersList = Array.isArray(usersData) ? usersData : usersData?.data || [];
 
-  // Determine total count from API or local filtering
-  const totalCount = !Array.isArray(usersData) && usersData?.total !== undefined ? usersData.total : usersList.length;
+  const statsTotalUsers = stats ? ((stats.admins || 0) + (stats.representatives || 0)) : 0;
+  // Prioritize the API's returned total (which may be nested in `pagination`). If missing, fallback to stats or list length.
+  const apiTotal = !Array.isArray(usersData) ? (usersData?.pagination?.total ?? usersData?.total) : undefined;
+  const totalCount = apiTotal !== undefined 
+    ? apiTotal 
+    : Math.max(statsTotalUsers, usersList.length);
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   
   // Only slice locally if the backend returned more items than rowsPerPage (meaning it didn't paginate properly)
@@ -274,7 +258,7 @@ export default function UsersPage() {
         <DataTable<User>
           columns={buildUserColumns(activeTab)}
           data={visibleData}
-          loading={isLoading}
+          loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
           actions={(user) => (
@@ -282,7 +266,6 @@ export default function UsersPage() {
               <ActionMenu 
                 onEdit={() => setFormModal({ open: true, mode: "edit", user })}
                 onDelete={() => setDeleteDialog({ open: true, user })}
-                onView={() => setViewModal({ open: true, userId: user.id })}
                 isPending={activeTab === "pending"}
               />
             </div>
@@ -309,11 +292,6 @@ export default function UsersPage() {
         open={deleteDialog.open}
         user={deleteDialog.user}
         onClose={() => setDeleteDialog({ open: false, user: null })}
-      />
-      <UserViewModal
-        open={viewModal.open}
-        userId={viewModal.userId}
-        onClose={() => setViewModal({ open: false, userId: null })}
       />
     </ListingScreenTemplate>
   );

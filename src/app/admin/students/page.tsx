@@ -9,6 +9,7 @@ import StudentDeleteDialog from "./StudentDeleteDialog";
 import StatsCard from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -96,7 +97,7 @@ export default function StudentsPage() {
   }, [debouncedSearch, status]);
 
   // Data fetching hooks
-  const { data: studentsData, isLoading } = useStudents(
+  const { data: studentsData, isLoading, isFetching } = useStudents(
     page,
     rowsPerPage,
     debouncedSearch || undefined,
@@ -165,13 +166,16 @@ export default function StudentsPage() {
       buttonOnclick={() => setFormModal({ open: true, mode: "add", student: null })}
       extraActions={extraHeaderActions}
     >
+      {isLoading ? (
+        <UserPageSkeleton />
+      ) : (
       <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
           <StatsCard
             title="TOTAL STUDENTS"
-            value={stats?.total_students ?? 0}
+            value={stats?.total_students ?? "..."}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -179,7 +183,7 @@ export default function StudentsPage() {
           />
           <StatsCard
             title="ACTIVE STUDENTS"
-            value={stats?.active_students ?? 0}
+            value={stats?.active_students ?? "..."}
             icon={<UserCheck className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -187,7 +191,7 @@ export default function StudentsPage() {
           />
           <StatsCard
             title="AVG. COURSES/STUDENT"
-            value={stats?.average_students_per_course ? stats.average_students_per_course.toFixed(1) : "0.0"}
+            value={stats?.average_students_per_course !== undefined ? stats.average_students_per_course.toFixed(1) : "..."}
             icon={<BookOpen className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
@@ -198,7 +202,7 @@ export default function StudentsPage() {
         <DataTable<Student>
           columns={buildStudentColumns()}
           data={visibleData}
-          loading={isLoading}
+          loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
           actions={(student) => (
@@ -218,6 +222,7 @@ export default function StudentsPage() {
           showPagination={true}
         />
       </div>
+      )}
 
       {/* Modals */}
       <StudentFormModal

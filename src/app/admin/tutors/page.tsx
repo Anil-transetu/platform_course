@@ -13,6 +13,7 @@ import {
 import StatsCard from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
+import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -121,6 +122,15 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 
 export default function TutorsPage() {
   const [tutorsData, setTutorsData] = useState<Tutor[]>(initialTutorsData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
   
   // Modal state
   const [formModal, setFormModal] = useState<{
@@ -146,6 +156,16 @@ export default function TutorsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Simulate network fetch when filters/pagination change
+  useEffect(() => {
+    if (isLoading) return; // don't trigger during initial load
+    setIsFetching(true);
+    const timer = setTimeout(() => {
+      setIsFetching(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, domainFilter, statusFilter, page, rowsPerPage, isLoading]);
 
   // Filter tutors
   const filteredData = tutorsData.filter((tutor) => {
@@ -250,6 +270,9 @@ export default function TutorsPage() {
       buttonRequired={true}
       buttonOnclick={() => setFormModal({ open: true, mode: "add", tutor: null })}
     >
+      {isLoading ? (
+        <UserPageSkeleton />
+      ) : (
       <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
         <Toaster position="top-right" />
         
@@ -257,7 +280,7 @@ export default function TutorsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
           <StatsCard
             title="Total Tutors"
-            value={tutorsData.length}
+            value={isLoading ? "..." : tutorsData.length}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -265,7 +288,7 @@ export default function TutorsPage() {
           />
           <StatsCard
             title="Active Tutors"
-            value={activeTutors}
+            value={isLoading ? "..." : activeTutors}
             icon={<CheckCircle className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -273,7 +296,7 @@ export default function TutorsPage() {
           />
           <StatsCard
             title="Average Rating"
-            value="4.8"
+            value={isLoading ? "..." : "4.8"}
             icon={<Star className="w-5 h-5" />}
             iconBgClass="bg-yellow-50"
             iconColorClass="text-yellow-600"
@@ -281,7 +304,7 @@ export default function TutorsPage() {
           />
           <StatsCard
             title="New Tutors (Month)"
-            value="42"
+            value={isLoading ? "..." : "42"}
             icon={<UserPlus className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
@@ -294,6 +317,7 @@ export default function TutorsPage() {
           <DataTable<Tutor>
             data={visibleData}
             columns={buildTutorColumns()}
+            loading={isFetching}
             rowKey={(tutor) => String(tutor.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -319,6 +343,7 @@ export default function TutorsPage() {
           />
         </div>
       </div>
+      )}
 
       <TutorFormModal
         open={formModal.open}
