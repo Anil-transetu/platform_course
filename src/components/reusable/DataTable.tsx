@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/table";
 
 export interface Column<T> {
-  key: keyof T;
+  key: keyof T | string;
   label: string;
-  render?: (value: unknown, row: T) => ReactNode;
+  render?: (value: unknown, row: T, isExpanded?: boolean, toggleExpand?: () => void) => ReactNode;
   width?: string;
   sortable?: boolean;
 }
@@ -64,6 +64,7 @@ export interface DataTableProps<T extends Record<string, unknown>> {
   filters?: FilterConfig[];
   loading?: boolean;
   emptyStateMessage?: string;
+  renderExpandedRow?: (row: T) => ReactNode;
 }
 
 export default function DataTable<T extends Record<string, unknown>>({
@@ -84,7 +85,16 @@ export default function DataTable<T extends Record<string, unknown>>({
   filters,
   loading = false,
   emptyStateMessage = "No data found",
+  renderExpandedRow,
 }: DataTableProps<T>) {
+  const [expandedRowKeys, setExpandedRowKeys] = React.useState<Set<string | number>>(new Set());
+
+  const toggleExpand = (rowId: string | number) => {
+    const newSet = new Set(expandedRowKeys);
+    if (newSet.has(rowId)) newSet.delete(rowId);
+    else newSet.add(rowId);
+    setExpandedRowKeys(newSet);
+  };
   return (
     <div className="bg-card rounded-lg shadow-sm border border-border flex flex-col h-full overflow-hidden flex-1 min-h-0">
       {/* SEARCH & FILTERS BAR */}
@@ -238,6 +248,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             ) : data.length > 0 ? (
               data.map((row, index) => {
                 const rowId = String(rowKey(row, index));
+                const isExpanded = expandedRowKeys.has(rowId);
                 const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
                   if ((e.key === "Enter" || e.key === " ") && (actions || onRowClick)) {
                     e.preventDefault();
@@ -245,31 +256,39 @@ export default function DataTable<T extends Record<string, unknown>>({
                   }
                 };
                 return (
-                  <TableRow
-                    key={rowId}
-                    className={`border-b border-gray-100 transition-colors ${
-                      actions || onRowClick
-                        ? "cursor-pointer hover:bg-muted"
-                        : ""
-                    }`}
-                    onClick={() => onRowClick?.(row)}
-                    onKeyDown={handleKeyDown}
-                    tabIndex={actions || onRowClick ? 0 : -1}
-                    role={actions || onRowClick ? "button" : undefined}
-                  >
-                    {columns.map((column) => (
-                      <TableCell key={String(column.key)} className="text-card-foreground">
-                        {column.render
-                          ? column.render(row[column.key], row)
-                          : (row[column.key] as ReactNode)}
-                      </TableCell>
-                    ))}
-                    {actions && (
-                      <TableCell className="text-center">
-                        {actions(row)}
-                      </TableCell>
+                  <React.Fragment key={rowId}>
+                    <TableRow
+                      className={`border-b border-gray-100 transition-colors ${
+                        actions || onRowClick
+                          ? "cursor-pointer hover:bg-muted"
+                          : ""
+                      }`}
+                      onClick={() => onRowClick?.(row)}
+                      onKeyDown={handleKeyDown}
+                      tabIndex={actions || onRowClick ? 0 : -1}
+                      role={actions || onRowClick ? "button" : undefined}
+                    >
+                      {columns.map((column) => (
+                        <TableCell key={String(column.key)} className="text-card-foreground">
+                          {column.render
+                            ? column.render(row[column.key as keyof T], row, isExpanded, () => toggleExpand(rowId))
+                            : (row[column.key as keyof T] as ReactNode)}
+                        </TableCell>
+                      ))}
+                      {actions && (
+                        <TableCell className="text-center">
+                          {actions(row)}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    {isExpanded && renderExpandedRow && (
+                      <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
+                        <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="p-0 border-b border-gray-100">
+                          {renderExpandedRow(row)}
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </TableRow>
+                  </React.Fragment>
                 );
               })
             ) : (

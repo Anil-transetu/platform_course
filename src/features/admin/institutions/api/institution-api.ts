@@ -83,7 +83,7 @@ async function handleResponse(response: Response) {
 }
 
 export function mapInstitution(data: any): Institution {
-  let contacts = data.contacts || data.point_of_contacts || data.pointOfContacts || data.institution_contacts || [];
+  let contacts = data.contacts || data.point_of_contacts || data.pointOfContacts || data.institution_contacts || data.InstitutionContacts || [];
   
   if (typeof contacts === 'string') {
     try {
@@ -102,10 +102,20 @@ export function mapInstitution(data: any): Institution {
 /**
  * Fetch all institutions
  */
-export async function fetchInstitutions(search?: string, statusFilter?: string): Promise<{ data: Institution[], total?: number }> {
+export async function fetchInstitutions(
+  page: number = 1,
+  limit: number = 50,
+  search?: string, 
+  statusFilter?: string
+): Promise<{ data: Institution[], total?: number }> {
   let url = BASE_URL;
   const query = new URLSearchParams();
   
+  if (page !== undefined && limit !== undefined) {
+    query.append("page", page.toString());
+    query.append("limit", limit.toString());
+  }
+
   if (search) {
     query.append("search", search);
   }
