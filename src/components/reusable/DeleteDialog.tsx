@@ -77,7 +77,7 @@ export default function DeleteDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="rounded-2xl border-border shadow-xl">
+      <DialogContent className="rounded-2xl border-border shadow-xl sm:max-w-[425px]">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-50 rounded-lg">
