@@ -207,7 +207,7 @@ export default function UsersPage() {
           <Toaster position="top-right" />
           
           {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard
             title="TOTAL ADMINS"
             value={stats?.admins ?? "..."}

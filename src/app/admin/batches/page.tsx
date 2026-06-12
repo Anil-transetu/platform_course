@@ -197,7 +197,7 @@ export default function BatchesPage() {
       <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard
             title="Total Batches"
             value={DUMMY_BATCHES.length}

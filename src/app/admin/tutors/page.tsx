@@ -277,7 +277,7 @@ export default function TutorsPage() {
         <Toaster position="top-right" />
         
         {/* STATS CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard
             title="Total Tutors"
             value={isLoading ? "..." : tutorsData.length}

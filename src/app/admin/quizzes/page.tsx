@@ -271,7 +271,7 @@ export default function QuizzesPage() {
     >
       <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
         {/* Stats Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard
             title="Total Quizzes"
             value={totalQuizzes}

@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 function CoursePageSkeleton() {
   return (
     <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="p-5 rounded-2xl bg-white border border-gray-100 flex items-center shadow-sm">
             <div className="flex-1">
@@ -273,7 +273,7 @@ export default function CoursesPage() {
       ) : (
         <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
         {/* CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard title="Total Courses" value={coursesData.length} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
           <StatsCard title="Active Courses" value={coursesData.filter(c => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
           <StatsCard title="Draft Courses" value={coursesData.filter(c => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />

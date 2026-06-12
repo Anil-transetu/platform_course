@@ -151,7 +151,7 @@ export default function InstitutionsPage() {
       buttonOnclick={() => setFormModal({ open: true, mode: "add", institution: null })}
     >
       <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard 
             title="Total Institutions" 
             value={stats?.total_institutions || totalCount} 
