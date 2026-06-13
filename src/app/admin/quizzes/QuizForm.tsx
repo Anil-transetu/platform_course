@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, X, Info, LayoutGrid, Check, Plus, SlidersHorizontal } from "lucide-react";
 import { Quiz, QuizQuestion } from "@/features/admin/quizzes/api/quiz-api";
 import { useCreateQuiz, useUpdateQuiz } from "@/features/admin/quizzes/api/use-quizzes";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import QuestionBuilder from "./QuestionBuilder";
 import { useRouter } from "next/navigation";
 
@@ -218,6 +218,7 @@ export default function QuizForm({ mode, initialData }: Props) {
 
   return (
     <div className="mx-auto max-w-5xl">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="mb-8">
         <div className="text-sm text-slate-500 mb-2">

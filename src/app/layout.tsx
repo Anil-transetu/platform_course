@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 
 export const metadata = {
   title: "Admin Dashboard",
@@ -42,6 +43,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <TooltipProvider>
+              <Toaster position="top-right" />
               {children}
             </TooltipProvider>
           </QueryProvider>
