@@ -77,7 +77,16 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
   const validate = () => {
     const e: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.name.trim()) e.name = "Name is required";
+    
+    const nameStr = form.name.trim();
+    if (!nameStr) {
+      e.name = "Name is required";
+    } else if (nameStr.length < 3) {
+      e.name = "Name must be at least 3 characters long";
+    } else if (!/^[a-zA-Z0-9\s.,&'-]+$/.test(nameStr)) {
+      e.name = "Name can only contain letters, numbers, and basic punctuation";
+    }
+
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.phone.trim()) {
       e.phone = "Contact number is required";

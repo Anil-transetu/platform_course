@@ -123,33 +123,6 @@ export default function InstitutionsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   // Debounce search term
-  // Modal state
-  const [formModal, setFormModal] = useState<{
-    open: boolean;
-    mode: "add" | "edit";
-    institution?: Institution | null;
-  }>({
-    open: false,
-    mode: "add",
-    institution: null,
-  });
-  
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    institution: Institution | null;
-  }>({
-    open: false,
-    institution: null,
-  });
-
-  // Filters & Pagination state
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"All Institutions" | "Active" | "Inactive">("All Institutions");
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);

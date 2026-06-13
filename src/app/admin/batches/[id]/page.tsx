@@ -137,6 +137,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
             icon={<Users />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
+            tooltip="Total number of students enrolled in this batch"
           />
           <StatsCard
             title="Completed Course"
@@ -144,6 +145,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
             icon={<UserCheck />}
             iconBgClass="bg-emerald-50"
             iconColorClass="text-emerald-600"
+            tooltip="Number of students who have successfully completed the course"
           />
           <StatsCard
             title="Not Completed Course"
@@ -151,6 +153,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
             icon={<UserMinus />}
             iconBgClass="bg-red-50"
             iconColorClass="text-red-600"
+            tooltip="Number of students currently in progress or yet to complete the course"
           />
         </div>
 
