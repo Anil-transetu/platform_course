@@ -51,18 +51,26 @@ export default function CourseSidebar() {
     }
   };
 
-  const handleQuizClick = (moduleId: string, lessonId: string, quizId: string) => {
+  const handleQuizClick = (moduleId: string, lessonId: string | null | undefined, quizId: string) => {
     setActiveModule(moduleId);
-    setActiveLesson(lessonId);
+    if (lessonId) {
+      setActiveLesson(lessonId);
+    } else {
+      setActiveLesson(null);
+    }
     setActiveQuiz(quizId);
     if (pathname !== '/admin/courses/create/quiz') {
       router.push('/admin/courses/create/quiz');
     }
   };
 
-  const handleAssignmentClick = (moduleId: string, lessonId: string, assignmentId: string) => {
+  const handleAssignmentClick = (moduleId: string, lessonId: string | null | undefined, assignmentId: string) => {
     setActiveModule(moduleId);
-    setActiveLesson(lessonId);
+    if (lessonId) {
+      setActiveLesson(lessonId);
+    } else {
+      setActiveLesson(null);
+    }
     setActiveAssignment(assignmentId);
     if (pathname !== '/admin/courses/create/assignment') {
       router.push('/admin/courses/create/assignment');
@@ -93,20 +101,20 @@ export default function CourseSidebar() {
   };
 
   const handleAddQuiz = () => {
-    if (activeModuleId && activeLessonId) {
-      addQuiz(activeModuleId, activeLessonId);
+    if (activeModuleId) {
+      addQuiz(activeModuleId, activeLessonId || undefined);
       router.push('/admin/courses/create/quiz');
     } else {
-      alert("Please select a lesson first.");
+      alert("Please select a module first.");
     }
   };
 
   const handleAddAssignment = () => {
-    if (activeModuleId && activeLessonId) {
-      addAssignment(activeModuleId, activeLessonId);
+    if (activeModuleId) {
+      addAssignment(activeModuleId, activeLessonId || undefined);
       router.push('/admin/courses/create/assignment');
     } else {
-      alert("Please select a lesson first.");
+      alert("Please select a module first.");
     }
   };
 
@@ -151,6 +159,40 @@ export default function CourseSidebar() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Children of Module (Quizzes, Assignments) */}
+                  {isModuleActive && (
+                    <div className="flex flex-col pl-4 gap-1">
+                      {module.quizzes?.map((quiz, qIdx) => (
+                        <div 
+                          key={quiz.id}
+                          onClick={() => handleQuizClick(module.id, null, quiz.id)}
+                          className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
+                            activeQuizId === quiz.id && !activeLessonId ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                          }`}
+                        >
+                          <FileText className={activeQuizId === quiz.id && !activeLessonId ? "text-blue-600" : "text-gray-400"} size={14} />
+                          <span className="text-xs font-bold truncate">
+                            {quiz.title || `Module Quiz ${qIdx + 1}`}
+                          </span>
+                        </div>
+                      ))}
+                      {module.assignments?.map((assignment, aIdx) => (
+                        <div 
+                          key={assignment.id}
+                          onClick={() => handleAssignmentClick(module.id, null, assignment.id)}
+                          className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
+                            activeAssignmentId === assignment.id && !activeLessonId ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                          }`}
+                        >
+                          <ClipboardList className={activeAssignmentId === assignment.id && !activeLessonId ? "text-blue-600" : "text-gray-400"} size={14} />
+                          <span className="text-xs font-bold truncate">
+                            {assignment.title || `Module Assignment ${aIdx + 1}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Lessons inside Module */}
                   {isModuleActive && module.lessons.map((lesson, lIdx) => {
@@ -236,7 +278,6 @@ export default function CourseSidebar() {
           </h3>
           <div className="flex flex-col gap-3">
             {activeLessonId && (
-              <>
                 <button 
                   onClick={handleAddTopic}
                   className="w-full flex items-center gap-3 border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
@@ -244,30 +285,23 @@ export default function CourseSidebar() {
                   <Plus size={16} className="text-gray-400" />
                   <span className="text-sm font-semibold text-gray-600">Add Topic</span>
                 </button>
-                
-                <button 
-                  onClick={handleAddQuiz}
-                  className="w-full flex items-center justify-between border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText size={16} className="text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-600">Add Quiz</span>
-                  </div>
-                  <ChevronDown size={14} className="text-gray-400" />
-                </button>
-
-                <button 
-                  onClick={handleAddAssignment}
-                  className="w-full flex items-center justify-between border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList size={16} className="text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-600">Add Assignment</span>
-                  </div>
-                  <ChevronDown size={14} className="text-gray-400" />
-                </button>
-              </>
             )}
+
+            <button 
+              onClick={handleAddQuiz}
+              className="w-full flex items-center gap-3 border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+            >
+              <FileText size={16} className="text-gray-400" />
+              <span className="text-sm font-semibold text-gray-600">Add Quiz</span>
+            </button>
+
+            <button 
+              onClick={handleAddAssignment}
+              className="w-full flex items-center gap-3 border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+            >
+              <ClipboardList size={16} className="text-gray-400" />
+              <span className="text-sm font-semibold text-gray-600">Add Assignment</span>
+            </button>
 
             <button 
               onClick={handleAddLesson}

@@ -56,12 +56,7 @@ export default function TopicDetailsPage() {
   };
 
   if (!activeTopic) {
-    return (
-      <div className="bg-muted min-h-screen flex items-center justify-center flex-col gap-4">
-        <p className="text-gray-500">No active topic selected.</p>
-        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline">Go back to Course</button>
-      </div>
-    );
+    return null;
   }
 
   return (
