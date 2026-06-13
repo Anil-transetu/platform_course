@@ -3,15 +3,18 @@ import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Eye, EyeOff, X } from "lucide-react";
 
-export interface Tutor extends Record<string, any> {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  domain: string[];
-  batches: string[];
-  status: string;
-}
+import { Tutor } from "@/types/tutor";
+
+const PREDEFINED_DOMAINS = [
+  "HTML",
+  "CSS",
+  "JAVASCRIPT",
+  "REACT",
+  "NEXT.JS",
+  "NODE.JS",
+  "PYTHON",
+  "THREE.JS"
+];
 
 interface Props {
   open: boolean;
@@ -29,11 +32,13 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     password: "",
     domains: [] as string[],
     tags: [] as string[],
+    status: "active",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
-  // Domain input state
+  // Domain input state for custom domains
+  const [isCustomDomain, setIsCustomDomain] = useState(false);
   const [domainInput, setDomainInput] = useState("");
   // Tag input state
   const [tagInput, setTagInput] = useState("");
@@ -46,8 +51,9 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           email: tutor.email || "",
           phone: tutor.phone || "",
           password: "",
-          domains: tutor.domain || [],
-          tags: ["REACT", "PYTHON"], // Mocking tags as they don't exist on tutor directly in our mock data
+          domains: tutor.domains || [],
+          tags: tutor.tags || [],
+          status: tutor.status?.toLowerCase() === "active" ? "active" : "inactive",
         });
       } else {
         setForm({
@@ -57,10 +63,12 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: [],
           tags: [],
+          status: "active",
         });
       }
       setErrors({});
       setShowPassword(false);
+      setIsCustomDomain(false);
       setDomainInput("");
       setTagInput("");
     }
@@ -70,7 +78,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     const e: Partial<Record<keyof typeof form, string>> = {};
     if (!form.name.trim()) e.name = "Name is required";
     if (!form.email.trim()) e.email = "Email is required";
-    if (!form.phone.trim()) e.phone = "Contact number is required";
+    if (!form.phone.trim()) {
+      e.phone = "Contact number is required";
+    } else if (!/^\d{10}$/.test(form.phone.trim())) {
+      e.phone = "Phone number must be exactly 10 digits";
+    }
     if (mode === "add" && !form.password.trim()) {
       e.password = "Password is required";
     }
@@ -81,7 +93,26 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   const handleSubmit = () => {
     if (!validate()) return;
     
-    const payload = { ...form };
+    const payload = { 
+      ...form, 
+      domains: [...form.domains], 
+      tags: [...form.tags] 
+    };
+
+    if (domainInput.trim()) {
+      const newDomain = domainInput.trim().toUpperCase();
+      if (!payload.domains.some(d => d.toUpperCase() === newDomain)) {
+        payload.domains.push(newDomain);
+      }
+    }
+
+    if (tagInput.trim()) {
+      const formattedTag = tagInput.trim().toUpperCase();
+      if (!payload.tags.includes(formattedTag)) {
+        payload.tags.push(formattedTag);
+      }
+    }
+
     if (mode === "edit" && !payload.password) {
       delete (payload as any).password;
     }
@@ -92,13 +123,15 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     onClose();
   };
 
-  const handleAddDomain = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleAddDomain = (e: React.KeyboardEvent<HTMLInputElement> | { key: string; preventDefault: () => void }) => {
     if (e.key === 'Enter' && domainInput.trim()) {
       e.preventDefault();
-      if (!form.domains.includes(domainInput.trim().toUpperCase())) {
-        setForm({ ...form, domains: [...form.domains, domainInput.trim().toUpperCase()] });
+      const newDomain = domainInput.trim().toUpperCase();
+      if (!form.domains.some(d => d.toUpperCase() === newDomain)) {
+        setForm({ ...form, domains: [...form.domains, newDomain] });
       }
       setDomainInput("");
+      setIsCustomDomain(false);
     }
   };
 
@@ -125,19 +158,20 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       isOpen={open}
       onClose={onClose}
       title={mode === "add" ? "Register New Tutor" : "Edit Tutor Details"}
-      size="lg"
+      size="xl"
     >
       <div className="space-y-6 mt-4">
         {/* Row 1: Full Name & Email Address */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Full Name
+              Full Name <span className="text-red-500">*</span>
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Dr. John Doe"
+              autoComplete="off"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
                 errors.name ? "border-red-500" : "border-gray-200"
               }`}
@@ -148,14 +182,14 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Email Address
+              Email Address <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="john.doe@example.com"
-              autoComplete="new-email"
+              autoComplete="off"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
                 errors.email ? "border-red-500" : "border-gray-200"
               }`}
@@ -170,13 +204,13 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Contact Number
+              Contact Number <span className="text-red-500">*</span>
             </label>
             <input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+1 (234) 567-8900"
-              autoComplete="new-phone"
+              autoComplete="off"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
                 errors.phone ? "border-red-500" : "border-gray-200"
               }`}
@@ -187,7 +221,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Password
+              Password {mode === "add" && <span className="text-red-500">*</span>}
             </label>
             <div className="relative">
               <input
@@ -215,53 +249,133 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         </div>
 
         {/* Row 3: Domains */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-            Domains
-          </label>
-          <div className="w-full border border-gray-200 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
-            {form.domains.map((domain) => (
-              <span key={domain} className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-                {domain}
-                <button onClick={() => handleRemoveDomain(domain)} className="text-blue-400 hover:text-blue-600 transition-colors">
-                  <X size={12} strokeWidth={3} />
-                </button>
-              </span>
-            ))}
-            <input
-              type="text"
-              value={domainInput}
-              onChange={(e) => setDomainInput(e.target.value)}
-              onKeyDown={handleAddDomain}
-              placeholder={form.domains.length === 0 ? "Add domain..." : ""}
-              className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400 min-w-[120px]"
-            />
+        {/* Row 3: Domains & Tags */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Domains
+            </label>
+            <div className="w-full border border-gray-200 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
+              {form.domains.map((domain) => (
+                <span key={domain} className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                  {domain}
+                  <button type="button" onClick={() => handleRemoveDomain(domain)} className="text-blue-400 hover:text-blue-600 transition-colors">
+                    <X size={12} strokeWidth={3} />
+                  </button>
+                </span>
+              ))}
+              {isCustomDomain ? (
+                <div className="flex-1 flex items-center min-w-[140px]">
+                  <input
+                    type="text"
+                    value={domainInput}
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={handleAddDomain}
+                    placeholder="Enter custom domain..."
+                    autoComplete="off"
+                    className="w-full bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400"
+                    autoFocus
+                  />
+                  {domainInput.trim() && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleAddDomain({ key: 'Enter', preventDefault: () => {} })}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-bold px-2 uppercase tracking-wider"
+                    >
+                      Add
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { setIsCustomDomain(false); setDomainInput(""); }}
+                    className="text-gray-400 hover:text-gray-600 ml-1 p-1"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "CUSTOM") {
+                      setIsCustomDomain(true);
+                    } else if (val && !form.domains.some(d => d.toLowerCase() === val.toLowerCase())) {
+                      setForm({ ...form, domains: [...form.domains, val] });
+                    }
+                  }}
+                  className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm text-gray-700 min-w-[140px] cursor-pointer"
+                >
+                  <option value="" disabled>Select domain...</option>
+                  {PREDEFINED_DOMAINS.filter(d => !form.domains.some(existing => existing.toLowerCase() === d.toLowerCase())).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                  <option value="CUSTOM">+ Add Custom Domain...</option>
+                </select>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Row 4: Tags */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-            Tags
-          </label>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Tags
+            </label>
           <div className="w-full border border-gray-200 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
             {form.tags.map((tag, i) => (
               <span key={tag} className={`text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 ${i % 2 === 0 ? 'bg-purple-50 text-purple-600' : 'bg-orange-50 text-orange-600'}`}>
                 {tag}
-                <button onClick={() => handleRemoveTag(tag)} className="opacity-60 hover:opacity-100 transition-opacity">
+                <button type="button" onClick={() => handleRemoveTag(tag)} className="opacity-60 hover:opacity-100 transition-opacity">
                   <X size={12} strokeWidth={3} />
                 </button>
               </span>
             ))}
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleAddTag}
-              placeholder={form.tags.length === 0 ? "Add tag..." : ""}
-              className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400 min-w-[120px]"
-            />
+            <div className="flex-1 flex items-center min-w-[140px]">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder={form.tags.length === 0 ? "Add tag..." : ""}
+                autoComplete="off"
+                className="w-full bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400"
+              />
+              {tagInput.trim() && (
+                <button
+                  type="button"
+                  onClick={(e) => handleAddTag({ key: 'Enter', preventDefault: () => {} } as any)}
+                  className="text-orange-600 hover:text-orange-800 text-xs font-bold px-2 uppercase tracking-wider"
+                >
+                  Add
+                </button>
+              )}
+            </div>
+            </div>
           </div>
+        </div>
+
+        {/* Row 4: Status */}
+        <div className="flex items-center justify-between bg-gray-50/50 p-4 rounded-xl border border-gray-200">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">Account Status</h4>
+            <p className="text-xs text-gray-500 mt-0.5">Determine if this tutor is currently active on the platform.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, status: form.status === "active" ? "inactive" : "active" })}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
+              form.status === "active" ? "bg-green-500" : "bg-gray-300"
+            }`}
+            role="switch"
+            aria-checked={form.status === "active"}
+          >
+            <span className="sr-only">Use setting</span>
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                form.status === "active" ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
 
         {/* Footer actions */}

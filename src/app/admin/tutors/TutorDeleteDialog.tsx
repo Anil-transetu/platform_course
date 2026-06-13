@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
-import { Tutor } from "./TutorFormModal";
+import { Tutor } from "@/types/tutor";
 
 interface Props {
   open: boolean;
@@ -15,7 +15,7 @@ export default function TutorDeleteDialog({ open, onClose, tutor, onConfirm }: P
 
   useEffect(() => {
     if (open && tutor) {
-      setIsAssociatedWithBatch(tutor.batches && tutor.batches.length > 0);
+      setIsAssociatedWithBatch(!!(tutor.assignedBatches && tutor.assignedBatches.length > 0));
     }
   }, [open, tutor]);
 
@@ -43,19 +43,6 @@ export default function TutorDeleteDialog({ open, onClose, tutor, onConfirm }: P
             Are you sure you want to delete tutor <strong>{tutor.name}</strong>?
           </p>
         )}
-
-        {/* Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer select-none py-1.5 px-1 hover:bg-slate-50 rounded transition-colors">
-          <input
-            type="checkbox"
-            checked={isAssociatedWithBatch}
-            onChange={(e) => setIsAssociatedWithBatch(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 accent-blue-600 focus:ring-2 focus:ring-blue-500/20"
-          />
-          <span className="text-xs font-semibold text-gray-600">
-            Is the tutor associated with any batch?
-          </span>
-        </label>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
