@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Eye, EyeOff, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { Tutor } from "@/types/tutor";
 
@@ -294,24 +295,26 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                   </button>
                 </div>
               ) : (
-                <select
+                <Select
                   value=""
-                  onChange={(e) => {
-                    const val = e.target.value;
+                  onValueChange={(val) => {
                     if (val === "CUSTOM") {
                       setIsCustomDomain(true);
                     } else if (val && !form.domains.some(d => d.toLowerCase() === val.toLowerCase())) {
                       setForm({ ...form, domains: [...form.domains, val] });
                     }
                   }}
-                  className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm text-gray-700 min-w-[140px] cursor-pointer"
                 >
-                  <option value="" disabled>Select domain...</option>
-                  {PREDEFINED_DOMAINS.filter(d => !form.domains.some(existing => existing.toLowerCase() === d.toLowerCase())).map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                  <option value="CUSTOM">+ Add Custom Domain...</option>
-                </select>
+                  <SelectTrigger className="flex-1 bg-transparent border-0 shadow-none outline-none ring-0 focus:ring-0 px-2 py-1 h-auto text-sm text-gray-700 min-w-[140px]">
+                    <SelectValue placeholder="Select domain..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PREDEFINED_DOMAINS.filter(d => !form.domains.some(existing => existing.toLowerCase() === d.toLowerCase())).map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                    <SelectItem value="CUSTOM">+ Add Custom Domain...</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>
@@ -354,28 +357,27 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         </div>
 
         {/* Row 4: Status */}
-        <div className="flex items-center justify-between bg-gray-50/50 p-4 rounded-xl border border-gray-200">
+        <div className="grid grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-semibold text-gray-900">Account Status</h4>
-            <p className="text-xs text-gray-500 mt-0.5">Determine if this tutor is currently active on the platform.</p>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Status <span className="text-red-500">*</span>
+            </label>
+            <Select 
+              value={form.status} 
+              onValueChange={(value) => setForm({ ...form, status: value })}
+            >
+              <SelectTrigger className={`w-full h-[42px] px-4 py-2.5 rounded-xl border ${errors.status ? "border-red-500" : "border-gray-200"} bg-gray-50/50`}>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && (
+              <p className="text-red-500 text-xs mt-1.5">{errors.status}</p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, status: form.status === "active" ? "inactive" : "active" })}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 ${
-              form.status === "active" ? "bg-green-500" : "bg-gray-300"
-            }`}
-            role="switch"
-            aria-checked={form.status === "active"}
-          >
-            <span className="sr-only">Use setting</span>
-            <span
-              aria-hidden="true"
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                form.status === "active" ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
         </div>
 
         {/* Footer actions */}

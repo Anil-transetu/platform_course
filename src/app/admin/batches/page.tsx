@@ -6,6 +6,7 @@ import BatchFormModal from "./BatchFormModal";
 import BatchDeleteDialog from "./BatchDeleteDialog";
 import StatsCard from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
+import { useRouter } from "next/navigation";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
@@ -14,7 +15,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 // Dummy data for batches
@@ -48,7 +49,7 @@ const DUMMY_BATCHES: Batch[] = [
   }
 ];
 
-function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -60,6 +61,16 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onView();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Eye size={14} className="text-gray-400" />
+          View
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
           e.stopPropagation();
@@ -86,6 +97,7 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 }
 
 export default function BatchesPage() {
+  const router = useRouter();
   const [formModal, setFormModal] = useState<{
     open: boolean;
     mode: "add" | "edit";
@@ -241,6 +253,7 @@ export default function BatchesPage() {
           actions={(batch) => (
             <div className="flex justify-center">
               <ActionMenu 
+                onView={() => router.push(`/admin/batches/${batch.id}`)}
                 onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
                 onDelete={() => setDeleteDialog({ open: true, batch })}
               />

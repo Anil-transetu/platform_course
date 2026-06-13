@@ -4,6 +4,7 @@ import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
 import { FileText, Download, UploadCloud, Search, ChevronDown } from "lucide-react";
 import toast from "react-hot-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   open: boolean;
@@ -21,8 +22,10 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     enroll_students: "",
     start_date: "",
     end_date: "",
+    status: "active",
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPending, setIsPending] = useState(false);
 
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           enroll_students: "",
           start_date: batch.start_date || "2024-01-15",
           end_date: batch.end_date || "2024-06-15",
+          status: batch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
         });
       } else {
         setForm({
@@ -46,14 +50,30 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           enroll_students: "",
           start_date: "",
           end_date: "",
+          status: "active",
         });
       }
+      setErrors({});
     }
   }, [mode, batch, open]);
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!form.name.trim()) newErrors.name = "Batch Name is required";
+    if (!form.institution.trim()) newErrors.institution = "Institution is required";
+    if (!form.course.trim()) newErrors.course = "Course is required";
+    if (!form.instructor.trim()) newErrors.instructor = "Instructor is required";
+    if (!form.enroll_students.trim()) newErrors.enroll_students = "Enroll Students is required";
+    if (!form.start_date.trim()) newErrors.start_date = "Start Date is required";
+    if (!form.end_date.trim()) newErrors.end_date = "End Date is required";
+    if (!form.status.trim()) newErrors.status = "Status is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = () => {
-    if (!form.name.trim()) {
-      toast.error("Batch Name is required");
+    if (!validate()) {
       return;
     }
     
@@ -77,51 +97,48 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         {/* Batch Name */}
         <div>
           <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-            BATCH NAME
+            BATCH NAME <span className="text-red-500">*</span>
           </label>
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="e.g. Computer Science - 2024 - Section A"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50"
+            className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${errors.name ? "border-red-500" : "border-gray-200"}`}
           />
+          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
         </div>
 
         {/* Row 2: Institution & Course */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              SELECT INSTITUTION
+              SELECT INSTITUTION <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={form.institution}
-                onChange={(e) => setForm({ ...form, institution: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 appearance-none text-gray-700"
-              >
-                <option value="" disabled>Select Institution</option>
-                <option value="Global Tech Institute">Global Tech Institute</option>
-                <option value="National University">National University</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-            </div>
+            <Select value={form.institution} onValueChange={(val) => setForm({...form, institution: val})}>
+              <SelectTrigger className={`w-full h-[42px] px-3 py-2.5 rounded-lg border ${errors.institution ? "border-red-500" : "border-gray-200"} bg-gray-50/50`}>
+                <SelectValue placeholder="Select Institution" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Global Tech Institute">Global Tech Institute</SelectItem>
+                <SelectItem value="National University">National University</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.institution && <p className="text-red-500 text-xs mt-1">{errors.institution}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              SELECT COURSE
+              SELECT COURSE <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <select
-                value={form.course}
-                onChange={(e) => setForm({ ...form, course: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 appearance-none text-gray-700"
-              >
-                <option value="" disabled>Select Course</option>
-                <option value="Java Development">Java Development</option>
-                <option value="Web Development">Web Development</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-            </div>
+            <Select value={form.course} onValueChange={(val) => setForm({...form, course: val})}>
+              <SelectTrigger className={`w-full h-[42px] px-3 py-2.5 rounded-lg border ${errors.course ? "border-red-500" : "border-gray-200"} bg-gray-50/50`}>
+                <SelectValue placeholder="Select Course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Java Development">Java Development</SelectItem>
+                <SelectItem value="Web Development">Web Development</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.course && <p className="text-red-500 text-xs mt-1">{errors.course}</p>}
           </div>
         </div>
 
@@ -129,7 +146,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              INSTRUCTOR
+              INSTRUCTOR <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -137,14 +154,15 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                 value={form.instructor}
                 onChange={(e) => setForm({ ...form, instructor: e.target.value })}
                 placeholder="Search and select instructor..."
-                className="w-full border border-gray-200 rounded-lg pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50"
+                className={`w-full border rounded-lg pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${errors.instructor ? "border-red-500" : "border-gray-200"}`}
               />
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
             </div>
+            {errors.instructor && <p className="text-red-500 text-xs mt-1">{errors.instructor}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              ENROLL STUDENTS
+              ENROLL STUDENTS <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -152,10 +170,11 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                 value={form.enroll_students}
                 onChange={(e) => setForm({ ...form, enroll_students: e.target.value })}
                 placeholder="Search by name or ID..."
-                className="w-full border border-gray-200 rounded-lg pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50"
+                className={`w-full border rounded-lg pl-9 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${errors.enroll_students ? "border-red-500" : "border-gray-200"}`}
               />
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
             </div>
+            {errors.enroll_students && <p className="text-red-500 text-xs mt-1">{errors.enroll_students}</p>}
           </div>
         </div>
 
@@ -163,26 +182,45 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              START DATE
+              START DATE <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               value={form.start_date}
               onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-gray-700"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-gray-700 ${errors.start_date ? "border-red-500" : "border-gray-200"}`}
             />
+            {errors.start_date && <p className="text-red-500 text-xs mt-1">{errors.start_date}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
-              END DATE
+              END DATE <span className="text-red-500">*</span>
             </label>
             <input
               type="date"
               value={form.end_date}
               onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-gray-700"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-gray-700 ${errors.end_date ? "border-red-500" : "border-gray-200"}`}
             />
+            {errors.end_date && <p className="text-red-500 text-xs mt-1">{errors.end_date}</p>}
           </div>
+        </div>
+
+        {/* Row 5: Status */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            STATUS <span className="text-red-500">*</span>
+          </label>
+          <Select value={form.status} onValueChange={(val) => setForm({...form, status: val})}>
+            <SelectTrigger className={`w-full h-[42px] px-3 py-2.5 rounded-lg border ${errors.status ? "border-red-500" : "border-gray-200"} bg-gray-50/50`}>
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          {errors.status && <p className="text-red-500 text-xs mt-1">{errors.status}</p>}
         </div>
 
         {/* Bulk Upload Area */}

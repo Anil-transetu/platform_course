@@ -78,12 +78,12 @@ export function buildTutorColumns(): Column<Tutor>[] {
       width: "w-[15%]",
       render: (_, row) => (
         <div className="flex gap-1.5 flex-wrap max-w-[220px]">
-          {row.assignedBatches && row.assignedBatches.map((b: any) => (
+          {row.assignedBatches && row.assignedBatches.map((b: any, i: number) => (
             <span
-              key={b.id || b}
+              key={b?._id || b?.id || b?.batchName || i}
               className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap"
             >
-              {b.name || b}
+              {typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b}
             </span>
           ))}
         </div>
