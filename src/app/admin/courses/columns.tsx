@@ -36,6 +36,14 @@ export interface Course extends Record<string, unknown> {
   no_of_modules?: number;
 }
 
+export interface Domain {
+  id: number;
+  name: string;
+  category: string;
+  courses: number;
+  updated: string;
+  status: string;
+}
 
 export const buildCourseColumns = (): Column<Course>[] => [
   {
