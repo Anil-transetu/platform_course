@@ -31,6 +31,7 @@ export default function NavUser() {
                     alt="User" 
                     width={40}
                     height={40}
+                    unoptimized
                   />
                 </div>
 

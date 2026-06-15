@@ -21,6 +21,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 width={128} 
                 height={128}
                 className="w-full h-full object-cover"
+                unoptimized
               />
             </div>
             <div className="pb-2">

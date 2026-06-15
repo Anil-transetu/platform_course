@@ -35,64 +35,80 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   return (
     <div className="bg-muted min-h-screen flex flex-col">
       {/* CENTRALIZED HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 shadow-sm shrink-0">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-          <Link href="/admin/courses/create" className={isRootLevel ? "text-slate-900" : "hover:text-blue-600 transition-colors"}>
-            Course
-          </Link>
+      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 dark:border-border/50 shadow-sm shrink-0">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
+          {/* Base Course Breadcrumb */}
+          {isRootLevel ? (
+            <span className="text-foreground">Course</span>
+          ) : (
+            <Link href="/admin/courses/create" className="text-gray-400 hover:text-blue-600 transition-colors">Course</Link>
+          )}
 
-          {(pathname.includes("/module") || pathname.includes("/lesson") || pathname.includes("/topic") || pathname.includes("/quiz") || pathname.includes("/assignment") || activeModuleId) && (
+          {/* Module Breadcrumb */}
+          {!isRootLevel && activeModuleId && (
             <>
-              <ChevronRight size={14} className="text-slate-300" />
-              <Link href="/admin/courses/create/module" className={pathname.endsWith("/module") && !activeLessonId ? "text-slate-900" : "hover:text-blue-600 transition-colors"}>
-                {activeModule?.title || "Module"}
-              </Link>
+              <ChevronRight size={12} className="text-gray-300" />
+              {activeLessonId || activeTopicId || activeQuizId || activeAssignmentId ? (
+                <Link href="/admin/courses/create/module" className="text-gray-400 hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                  {activeModule?.title || "Module"}
+                </Link>
+              ) : (
+                <span className="text-foreground truncate max-w-[150px]">{activeModule?.title || "New Module"}</span>
+              )}
             </>
           )}
 
-          {(pathname.includes("/lesson") || pathname.includes("/topic") || pathname.includes("/quiz") || pathname.includes("/assignment") || activeLessonId) && (
+          {/* Lesson Breadcrumb */}
+          {(activeLessonId || activeTopicId || activeQuizId || activeAssignmentId) && (
             <>
-              <ChevronRight size={14} className="text-slate-300" />
-              <Link href="/admin/courses/create/lesson" className={pathname.endsWith("/lesson") && !activeTopicId && !activeQuizId && !activeAssignmentId ? "text-slate-900" : "hover:text-blue-600 transition-colors"}>
-                {activeLesson?.title || "Lesson"}
-              </Link>
+              <ChevronRight size={12} className="text-gray-300" />
+              {activeTopicId || activeQuizId || activeAssignmentId ? (
+                <Link href="/admin/courses/create/lesson" className="text-gray-400 hover:text-blue-600 transition-colors truncate max-w-[150px]">
+                  {activeLesson?.title || "Lesson"}
+                </Link>
+              ) : (
+                <span className="text-foreground truncate max-w-[150px]">{activeLesson?.title || "New Lesson"}</span>
+              )}
             </>
           )}
 
-          {(pathname.includes("/topic") || activeTopicId) && (
+          {/* Topic Breadcrumb */}
+          {activeTopicId && (
             <>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="text-slate-900 truncate max-w-[150px]">{activeTopic?.title || "New Topic"}</span>
+              <ChevronRight size={12} className="text-gray-300" />
+              <span className="text-foreground truncate max-w-[150px]">{activeTopic?.title || "New Topic"}</span>
             </>
           )}
 
-          {(pathname.includes("/quiz") || activeQuizId) && (
+          {/* Quiz Breadcrumb */}
+          {activeQuizId && (
             <>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="text-slate-900 truncate max-w-[150px]">{activeQuiz?.title || "New Quiz"}</span>
+              <ChevronRight size={12} className="text-gray-300" />
+              <span className="text-foreground truncate max-w-[150px]">{activeQuiz?.title || "New Quiz"}</span>
             </>
           )}
 
-          {(pathname.includes("/assignment") || activeAssignmentId) && (
+          {/* Assignment Breadcrumb */}
+          {activeAssignmentId && (
             <>
-              <ChevronRight size={14} className="text-slate-300" />
-              <span className="text-slate-900 truncate max-w-[150px]">{activeAssignment?.title || "New Assignment"}</span>
+              <ChevronRight size={12} className="text-gray-300" />
+              <span className="text-foreground truncate max-w-[150px]">{activeAssignment?.title || "New Assignment"}</span>
             </>
           )}
         </div>
 
         {/* CENTRALIZED ACTIONS */}
         <div className="flex gap-3">
+          <Link href="/admin/courses">
+            <button className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs">
+              Back
+            </button>
+          </Link>
           <button 
             onClick={handleSaveAsDraft}
-            className="px-5 py-2 rounded-lg border border-border bg-card text-card-foreground font-medium shadow-sm hover:bg-muted transition-all text-xs"
-          >
-            Save as Draft
-          </button>
-          <button 
             className="px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs whitespace-nowrap"
           >
-            Save
+            Save as Draft
           </button>
         </div>
       </div>

@@ -2,35 +2,18 @@
 import React from "react";
 import { Column } from "@/components/reusable/DataTable";
 import { Tutor } from "@/types/tutor";
-import { cn } from "@/lib/utils";
-
-const avatarColors = [
-  "bg-blue-100 text-blue-600",
-  "bg-orange-200 text-orange-600",
-  "bg-purple-100 text-purple-600",
-  "bg-pink-100 text-pink-600",
-  "bg-green-100 text-green-600",
-];
-
-const getAvatarColor = (id: string | number) => {
-  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
-  return avatarColors[index];
-};
 
 export function buildTutorColumns(): Column<Tutor>[] {
   return [
     {
       key: "name",
       label: "Tutor Info",
-      width: "w-[20%]",
+      width: "w-1/5",
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold",
-            getAvatarColor(row.id)
-          )}>
-            <span>
-              {row.name.charAt(0).toUpperCase()}
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-blue-600">
+              {row.name.charAt(0)}
             </span>
           </div>
           <div className="min-w-0">
@@ -47,13 +30,12 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "domains",
       label: "Domain",
-      width: "w-[30%]",
       render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap max-w-[220px]">
-          {row.domains && row.domains.map((d: string) => (
+        <div className="flex gap-1.5 flex-wrap">
+          {row.domains?.map((d: string) => (
             <span
               key={d}
-              className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap"
+              className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase"
             >
               {d}
             </span>
@@ -64,44 +46,45 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "email",
       label: "Contact",
-      width: "w-[25%]",
       render: (_, row) => (
         <div>
           <p className="text-foreground font-medium text-sm">{row.email}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{row.phone}</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">{row.phone}</p>
         </div>
       ),
     },
     {
       key: "assignedBatches",
       label: "Batches",
-      width: "w-[15%]",
       render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap max-w-[220px]">
-          {row.assignedBatches && row.assignedBatches.map((b: any, i: number) => (
-            <span
-              key={b?._id || b?.id || b?.batchName || i}
-              className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap"
-            >
-              {typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b}
-            </span>
-          ))}
+        <div className="flex gap-1.5 flex-wrap">
+          {row.assignedBatches?.map((b: any) => {
+            const batchId = typeof b === 'object' ? (b._id || b.id || Math.random()) : b;
+            const batchName = typeof b === 'object' ? (b.batchName || b.name || JSON.stringify(b)) : b;
+            return (
+              <span
+                key={batchId}
+                className="bg-gray-100 dark:bg-muted text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase"
+              >
+                {batchName}
+              </span>
+            );
+          })}
         </div>
       ),
     },
     {
       key: "status",
       label: "Status",
-      width: "w-[10%]",
       render: (_, row) => (
         <span
           className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-            row.status?.toLowerCase() === "active"
+            row.status === "Active"
               ? "bg-green-100 text-green-700"
               : "bg-red-100 text-red-700"
           }`}
         >
-          {row.status?.charAt(0).toUpperCase() + row.status?.slice(1)}
+          {row.status}
         </span>
       ),
     },

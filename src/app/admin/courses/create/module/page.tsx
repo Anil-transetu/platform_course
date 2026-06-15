@@ -78,7 +78,12 @@ export default function ModuleDetailsPage() {
   };
 
   if (!activeModule) {
-    return null;
+    return (
+      <div className="bg-muted min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-gray-500 dark:text-muted-foreground">No active module selected.</p>
+        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline">Go back to Course</button>
+      </div>
+    );
   }
 
   return (
@@ -90,7 +95,7 @@ export default function ModuleDetailsPage() {
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-8 min-w-0">
           {/* MODULE DETAILS CARD */}
-          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
               <h2 className="text-lg font-bold text-foreground">Module Details</h2>
             </div>
@@ -108,7 +113,7 @@ export default function ModuleDetailsPage() {
                   }}
                   onBlur={() => handleFieldBlur("moduleTitle", moduleTitle)}
                   placeholder="e.g., Introduction to UI Design Fundamentals"
-                  className={`w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""}`}
+                  className={`w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""}`}
                 />
                 {touched.moduleTitle && errors.moduleTitle && (
                   <p className={errorTextClass}>
@@ -136,7 +141,7 @@ export default function ModuleDetailsPage() {
           </div>
 
           {/* MODULE RESOURCES CARD */}
-          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
             <div className="p-8 border-b border-gray-50">
               <h2 className="text-lg font-bold text-foreground">Module Resources</h2>
             </div>
@@ -167,7 +172,7 @@ function ResourceButton({ icon, label, onClick }: { icon: React.ReactNode, label
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 border border-gray-100 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
+      className="flex flex-col items-center justify-center p-8 border border-gray-100 dark:border-border/50 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all group"
     >
       <div className="text-gray-400 group-hover:text-blue-500 transition-colors mb-3">
         {icon}
