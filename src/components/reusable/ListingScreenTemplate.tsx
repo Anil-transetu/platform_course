@@ -13,7 +13,7 @@ interface ListingScreenTemplateProps {
   /**
    * Subtitle/description text
    */
-  subHeaderText?: string;
+  subHeaderText?: React.ReactNode;
 
   /**
    * Text for the "Add New" button

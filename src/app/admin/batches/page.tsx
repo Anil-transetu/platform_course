@@ -1,223 +1,289 @@
 "use client";
-
-import { useState } from "react";
-import Link from "next/link";
-import { MoreVertical, Users, Layers, CheckCircle, XCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Batch } from "@/types/batch";
+import { buildBatchColumns } from "./columns";
+import BatchFormModal from "./BatchFormModal";
+import BatchDeleteDialog from "./BatchDeleteDialog";
 import StatsCard from "@/components/ui/StatsCard";
+import DataTable from "@/components/reusable/DataTable";
+import { useRouter } from "next/navigation";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import UserPageSkeleton from "@/components/users/UserPageSkeleton";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye } from "lucide-react";
+import { Toaster } from "react-hot-toast";
 
-interface Batch {
-  id: string | number;
-  name: string;
-  instructor: string;
-  students: number;
-  status: string;
-  institutionId?: string;
+// Dummy data for batches
+const DUMMY_BATCHES: Batch[] = [
+  {
+    id: "101",
+    name: "Computer Science - 2024 - Section A",
+    instructor: "Dr. Robert Wilson",
+    students: 45,
+    status: "Active",
+    institution: "Global Tech Institute",
+    course: "Java Development"
+  },
+  {
+    id: "102",
+    name: "Web Development Bootcamp",
+    instructor: "Sarah Jenkins",
+    students: 32,
+    status: "Active",
+    institution: "National University",
+    course: "Web Development"
+  },
+  {
+    id: "103",
+    name: "Data Science Fundamentals",
+    instructor: "Michael Chang",
+    students: 28,
+    status: "Inactive",
+    institution: "Global Tech Institute",
+    course: "Data Science"
+  }
+];
+
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <MoreVertical size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onView();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Eye size={14} className="text-gray-400" />
+          View
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Pencil size={14} className="text-gray-400" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+        >
+          <Trash2 size={14} className="text-red-500" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export default function BatchesPage() {
+  const router = useRouter();
+  const [formModal, setFormModal] = useState<{
+    open: boolean;
+    mode: "add" | "edit";
+    batch?: Batch | null;
+  }>({
+    open: false,
+    mode: "add",
+    batch: null,
+  });
 
-  const batches: Batch[] = [];
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    batch: Batch | null;
+  }>({
+    open: false,
+    batch: null,
+  });
 
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [openMenu, setOpenMenu] = useState<string | number | null>(null);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
 
-  const totalPages = Math.ceil(batches.length / rowsPerPage);
+  // Simulate loading on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Debounce search and simulate fetching
+  useEffect(() => {
+    if (!isLoading) {
+      setIsFetching(true);
+    }
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (!isLoading) {
+        setIsFetching(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, isLoading]);
+
+  // Reset page when search or status changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, status]);
+
+  // Filter data locally
+  const filteredData = DUMMY_BATCHES.filter((b) => {
+    const matchesSearch = b.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                          (b.instructor?.toLowerCase() || "").includes(debouncedSearch.toLowerCase());
+    const matchesStatus = status === "All" || b.status === status;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalCount = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = batches.slice(start, start + rowsPerPage);
+  const visibleData = filteredData.slice(start, start + rowsPerPage);
+
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search by batch name or instructor...",
+    value: search,
+    onChange: (val: string) => setSearch(val),
+  };
+
+  const filterConfig = [
+    {
+      id: "status",
+      label: "Status: All",
+      type: "select" as const,
+      value: status,
+      options: [
+        { value: "All", label: "Status: All" },
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" },
+      ],
+      onChange: (val: string | string[]) => {
+        setIsFetching(true);
+        const selected = Array.isArray(val) ? val[0] : val;
+        setStatus((selected || "All") as "All" | "Active" | "Inactive");
+        setTimeout(() => setIsFetching(false), 400);
+      },
+    },
+  ];
+
+  const paginationInfo = totalCount > 0
+    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+    : "0-0 of 0";
 
   return (
-    <div className="p-8 bg-gray-100 dark:bg-muted min-h-screen">
-
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-card-foreground">
-          Batches Dashboard
-        </h1>
-
-        <Link href="/admin/batches/new">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow">
-            + Add Batch
-          </button>
-        </Link>
-      </div>
-
-      {/* CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatsCard
-          title="Total Batches"
-          value={batches.length}
-          icon={<Layers className="w-5 h-5" />}
-          iconBgClass="bg-blue-50"
-          iconColorClass="text-blue-600"
-          tooltip="Total number of batches created"
-        />
-        <StatsCard
-          title="Active Batches"
-          value="7"
-          icon={<CheckCircle className="w-5 h-5" />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-600"
-          tooltip="Currently active batches"
-        />
-        <StatsCard
-          title="Inactive Batches"
-          value="3"
-          icon={<XCircle className="w-5 h-5" />}
-          iconBgClass="bg-red-50"
-          iconColorClass="text-red-600"
-          tooltip="Batches that are currently inactive"
-        />
-        <StatsCard
-          title="Total Students"
-          value="205"
-          icon={<Users className="w-5 h-5" />}
-          iconBgClass="bg-purple-50"
-          iconColorClass="text-purple-600"
-          tooltip="Total students enrolled across all batches"
-        />
-      </div>
-
-      {/* TABLE */}
-      <div className="bg-card rounded-xl shadow-md border overflow-hidden">
-
-        <table className="w-full">
-          <thead className="bg-muted border-b">
-            <tr className="text-card-foreground text-sm">
-              <th className="p-4 text-left font-semibold">Batch Name</th>
-              <th className="p-4 text-left font-semibold">Instructor</th>
-              <th className="p-4 text-left font-semibold">Students</th>
-              <th className="p-4 text-left font-semibold">Status</th>
-              <th className="p-4 text-left font-semibold">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {visibleData.map((batch) => (
-              <tr key={batch.id} className="border-b hover:bg-muted transition">
-
-                <td className="p-4 text-card-foreground font-medium">{batch.name}</td>
-                <td className="p-4 text-card-foreground">{batch.instructor}</td>
-                <td className="p-4 text-card-foreground">{batch.students}</td>
-
-                <td className="p-4">
-                  <span
-                    className={`px-3 py-1 text-xs rounded-full font-medium ${
-                      batch.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-600"
-                    }`}
-                  >
-                    {batch.status}
-                  </span>
-                </td>
-
-                <td className="p-4 relative">
-
-                  <button
-                    onClick={() =>
-                      setOpenMenu(openMenu === batch.id ? null : batch.id)
-                    }
-                    className="text-card-foreground hover:text-foreground"
-                  >
-                    <MoreVertical size={18} />
-                  </button>
-
-                  {openMenu === batch.id && (
-                    <div className="absolute right-0 mt-2 w-32 bg-card border rounded-lg shadow-lg z-10">
-
-                      {/* EDIT */}
-                      <Link href={`/admin/batches/${batch.id}?mode=edit`}>
-                        <button
-                          onClick={() => setOpenMenu(null)}
-                          className="w-full text-left px-4 py-2 hover:bg-accent text-sm text-card-foreground"
-                        >
-                          Edit
-                        </button>
-                      </Link>
-
-                      {/* DELETE ✅ */}
-                      <Link href={`/admin/batches/${batch.id}?mode=delete`}>
-                        <button
-                          onClick={() => setOpenMenu(null)}
-                          className="w-full text-left px-4 py-2 hover:bg-accent text-red-600 text-sm"
-                        >
-                          Delete
-                        </button>
-                      </Link>
-
-                    </div>
-                  )}
-
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
-
-      </div>
-
-      {/* PAGINATION */}
-      <div className="flex justify-between items-center mt-6">
-
-        <div className="flex items-center gap-2 text-card-foreground">
-          <span>Rows per page</span>
-
-          <select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setPage(1);
-            }}
-            className="border rounded px-2 py-1 text-card-foreground"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-          </select>
+    <ListingScreenTemplate
+      headerText="Batches Dashboard"
+      subHeaderText="Manage batches, institutions, courses, and enrollments."
+      buttonLabel="Add Batch"
+      buttonRequired={true}
+      buttonOnclick={() => setFormModal({ open: true, mode: "add", batch: null })}
+    >
+      {isLoading ? (
+        <UserPageSkeleton />
+      ) : (
+      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+        <Toaster position="top-right" />
+        
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
+          <StatsCard
+            title="Total Batches"
+            value={DUMMY_BATCHES.length}
+            icon={<Layers className="w-5 h-5" />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total number of batches created"
+          />
+          <StatsCard
+            title="Active Batches"
+            value={DUMMY_BATCHES.filter(b => b.status === "Active").length}
+            icon={<CheckCircle className="w-5 h-5" />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Currently active batches"
+          />
+          <StatsCard
+            title="Inactive Batches"
+            value={DUMMY_BATCHES.filter(b => b.status === "Inactive").length}
+            icon={<XCircle className="w-5 h-5" />}
+            iconBgClass="bg-red-50"
+            iconColorClass="text-red-600"
+            tooltip="Batches that are currently inactive"
+          />
+          <StatsCard
+            title="Total Students"
+            value={DUMMY_BATCHES.reduce((sum, b) => sum + b.students, 0)}
+            icon={<Users className="w-5 h-5" />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            tooltip="Total students enrolled across all batches"
+          />
         </div>
 
-        <div className="flex gap-2">
-
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-3 py-1 border rounded bg-card text-card-foreground hover:bg-accent disabled:opacity-40"
-          >
-            Previous
-          </button>
-
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const pageNumber = i + 1;
-
-            return (
-              <button
-                key={pageNumber}
-                onClick={() => setPage(pageNumber)}
-                className={`px-3 py-1 border rounded ${
-                  page === pageNumber
-                    ? "bg-blue-600 text-white"
-                    : "bg-card text-card-foreground hover:bg-accent"
-                }`}
-              >
-                {pageNumber}
-              </button>
-            );
-          })}
-
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-3 py-1 border rounded bg-card text-card-foreground hover:bg-accent disabled:opacity-40"
-          >
-            Next
-          </button>
-
-        </div>
-
+        <DataTable<Batch>
+          columns={buildBatchColumns()}
+          data={visibleData}
+          loading={isLoading || isFetching}
+          search={searchConfig}
+          filters={filterConfig}
+          actions={(batch) => (
+            <div className="flex justify-center">
+              <ActionMenu 
+                onView={() => router.push(`/admin/batches/${batch.id}`)}
+                onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
+                onDelete={() => setDeleteDialog({ open: true, batch })}
+              />
+            </div>
+          )}
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={setRowsPerPage}
+          paginationInfo={paginationInfo}
+          showPagination={true}
+        />
       </div>
+      )}
 
-    </div>
+      {/* Modals */}
+      <BatchFormModal
+        open={formModal.open}
+        mode={formModal.mode}
+        batch={formModal.batch}
+        onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
+      />
+      
+      <BatchDeleteDialog
+        open={deleteDialog.open}
+        batch={deleteDialog.batch}
+        onClose={() => setDeleteDialog({ open: false, batch: null })}
+      />
+      
+    </ListingScreenTemplate>
   );
 }

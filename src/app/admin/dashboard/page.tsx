@@ -40,7 +40,7 @@ export default function DashboardPage() {
 
       <h2 className="font-semibold mb-4 text-foreground">Quick Navigation</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-10">
 
         {/* Institutions */}
 

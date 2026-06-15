@@ -30,6 +30,8 @@ export type Module = {
   title: string;
   description: string;
   lessons: Lesson[];
+  quizzes?: Quiz[];
+  assignments?: Assignment[];
 };
 
 export type Course = {
@@ -64,14 +66,14 @@ interface CourseState {
   deleteTopic: (moduleId: string, lessonId: string, topicId: string) => void;
   setActiveTopic: (id: string | null) => void;
 
-  addQuiz: (moduleId: string, lessonId: string) => string;
-  updateQuiz: (moduleId: string, lessonId: string, quizId: string, updates: Partial<Quiz>) => void;
-  deleteQuiz: (moduleId: string, lessonId: string, quizId: string) => void;
+  addQuiz: (moduleId: string, lessonId?: string) => string;
+  updateQuiz: (moduleId: string, lessonId: string | undefined | null, quizId: string, updates: Partial<Quiz>) => void;
+  deleteQuiz: (moduleId: string, lessonId: string | undefined | null, quizId: string) => void;
   setActiveQuiz: (id: string | null) => void;
 
-  addAssignment: (moduleId: string, lessonId: string) => string;
-  updateAssignment: (moduleId: string, lessonId: string, assignmentId: string, updates: Partial<Assignment>) => void;
-  deleteAssignment: (moduleId: string, lessonId: string, assignmentId: string) => void;
+  addAssignment: (moduleId: string, lessonId?: string) => string;
+  updateAssignment: (moduleId: string, lessonId: string | undefined | null, assignmentId: string, updates: Partial<Assignment>) => void;
+  deleteAssignment: (moduleId: string, lessonId: string | undefined | null, assignmentId: string) => void;
   setActiveAssignment: (id: string | null) => void;
 }
 
@@ -97,7 +99,7 @@ export const useCourseStore = create<CourseState>((set) => ({
     set((state) => ({
       course: {
         ...state.course,
-        modules: [...state.course.modules, { id, title: '', description: '', lessons: [] }],
+        modules: [...state.course.modules, { id, title: '', description: '', lessons: [], quizzes: [], assignments: [] }],
       },
       activeModuleId: id,
       activeLessonId: null,
@@ -277,6 +279,12 @@ export const useCourseStore = create<CourseState>((set) => ({
         ...state.course,
         modules: state.course.modules.map(m => {
           if (m.id === moduleId) {
+            if (!lessonId) {
+              return {
+                ...m,
+                quizzes: [...(m.quizzes || []), { id, title: '' }],
+              };
+            }
             return {
               ...m,
               lessons: m.lessons.map(l => {
@@ -358,6 +366,12 @@ export const useCourseStore = create<CourseState>((set) => ({
         ...state.course,
         modules: state.course.modules.map(m => {
           if (m.id === moduleId) {
+            if (!lessonId) {
+              return {
+                ...m,
+                assignments: [...(m.assignments || []), { id, title: '' }],
+              };
+            }
             return {
               ...m,
               lessons: m.lessons.map(l => {
