@@ -20,7 +20,6 @@ function getAuthHeaders(): Record<string, string> {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    console.error("API ERROR:", err);
     let messageStr = "API request failed";
     if (err.errors) {
       if (Array.isArray(err.errors)) {
@@ -38,13 +37,18 @@ async function handleResponse(response: Response) {
       messageStr = err.detail;
     }
 
-    if (
+    const isTokenExpired =
       messageStr.toLowerCase().includes("token expired") ||
-      response.status === 401
-    ) {
+      response.status === 401;
+
+    if (!isTokenExpired) {
+      console.error("API ERROR:", err);
+    } else {
       if (typeof document !== "undefined") {
         document.cookie =
           "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         window.location.href = "/login";
       }
     }

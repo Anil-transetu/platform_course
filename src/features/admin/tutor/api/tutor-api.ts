@@ -29,6 +29,8 @@ async function handleResponse(response: Response) {
       if (typeof document !== "undefined") {
         document.cookie =
           "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         window.location.href = "/login";
       }
     }
