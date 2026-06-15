@@ -1,18 +1,33 @@
 "use client";
 
-import { useSearchParams, useParams } from "next/navigation";
-import EditForm from "@/app/admin/assignments/EditForm";
-import DeleteDialog from "@/app/admin/assignments/DeleteDialog";
+import React, { use } from "react";
+import AssignmentForm from "../AssignmentForm";
+import { useAssignment } from "@/features/admin/assignments/api/use-assignments";
 
-export default function ManagePage() {
-  const params = useParams();
-  const id = params.id as string;
-  const searchParams = useSearchParams();
-  const mode = searchParams.get("mode"); // "edit" | "delete"
+export default function EditAssignmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const id = resolvedParams.id;
+  const { data: assignment, isLoading } = useAssignment(id);
 
-  if (mode === "delete") {
-    return <DeleteDialog id={id} />;
+  if (isLoading) {
+    return (
+      <div className="p-8 font-sans max-w-7xl mx-auto min-h-screen flex items-center justify-center">
+        <div className="text-slate-500 font-medium animate-pulse">Loading assignment details...</div>
+      </div>
+    );
   }
 
-  return <EditForm id={id} />;
+  if (!assignment) {
+    return (
+      <div className="p-8 font-sans max-w-7xl mx-auto min-h-screen flex items-center justify-center">
+        <div className="text-red-500 font-medium">Assignment not found</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-8 font-sans max-w-7xl mx-auto min-h-screen">
+      <AssignmentForm mode="edit" initialData={assignment} />
+    </div>
+  );
 }

@@ -156,15 +156,15 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
         {/* Basic Info */}
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
               INSTITUTION NAME <span className="text-red-500">*</span>
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Oxford Technical Institute"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                errors.name ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
@@ -172,7 +172,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
                 OFFICIAL EMAIL ADDRESS <span className="text-red-500">*</span>
               </label>
               <input
@@ -180,22 +180,22 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="e.g. admin@oxford.edu"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                  errors.email ? "border-red-500" : "border-gray-200"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                  errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
                 }`}
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
                 LOCATION <span className="text-red-500">*</span>
               </label>
               <input
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="e.g. London, UK"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                  errors.location ? "border-red-500" : "border-gray-200"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                  errors.location ? "border-red-500" : "border-gray-200 dark:border-border/70"
                 }`}
               />
               {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location}</p>}
@@ -222,7 +222,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
 
           <div className="space-y-4">
             {form.contacts.map((contact, index) => (
-              <div key={index} className="bg-slate-50/50 border border-gray-100 rounded-xl p-4 relative">
+              <div key={index} className="bg-slate-50/50 border border-gray-100 dark:border-border/50 rounded-xl p-4 relative">
                 {/* We can always allow removing contact if there's more than one, or even the only one if needed, but usually we keep at least one. However the image shows a delete icon for the second contact. We'll show it for all except maybe index 0, or show for all if > 1 */}
                 {form.contacts.length > 1 && (
                   <button
@@ -236,29 +236,29 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
                 
                 <div className="grid grid-cols-2 gap-4 mt-1">
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1 tracking-wider uppercase">
+                    <label className="block text-[10px] font-bold text-gray-500 dark:text-muted-foreground mb-1 tracking-wider uppercase">
                       NAME
                     </label>
                     <input
                       value={contact.name}
                       onChange={(e) => handleContactChange(index, "name", e.target.value)}
                       placeholder="e.g. Dr. Helena Vance"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                      className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1 tracking-wider uppercase">
+                    <label className="block text-[10px] font-bold text-gray-500 dark:text-muted-foreground mb-1 tracking-wider uppercase">
                       ROLE
                     </label>
                     <input
                       value={contact.role || contact.designation || ""}
                       onChange={(e) => handleContactChange(index, "role", e.target.value)}
                       placeholder="e.g. Dean of Academics"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                      className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1 tracking-wider uppercase">
+                    <label className="block text-[10px] font-bold text-gray-500 dark:text-muted-foreground mb-1 tracking-wider uppercase">
                       EMAIL
                     </label>
                     <input
@@ -266,18 +266,18 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
                       value={contact.email}
                       onChange={(e) => handleContactChange(index, "email", e.target.value)}
                       placeholder="e.g. h.vance@oxford.edu"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                      className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-gray-500 mb-1 tracking-wider uppercase">
+                    <label className="block text-[10px] font-bold text-gray-500 dark:text-muted-foreground mb-1 tracking-wider uppercase">
                       PHONE
                     </label>
                     <input
                       value={contact.phone}
                       onChange={(e) => handleContactChange(index, "phone", e.target.value)}
                       placeholder="+44 20 7946 0958"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                      className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card"
                     />
                   </div>
                 </div>

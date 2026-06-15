@@ -42,7 +42,7 @@ export default function QuestionBuilder({ questions, onChange }: QuestionBuilder
   return (
     <div className="space-y-6">
       {questions.map((q, qIndex) => (
-        <div key={q.id || qIndex} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div key={q.id || qIndex} className="bg-white dark:bg-card border border-slate-200 rounded-2xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">
@@ -89,7 +89,7 @@ export default function QuestionBuilder({ questions, onChange }: QuestionBuilder
                     className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
                       isSelected 
                         ? 'border-green-200 bg-green-50/50' 
-                        : 'border-slate-100 hover:border-slate-200 bg-white'
+                        : 'border-slate-100 hover:border-slate-200 bg-white dark:bg-card'
                     }`}
                   >
                     {q.type === "multiple_choice" ? (
@@ -118,7 +118,7 @@ export default function QuestionBuilder({ questions, onChange }: QuestionBuilder
                       type="button"
                       onClick={() => handleCorrectOptionChange(qIndex, oIndex)}
                       className={`flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full transition-colors ${
-                        isSelected ? 'text-green-600 bg-white' : 'text-slate-300 hover:text-green-500'
+                        isSelected ? 'text-green-600 bg-white dark:bg-card' : 'text-slate-300 hover:text-green-500'
                       }`}
                     >
                       {isSelected ? <CheckCircle2 size={24} className="fill-green-100" /> : <div className="w-4 h-4 rounded-full border-2 border-slate-200" />}

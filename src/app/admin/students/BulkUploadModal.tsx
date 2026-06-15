@@ -51,7 +51,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl py-10 flex flex-col items-center gap-3 transition-all cursor-pointer
-            ${isDragging ? "border-blue-500 bg-blue-50/50" : "border-gray-200 bg-gray-50 hover:bg-slate-50/50"}
+            ${isDragging ? "border-blue-500 bg-blue-50/50" : "border-gray-200 dark:border-border/70 bg-gray-50 dark:bg-muted/50 hover:bg-slate-50/50"}
             ${file ? "border-green-400 bg-green-50/30" : ""}`}
           onClick={() => {
             if (!file) fileInputRef.current?.click();
@@ -72,14 +72,14 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                   setFile(null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
-                className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1 mt-1 border px-2 py-0.5 rounded bg-white shadow-sm transition-colors"
+                className="text-xs text-gray-500 dark:text-muted-foreground hover:text-red-500 flex items-center gap-1 mt-1 border px-2 py-0.5 rounded bg-white dark:bg-card shadow-sm transition-colors"
               >
                 <X size={12} /> Remove
               </button>
             </div>
           ) : (
             <>
-              <p className="text-sm font-bold text-gray-700">Drag and drop CSV file here</p>
+              <p className="text-sm font-bold text-gray-700 dark:text-foreground">Drag and drop CSV file here</p>
               <p className="text-xs text-gray-400 font-medium">Maximum file size: 10MB</p>
               <input
                 ref={fileInputRef}
@@ -94,7 +94,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
-                className="px-4 py-1.5 text-xs font-semibold border rounded-lg bg-white hover:bg-gray-50 shadow-sm transition-all"
+                className="px-4 py-1.5 text-xs font-semibold border rounded-lg bg-white dark:bg-card hover:bg-gray-50 dark:bg-muted/50 shadow-sm transition-all"
               >
                 Select File
               </button>
@@ -119,10 +119,10 @@ export default function BulkUploadModal({ open, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-border/50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold transition-colors"
+            className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-border/70 text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 font-semibold transition-colors"
           >
             Cancel
           </button>

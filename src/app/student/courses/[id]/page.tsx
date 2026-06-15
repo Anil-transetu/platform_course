@@ -71,11 +71,11 @@ export default function CoursePlayerPage() {
   const [notesSidebarOpen] = useState(true);
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden text-[#1E293B]">
+    <div className="flex flex-col h-screen bg-white dark:bg-card overflow-hidden text-[#1E293B]">
       {/* Top Header */}
-      <header className="h-16 px-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-20">
+      <header className="h-16 px-6 border-b border-gray-100 dark:border-border/50 flex items-center justify-between shrink-0 bg-white dark:bg-card z-20">
         <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors text-gray-400">
+          <button className="p-2 hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors text-gray-400">
             <ChevronLeft size={20} />
           </button>
           <div>
@@ -92,7 +92,7 @@ export default function CoursePlayerPage() {
         
         <div className="flex items-center gap-6">
           <div className="flex flex-col items-end gap-1">
-            <div className="w-48 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="w-48 h-1.5 bg-gray-100 dark:bg-muted rounded-full overflow-hidden">
               <div className="h-full bg-blue-600 rounded-full w-[28%] shadow-[0_0_8px_rgba(37,99,235,0.3)]"></div>
             </div>
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{courseData.progress}% Progress</span>
@@ -107,22 +107,22 @@ export default function CoursePlayerPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar: Course Structure */}
         {sidebarOpen && (
-          <aside className="w-[320px] border-r border-gray-100 flex flex-col bg-white overflow-y-auto shrink-0 animate-in slide-in-from-left duration-300">
+          <aside className="w-[320px] border-r border-gray-100 dark:border-border/50 flex flex-col bg-white dark:bg-card overflow-y-auto shrink-0 animate-in slide-in-from-left duration-300">
             <div className="p-6 border-b border-gray-50">
               <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Course Structure</h2>
             </div>
             <div className="flex-1">
               {courseData.modules.map((module) => (
                 <div key={module.id} className="border-b border-gray-50 last:border-0">
-                  <button className="w-full p-6 flex flex-col gap-2 hover:bg-gray-50 transition-all text-left group">
+                  <button className="w-full p-6 flex flex-col gap-2 hover:bg-gray-50 dark:bg-muted/50 transition-all text-left group">
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-3">
-                        <ChevronRight size={14} className={cn("text-gray-300 group-hover:text-gray-900 transition-transform", !module.locked && "rotate-90 text-gray-900")} />
-                        <span className={cn("text-sm font-bold", module.locked ? "text-gray-400" : "text-gray-900")}>
+                        <ChevronRight size={14} className={cn("text-gray-300 group-hover:text-gray-900 dark:text-foreground transition-transform", !module.locked && "rotate-90 text-gray-900 dark:text-foreground")} />
+                        <span className={cn("text-sm font-bold", module.locked ? "text-gray-400" : "text-gray-900 dark:text-foreground")}>
                           {module.title}
                         </span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 rounded text-gray-500">{module.progress}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 dark:bg-muted rounded text-gray-500 dark:text-muted-foreground">{module.progress}</span>
                     </div>
                   </button>
                   
@@ -133,7 +133,7 @@ export default function CoursePlayerPage() {
                           key={lesson.id} 
                           className={cn(
                             "w-full px-10 py-3 flex items-center justify-between group transition-all text-left",
-                            lesson.active ? "bg-blue-50/50 border-r-4 border-blue-600" : "hover:bg-gray-50"
+                            lesson.active ? "bg-blue-50/50 border-r-4 border-blue-600" : "hover:bg-gray-50 dark:bg-muted/50"
                           )}
                           onClick={() => {
                             if (lesson.type === "quiz") setView("quiz");
@@ -154,7 +154,7 @@ export default function CoursePlayerPage() {
                             )}
                             <span className={cn(
                               "text-xs font-medium truncate",
-                              lesson.active ? "text-blue-600 font-bold" : lesson.locked ? "text-gray-400" : "text-gray-600"
+                              lesson.active ? "text-blue-600 font-bold" : lesson.locked ? "text-gray-400" : "text-gray-600 dark:text-muted-foreground"
                             )}>
                               {lesson.id} {lesson.title}
                             </span>
@@ -173,7 +173,7 @@ export default function CoursePlayerPage() {
         )}
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-white flex flex-col relative z-10 scroll-smooth">
+        <main className="flex-1 overflow-y-auto bg-white dark:bg-card flex flex-col relative z-10 scroll-smooth">
           {view !== "quiz" && view !== "results" ? (
             <>
               {/* Video Player Shell */}
@@ -185,7 +185,7 @@ export default function CoursePlayerPage() {
                 </div>
                 {/* Custom Video Controls Mockup */}
                 <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/80 to-transparent p-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                   <div className="w-full h-1 bg-white dark:bg-card/20 rounded-full overflow-hidden">
                       <div className="w-[35%] h-full bg-blue-600"></div>
                    </div>
                    <div className="flex items-center justify-between text-white">
@@ -207,7 +207,7 @@ export default function CoursePlayerPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-3xl font-extrabold tracking-tight">Components and Props</h2>
-                    <p className="text-sm text-gray-500 mt-2 font-medium">Topic 2 of 5 in Lesson 1.2</p>
+                    <p className="text-sm text-gray-500 dark:text-muted-foreground mt-2 font-medium">Topic 2 of 5 in Lesson 1.2</p>
                   </div>
                   <button className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95">
                     <CheckCircle2 size={18} />
@@ -217,10 +217,10 @@ export default function CoursePlayerPage() {
 
                 <section className="space-y-6">
                   <h3 className="text-xl font-bold">Lesson Content: Building Blocks of the UI</h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 dark:text-muted-foreground leading-relaxed">
                     Components are the core building blocks of any React application. They allow you to split the UI into independent, reusable pieces, and think about each piece in isolation. Think of them like...
                   </p>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-600 dark:text-muted-foreground leading-relaxed">
                     React is a single-threaded language, meaning it executes one command at a time. However, web applications often need to perform time-consuming tasks like fetching data from an API, reading files, or handling user input. Without asynchronous patterns, the entire UI would freeze while waiting for these tasks to complete.
                   </p>
                 </section>
@@ -258,19 +258,19 @@ export default function CoursePlayerPage() {
                       Time Remaining: {quizData.timeRemaining}
                     </div>
                   </div>
-                  <div className="w-full h-2 bg-gray-100 rounded-full mt-6 overflow-hidden">
+                  <div className="w-full h-2 bg-gray-100 dark:bg-muted rounded-full mt-6 overflow-hidden">
                     <div className="h-full bg-blue-600 rounded-full w-[30%] shadow-[0_0_12px_rgba(37,99,235,0.4)] transition-all duration-700"></div>
                   </div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-3 text-right">Question {quizData.currentQuestion} of {quizData.questions}</p>
                </div>
 
                <div className="space-y-8 flex-1">
-                  <div className="p-10 bg-white rounded-[40px] border-2 border-gray-100 shadow-sm space-y-10">
+                  <div className="p-10 bg-white dark:bg-card rounded-[40px] border-2 border-gray-100 dark:border-border/50 shadow-sm space-y-10">
                     <div className="flex gap-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center shrink-0 text-gray-400 font-bold text-sm">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-muted rounded-xl flex items-center justify-center shrink-0 text-gray-400 font-bold text-sm">
                         Q{quizData.currentQuestion}
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 leading-snug">{quizData.questionText}</h3>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-foreground leading-snug">{quizData.questionText}</h3>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
@@ -281,18 +281,18 @@ export default function CoursePlayerPage() {
                             "w-full p-6 text-left rounded-[24px] border-2 transition-all flex items-center justify-between group",
                             quizData.selectedOption === i 
                               ? "border-blue-600 bg-blue-50 shadow-lg shadow-blue-500/10" 
-                              : "border-gray-100 hover:border-gray-200 hover:bg-gray-50 bg-white"
+                              : "border-gray-100 dark:border-border/50 hover:border-gray-200 dark:border-border/70 hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card"
                           )}
                         >
                           <span className={cn(
                             "text-sm font-medium",
-                            quizData.selectedOption === i ? "text-blue-900" : "text-gray-600"
+                            quizData.selectedOption === i ? "text-blue-900" : "text-gray-600 dark:text-muted-foreground"
                           )}>
                             {option}
                           </span>
                           <div className={cn(
                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
-                            quizData.selectedOption === i ? "border-blue-600 bg-blue-600" : "border-gray-200"
+                            quizData.selectedOption === i ? "border-blue-600 bg-blue-600" : "border-gray-200 dark:border-border/70"
                           )}>
                             {quizData.selectedOption === i && <Circle size={10} className="text-blue-50 fill-white" />}
                           </div>
@@ -302,12 +302,12 @@ export default function CoursePlayerPage() {
                   </div>
                </div>
 
-               <div className="flex items-center justify-between pt-10 border-t border-gray-100 mt-auto">
-                  <button className="px-8 py-3.5 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">
+               <div className="flex items-center justify-between pt-10 border-t border-gray-100 dark:border-border/50 mt-auto">
+                  <button className="px-8 py-3.5 text-sm font-bold text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors">
                     Previous
                   </button>
                   <div className="flex gap-4">
-                    <button className="px-8 py-3.5 text-sm font-bold text-gray-500 hover:bg-gray-50 rounded-2xl transition-all">
+                    <button className="px-8 py-3.5 text-sm font-bold text-gray-500 dark:text-muted-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-2xl transition-all">
                       Save Progress
                     </button>
                     <button 
@@ -323,9 +323,9 @@ export default function CoursePlayerPage() {
           ) : (
             /* Results View */
             <div className="flex-1 flex flex-col items-center justify-center p-10 animate-in fade-in zoom-in-95 duration-700">
-               <div className="bg-white p-12 rounded-[50px] border-2 border-gray-100 shadow-2xl max-w-3xl w-full flex flex-col items-center text-center space-y-10 relative overflow-hidden">
+               <div className="bg-white dark:bg-card p-12 rounded-[50px] border-2 border-gray-100 dark:border-border/50 shadow-2xl max-w-3xl w-full flex flex-col items-center text-center space-y-10 relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8">
-                     <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold text-gray-500 hover:bg-gray-100 transition-all">
+                     <button className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-xl text-xs font-bold text-gray-500 dark:text-muted-foreground hover:bg-gray-100 dark:bg-muted transition-all">
                        <BarChart size={14} /> Review Quiz
                      </button>
                   </div>
@@ -344,7 +344,7 @@ export default function CoursePlayerPage() {
                       <circle cx="112" cy="112" r="90" stroke="currentColor" strokeWidth="16" fill="transparent" strokeDasharray={565.48} strokeDashoffset={565.48 * (1 - 0.85)} strokeLinecap="round" className="text-emerald-500" />
                     </svg>
                     <div className="absolute flex flex-col items-center justify-center animate-in fade-in slide-in-from-bottom-2 duration-1000 delay-500">
-                      <span className="text-6xl font-black text-gray-900 tracking-tight">85%</span>
+                      <span className="text-6xl font-black text-gray-900 dark:text-foreground tracking-tight">85%</span>
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Your Score</span>
                     </div>
                   </div>
@@ -387,12 +387,12 @@ export default function CoursePlayerPage() {
 
         {/* Right Sidebar: Notes */}
         {notesSidebarOpen && view !== "quiz" && view !== "results" && (
-          <aside className="w-[320px] border-l border-gray-100 flex flex-col bg-white overflow-hidden shrink-0 animate-in slide-in-from-right duration-500">
+          <aside className="w-[320px] border-l border-gray-100 dark:border-border/50 flex flex-col bg-white dark:bg-card overflow-hidden shrink-0 animate-in slide-in-from-right duration-500">
             <div className="p-8 border-b border-gray-50 flex items-center justify-between">
               <h2 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
                 <FileText size={16} /> Notes
               </h2>
-              <button className="p-2 text-gray-300 hover:text-gray-900 transition-all rounded-lg hover:bg-gray-50">
+              <button className="p-2 text-gray-300 hover:text-gray-900 dark:text-foreground transition-all rounded-lg hover:bg-gray-50 dark:bg-muted/50">
                 <Plus size={18} />
               </button>
             </div>
@@ -401,23 +401,23 @@ export default function CoursePlayerPage() {
                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3 relative group">
                   <div className="flex items-center justify-between">
                     <span className="text-[9px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded uppercase tracking-tighter">Timestamp 02:45</span>
-                    <button className="text-gray-300 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-all">
+                    <button className="text-gray-300 hover:text-gray-900 dark:text-foreground opacity-0 group-hover:opacity-100 transition-all">
                       <MoreVertical size={14} />
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-700 leading-relaxed font-medium">
+                  <p className="text-[10px] text-gray-700 dark:text-foreground leading-relaxed font-medium">
                     Important: Props are strictly read-only. We should never try to mutate them inside a child component.
                   </p>
                </div>
 
-               <div className="p-5 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-3 relative group">
+               <div className="p-5 bg-gray-50 dark:bg-muted/50/50 rounded-2xl border border-gray-100 dark:border-border/50 space-y-3 relative group">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded uppercase tracking-tighter">General Note</span>
-                    <button className="text-gray-300 hover:text-gray-900 opacity-0 group-hover:opacity-100 transition-all">
+                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 dark:bg-muted px-2 py-0.5 rounded uppercase tracking-tighter">General Note</span>
+                    <button className="text-gray-300 hover:text-gray-900 dark:text-foreground opacity-0 group-hover:opacity-100 transition-all">
                       <MoreVertical size={14} />
                     </button>
                   </div>
-                  <p className="text-[10px] text-gray-600 leading-relaxed font-medium">
+                  <p className="text-[10px] text-gray-600 dark:text-muted-foreground leading-relaxed font-medium">
                     Review the backpropagation calculus section again. Need to clarify the chain rule application in deep layers.
                   </p>
                </div>
@@ -426,7 +426,7 @@ export default function CoursePlayerPage() {
             <div className="p-6 border-t border-gray-50 space-y-4">
                <textarea 
                   placeholder="Start typing your note..." 
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 min-h-[120px] resize-none font-medium text-gray-600"
+                  className="w-full p-4 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-2xl text-[10px] focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 min-h-[120px] resize-none font-medium text-gray-600 dark:text-muted-foreground"
                ></textarea>
                <button className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
                  Save Note

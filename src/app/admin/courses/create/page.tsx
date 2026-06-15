@@ -99,7 +99,7 @@ export default function CreateCoursePage() {
       <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
       {/* FORM SECTION */}
-      <div className="bg-card rounded-2xl shadow-sm border border-gray-100 p-8 mb-8">
+      <div className="bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 p-8 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">
@@ -110,7 +110,7 @@ export default function CreateCoursePage() {
               value={title}
               onChange={(e) => handleFieldChange("title", e.target.value)}
               onBlur={() => handleBlur("title", title)}
-              className={getInputClass("title", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
+              className={getInputClass("title", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 dark:border-border/50 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Enter course title..."
             />
             <ErrorMsg field="title" />
@@ -124,7 +124,7 @@ export default function CreateCoursePage() {
               <select
                 value={domain}
                 onChange={(e) => handleFieldChange("domain", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground font-medium appearance-none cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 dark:border-border/50 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground font-medium appearance-none cursor-pointer"
               >
                 <option>Web Development</option>
                 <option>Data Science</option>
@@ -144,7 +144,7 @@ export default function CreateCoursePage() {
               value={tags}
               onChange={(e) => handleFieldChange("tags", e.target.value)}
               onBlur={() => handleBlur("tags", tags)}
-              className={getInputClass("tags", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
+              className={getInputClass("tags", "w-full px-4 py-3 rounded-xl bg-muted border border-gray-100 dark:border-border/50 focus:bg-card focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-card-foreground placeholder-gray-400 font-medium")}
               placeholder="Add tags separated by comma..."
             />
             <ErrorMsg field="tags" />

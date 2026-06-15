@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, X, Info, LayoutGrid, Check, Plus, SlidersHorizontal } from "lucide-react";
 import { Quiz, QuizQuestion } from "@/features/admin/quizzes/api/quiz-api";
 import { useCreateQuiz, useUpdateQuiz } from "@/features/admin/quizzes/api/use-quizzes";
-import { toast } from "sonner";
+import { toast, Toaster } from "sonner";
 import QuestionBuilder from "./QuestionBuilder";
 import { useRouter } from "next/navigation";
 
@@ -218,6 +218,7 @@ export default function QuizForm({ mode, initialData }: Props) {
 
   return (
     <div className="mx-auto max-w-5xl">
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="mb-8">
         <div className="text-sm text-slate-500 mb-2">
@@ -232,7 +233,7 @@ export default function QuizForm({ mode, initialData }: Props) {
       <div className="space-y-6 pb-24">
 
         {/* Basic Information */}
-        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50">
             <Info size={16} className="text-blue-500" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-blue-600">Basic Information</h2>
@@ -246,7 +247,7 @@ export default function QuizForm({ mode, initialData }: Props) {
                 onChange={(e) => handleFieldChange("title", e.target.value, setTitle)}
                 onBlur={() => setTouched(p => ({ ...p, title: true }))}
                 placeholder="e.g. Introduction to Data Structures Midterm"
-                className={getInputClass("title", "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
+                className={getInputClass("title", "w-full rounded-xl border border-slate-200 bg-white dark:bg-card px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
               />
               {touched.title && errors.title && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.title}</p>}
             </div>
@@ -260,7 +261,7 @@ export default function QuizForm({ mode, initialData }: Props) {
                   onChange={(e) => handleFieldChange("durationMinutes", e.target.value, setDurationMinutes)}
                   onBlur={() => setTouched(p => ({ ...p, durationMinutes: true }))}
                   placeholder="e.g. 60"
-                  className={getInputClass("durationMinutes", "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
+                  className={getInputClass("durationMinutes", "w-full rounded-xl border border-slate-200 bg-white dark:bg-card px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
                 />
                 {touched.durationMinutes && errors.durationMinutes && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.durationMinutes}</p>}
               </div>
@@ -272,7 +273,7 @@ export default function QuizForm({ mode, initialData }: Props) {
                   onChange={(e) => handleFieldChange("totalMarks", e.target.value, setTotalMarks)}
                   onBlur={() => setTouched(p => ({ ...p, totalMarks: true }))}
                   placeholder="e.g. 100"
-                  className={getInputClass("totalMarks", "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
+                  className={getInputClass("totalMarks", "w-full rounded-xl border border-slate-200 bg-white dark:bg-card px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
                 />
                 {touched.totalMarks && errors.totalMarks && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.totalMarks}</p>}
               </div>
@@ -281,7 +282,7 @@ export default function QuizForm({ mode, initialData }: Props) {
         </section>
 
         {/* Categorization */}
-        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
           <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Categorization</h2>
           </div>
@@ -290,7 +291,7 @@ export default function QuizForm({ mode, initialData }: Props) {
               <label className="mb-2 block text-sm font-semibold text-slate-800">
                 Domains <span className="text-red-500">*</span>
               </label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
                 {selectedDomains.map((item) => (
                   <span
                     key={item}
@@ -324,7 +325,7 @@ export default function QuizForm({ mode, initialData }: Props) {
               <p className="text-xs text-slate-400 font-medium mt-3">Select one or more professional domains for this quiz.</p>
 
               {filteredDomains.length > 0 && domainSearch.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm absolute z-10 w-full max-w-sm">
+                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white dark:bg-card border border-slate-100 rounded-xl shadow-sm absolute z-10 w-full max-w-sm">
                   {filteredDomains.map((item) => (
                     <button
                       key={item}
@@ -333,7 +334,7 @@ export default function QuizForm({ mode, initialData }: Props) {
                         setSelectedDomains((prev) => [...prev, item]);
                         setDomainSearch("");
                       }}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold tracking-wide text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                      className="rounded-lg border border-slate-200 bg-white dark:bg-card px-3 py-1.5 text-xs font-bold tracking-wide text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
                     >
                       + {item}
                     </button>
@@ -345,7 +346,7 @@ export default function QuizForm({ mode, initialData }: Props) {
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-800">Tags</label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
                 {tags.map((item) => (
                   <span
                     key={item}
@@ -372,7 +373,7 @@ export default function QuizForm({ mode, initialData }: Props) {
         </section>
 
         {/* Quiz Content Builder */}
-        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50/50">
             <div className="flex items-center gap-2">
               <LayoutGrid size={16} className="text-blue-500" />
@@ -402,7 +403,7 @@ export default function QuizForm({ mode, initialData }: Props) {
           
           <div className="p-6 bg-slate-50/30">
             {questions.length === 0 ? (
-              <div className="py-16 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center bg-white">
+              <div className="py-16 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-card">
                 <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mb-4">
                   <LayoutGrid size={24} className="text-slate-300" />
                 </div>
@@ -412,14 +413,14 @@ export default function QuizForm({ mode, initialData }: Props) {
                   <button
                     type="button"
                     onClick={() => handleAddQuestion("multiple_choice")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:bg-card px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
                   >
                     <SlidersHorizontal size={16} className="text-slate-400" /> Multiple Choice
                   </button>
                   <button
                     type="button"
                     onClick={() => handleAddQuestion("true_false")}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white dark:bg-card px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm"
                   >
                     <SlidersHorizontal size={16} className="text-slate-400" /> True / False
                   </button>
@@ -432,7 +433,7 @@ export default function QuizForm({ mode, initialData }: Props) {
         </section>
 
         {/* Visibility & Settings */}
-        <section className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
           <div className="border-b border-slate-100 px-6 py-4 bg-slate-50/50">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Visibility & Settings</h2>
           </div>
@@ -477,11 +478,11 @@ export default function QuizForm({ mode, initialData }: Props) {
       </div>
 
       {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-slate-200 p-4 z-50">
+      <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white dark:bg-card border-t border-slate-200 p-4 z-50">
         <div className="mx-auto max-w-5xl flex justify-end gap-3 pr-4">
           <button
             onClick={() => router.push("/admin/quizzes")}
-            className="px-5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-semibold transition-colors shadow-sm"
+            className="px-5 py-2.5 text-sm rounded-xl border border-slate-200 bg-white dark:bg-card text-slate-600 hover:bg-slate-50 font-semibold transition-colors shadow-sm"
           >
             Cancel
           </button>

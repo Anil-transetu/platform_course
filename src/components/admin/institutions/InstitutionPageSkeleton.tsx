@@ -7,7 +7,7 @@ export default function InstitutionPageSkeleton() {
       {/* STATS CARDS SKELETON */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="p-5 rounded-2xl bg-white border border-gray-100 flex items-center shadow-sm">
+          <div key={i} className="p-5 rounded-2xl bg-white dark:bg-card border border-gray-100 dark:border-border/50 flex items-center shadow-sm">
             <div className="flex-1">
               <Skeleton className="h-4 w-28 mb-2" />
               <Skeleton className="h-8 w-16" />
@@ -18,15 +18,15 @@ export default function InstitutionPageSkeleton() {
       </div>
 
       {/* DATA TABLE SKELETON */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col flex-1">
+      <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-200 dark:border-border/70 overflow-hidden flex flex-col flex-1">
         {/* Table Toolbar (Search & Filter) */}
-        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="p-4 border-b border-gray-100 dark:border-border/50 flex justify-between items-center bg-gray-50 dark:bg-muted/50/50">
           <Skeleton className="h-10 w-[300px] rounded-lg" />
           <Skeleton className="h-10 w-[200px] rounded-lg" />
         </div>
 
         {/* Table Header */}
-        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-100 bg-gray-50/80">
+        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray-100 dark:border-border/50 bg-gray-50 dark:bg-muted/50/80">
           <Skeleton className="h-4 w-20 col-span-1" /> {/* ID */}
           <Skeleton className="h-4 w-24 col-span-2" /> {/* NAME */}
           <Skeleton className="h-4 w-20 col-span-1" /> {/* CONTACT */}
@@ -70,7 +70,7 @@ export default function InstitutionPageSkeleton() {
         </div>
 
         {/* Pagination Skeleton */}
-        <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+        <div className="p-4 border-t border-gray-100 dark:border-border/50 flex items-center justify-between bg-gray-50 dark:bg-muted/50/50">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-8 w-16 rounded-md" />

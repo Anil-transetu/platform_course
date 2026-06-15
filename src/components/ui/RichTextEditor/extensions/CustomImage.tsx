@@ -10,7 +10,7 @@ const ImageComponent = (props: any) => {
       <img
         src={props.node.attrs.src}
         alt={props.node.attrs.alt}
-        className="rounded-xl border border-gray-100 shadow-sm max-w-full h-auto mt-4 mb-4"
+        className="rounded-xl border border-gray-100 dark:border-border/50 shadow-sm max-w-full h-auto mt-4 mb-4"
       />
       
       <button

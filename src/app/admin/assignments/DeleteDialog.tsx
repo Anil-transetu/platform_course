@@ -26,7 +26,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
   if (step === 2) {
     return (
       <div className="min-h-screen bg-slate-900/10 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300 scale-100">
+        <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 dark:border-border/50 overflow-hidden transform transition-all duration-300 scale-100">
           
           {/* HEADER */}
           <div className="flex justify-between items-center p-6 border-b border-gray-50">
@@ -90,7 +90,7 @@ export default function DeleteDialog({ id }: DeleteDialogProps) {
 
   return (
     <div className="min-h-screen bg-slate-900/10 flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300 scale-100">
+      <div className="bg-card w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 dark:border-border/50 overflow-hidden transform transition-all duration-300 scale-100">
         
         {/* HEADER */}
         <div className="flex justify-between items-center p-6 border-b border-gray-50">
