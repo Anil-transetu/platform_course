@@ -6,7 +6,7 @@ import { buildStudentColumns } from "./columns";
 import StudentFormModal from "./StudentFormModal";
 import BulkUploadModal from "./BulkUploadModal";
 import StudentDeleteDialog from "./StudentDeleteDialog";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
@@ -169,10 +169,10 @@ export default function StudentsPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="TOTAL STUDENTS"
             value={stats?.total_students ?? "..."}
@@ -197,7 +197,7 @@ export default function StudentsPage() {
             iconColorClass="text-purple-600"
             tooltip="Average number of courses per student"
           />
-        </div>
+        </StatsGrid>
 
         <DataTable<Student>
           columns={buildStudentColumns()}

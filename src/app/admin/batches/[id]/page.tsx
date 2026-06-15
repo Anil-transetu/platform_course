@@ -6,7 +6,7 @@ import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import { ArrowLeft, Users, UserCheck, UserMinus, Download } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Toaster, toast } from "react-hot-toast";
 import {
   useBatch,
@@ -160,11 +160,11 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
       {isStudentsLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Students"
             value={batchStats?.total_students ?? 0}
@@ -189,7 +189,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
             iconColorClass="text-red-600"
             tooltip="Number of students currently in progress or yet to complete the course"
           />
-        </div>
+        </StatsGrid>
 
         <DataTable<any>
           columns={buildEnrolledStudentColumns()}

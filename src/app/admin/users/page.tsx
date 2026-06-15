@@ -6,7 +6,7 @@ import { buildUserColumns } from "./columns";
 import UserFormModal from "./UserFormModal";
 import UserDeleteDialog from "./UserDeleteDialog";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import {
@@ -203,36 +203,36 @@ export default function UsersPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-        <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
           
           {/* STATS CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
-          <StatsCard
-            title="TOTAL ADMINS"
-            value={stats?.admins ?? "..."}
-            icon={<ShieldCheck className="w-5 h-5" />}
-            iconBgClass="bg-blue-50"
-            iconColorClass="text-blue-600"
-            tooltip="Administrators with full system access"
-          />
-          <StatsCard
-            title="INSTITUTION REPS"
-            value={stats?.representatives ?? "..."}
-            icon={<Users className="w-5 h-5" />}
-            iconBgClass="bg-purple-50"
-            iconColorClass="text-purple-600"
-            tooltip="Users representing their respective institutions"
-          />
-          <StatsCard
-            title="TOTAL INSTITUTIONS"
-            value={stats?.institutions ?? "..."}
-            icon={<Building className="w-5 h-5" />}
-            iconBgClass="bg-green-50"
-            iconColorClass="text-green-600"
-            tooltip="Total institutions linked to registered users"
-          />
-        </div>
+          <StatsGrid>
+            <StatsCard
+              title="TOTAL ADMINS"
+              value={stats?.admins ?? "..."}
+              icon={<ShieldCheck className="w-5 h-5" />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              tooltip="Administrators with full system access"
+            />
+            <StatsCard
+              title="INSTITUTION REPS"
+              value={stats?.representatives ?? "..."}
+              icon={<Users className="w-5 h-5" />}
+              iconBgClass="bg-purple-50"
+              iconColorClass="text-purple-600"
+              tooltip="Users representing their respective institutions"
+            />
+            <StatsCard
+              title="TOTAL INSTITUTIONS"
+              value={stats?.institutions ?? "..."}
+              icon={<Building className="w-5 h-5" />}
+              iconBgClass="bg-green-50"
+              iconColorClass="text-green-600"
+              tooltip="Total institutions linked to registered users"
+            />
+          </StatsGrid>
 
         {/* TABS */}
         <div className="flex items-center gap-6 border-b border-gray-200">

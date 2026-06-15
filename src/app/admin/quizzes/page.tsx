@@ -3,7 +3,7 @@
 import { FileText, Award, HelpCircle, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
 import DeleteDialog from "@/components/reusable/DeleteDialog";
@@ -185,9 +185,9 @@ export default function QuizzesPage() {
       {isLoading ? (
         <QuizPageSkeleton />
       ) : (
-        <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
           {/* Stats Section */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-shrink-0">
+          <StatsGrid>
             <StatsCard
               title="Total Quizzes"
               value={stats?.total_quizzes ?? totalCount}
@@ -212,7 +212,7 @@ export default function QuizzesPage() {
               iconColorClass="text-orange-600"
               tooltip="Quizzes that are currently in Draft status"
             />
-          </div>
+          </StatsGrid>
 
           {/* DataTable Wrapper */}
           <div className="flex-1 overflow-hidden min-h-0">

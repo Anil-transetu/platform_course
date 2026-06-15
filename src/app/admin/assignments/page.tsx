@@ -7,7 +7,7 @@ import {
   FileText, CheckCircle, ClipboardList, Star,
   MoreVertical, FileUp, Link as LinkIcon, Pencil, Trash2
 } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 
 import CreateAssignmentModal from "@/components/sidebar/CreateAssignmentModal";
 
@@ -86,39 +86,41 @@ export default function AssignmentsPage() {
       </div>
 
       {/* STAT CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
-        <StatsCard
-          title="Total Assignments"
-          value="1,240"
-          icon={<FileText className="w-5 h-5" />}
-          iconBgClass="bg-blue-50"
-          iconColorClass="text-blue-600"
-          tooltip="Total number of assignments created"
-        />
-        <StatsCard
-          title="Active Assignments"
-          value="850"
-          icon={<CheckCircle className="w-5 h-5" />}
-          iconBgClass="bg-green-50"
-          iconColorClass="text-green-600"
-          tooltip="Assignments currently active"
-        />
-        <StatsCard
-          title="Submissions Pending"
-          value="124"
-          icon={<ClipboardList className="w-5 h-5" />}
-          iconBgClass="bg-orange-50"
-          iconColorClass="text-orange-600"
-          tooltip="Submitted assignments awaiting grading"
-        />
-        <StatsCard
-          title="Avg. Score"
-          value="82%"
-          icon={<Star className="w-5 h-5" />}
-          iconBgClass="bg-purple-50"
-          iconColorClass="text-purple-600"
-          tooltip="Average grade score across all submissions"
-        />
+      <div className="mb-8">
+        <StatsGrid>
+          <StatsCard
+            title="Total Assignments"
+            value="1,240"
+            icon={<FileText className="w-5 h-5" />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total number of assignments created"
+          />
+          <StatsCard
+            title="Active Assignments"
+            value="850"
+            icon={<CheckCircle className="w-5 h-5" />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Assignments currently active"
+          />
+          <StatsCard
+            title="Submissions Pending"
+            value="124"
+            icon={<ClipboardList className="w-5 h-5" />}
+            iconBgClass="bg-orange-50"
+            iconColorClass="text-orange-600"
+            tooltip="Submitted assignments awaiting grading"
+          />
+          <StatsCard
+            title="Avg. Score"
+            value="82%"
+            icon={<Star className="w-5 h-5" />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            tooltip="Average grade score across all submissions"
+          />
+        </StatsGrid>
       </div>
 
       {/* TABLE CONTAINER */}

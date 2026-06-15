@@ -10,7 +10,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
@@ -217,11 +217,11 @@ export default function TutorsPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
         <Toaster position="top-right" />
         
         {/* STATS CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Tutors"
             value={isStatsLoading ? "..." : (tutorStats?.total || totalCount || 0)}
@@ -254,7 +254,7 @@ export default function TutorsPage() {
             iconColorClass="text-purple-600"
             tooltip="Tutors onboarded recently"
           />
-        </div>
+        </StatsGrid>
 
         {/* DATA TABLE */}
         <div className="flex-1 overflow-hidden min-h-0">

@@ -48,18 +48,32 @@ export function buildTutorColumns(): Column<Tutor>[] {
       key: "domains",
       label: "Domain",
       width: "w-[30%]",
-      render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap max-w-[220px]">
-          {row.domains && row.domains.map((d: string) => (
-            <span
-              key={d}
-              className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-      ),
+      render: (_, row) => {
+        const domains = row.domains || [];
+        const maxVisible = 2;
+        const visibleDomains = domains.slice(0, maxVisible);
+        const extraCount = domains.length - maxVisible;
+        return (
+          <div className="flex gap-1.5 flex-wrap max-w-[220px]">
+            {visibleDomains.map((d: string) => (
+              <span
+                key={d}
+                className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block max-w-[180px]"
+              >
+                {d}
+              </span>
+            ))}
+            {extraCount > 0 && (
+              <span
+                title={domains.slice(maxVisible).join(", ")}
+                className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap cursor-help"
+              >
+                +{extraCount}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "email",
@@ -76,18 +90,32 @@ export function buildTutorColumns(): Column<Tutor>[] {
       key: "assignedBatches",
       label: "Batches",
       width: "w-[15%]",
-      render: (_, row) => (
-        <div className="flex gap-1.5 flex-wrap max-w-[220px]">
-          {row.assignedBatches && row.assignedBatches.map((b: any, i: number) => (
-            <span
-              key={b?._id || b?.id || b?.batchName || i}
-              className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap"
-            >
-              {typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b}
-            </span>
-          ))}
-        </div>
-      ),
+      render: (_, row) => {
+        const batches = row.assignedBatches || [];
+        const maxVisible = 2;
+        const visibleBatches = batches.slice(0, maxVisible);
+        const extraCount = batches.length - maxVisible;
+        return (
+          <div className="flex gap-1.5 flex-wrap max-w-[220px]">
+            {visibleBatches.map((b: any, i: number) => (
+              <span
+                key={b?._id || b?.id || b?.batchName || i}
+                className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block max-w-[180px]"
+              >
+                {typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b}
+              </span>
+            ))}
+            {extraCount > 0 && (
+              <span
+                title={batches.map((b: any) => typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b).slice(maxVisible).join(", ")}
+                className="bg-gray-200 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap cursor-help"
+              >
+                +{extraCount}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "status",

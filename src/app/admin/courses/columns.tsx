@@ -54,14 +54,16 @@ export const buildCourseColumns = (): Column<Course>[] => [
     key: "name",
     label: "COURSE NAME",
     render: (value, row) => (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 max-w-[280px]">
         <div className={cn(
-          "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold",
+          "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
           getAvatarColor(row.id)
         )}>
           {getInitials(row.name)}
         </div>
-        <div className="font-semibold text-slate-900 text-sm">{row.name}</div>
+        <div className="font-semibold text-slate-900 text-sm whitespace-normal break-words leading-tight">
+          {row.name}
+        </div>
       </div>
     ),
   },
@@ -117,14 +119,16 @@ export const buildDomainColumns = (): Column<Domain>[] => [
     key: "name",
     label: "DOMAIN NAME",
     render: (value, row) => (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 max-w-[240px]">
         <div className={cn(
-          "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold",
+          "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
           getAvatarColor(row.id)
         )}>
           {getInitials(row.name)}
         </div>
-        <div className="font-semibold text-slate-900 text-sm">{row.name}</div>
+        <div className="font-semibold text-slate-900 text-sm whitespace-normal break-words leading-tight">
+          {row.name}
+        </div>
       </div>
     ),
   },

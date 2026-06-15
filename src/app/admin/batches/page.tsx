@@ -4,7 +4,7 @@ import { Batch } from "@/types/batch";
 import { buildBatchColumns } from "./columns";
 import BatchFormModal from "./BatchFormModal";
 import BatchDeleteDialog from "./BatchDeleteDialog";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import { useRouter } from "next/navigation";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
@@ -202,10 +202,10 @@ export default function BatchesPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Batches"
             value={totalBatches}
@@ -238,7 +238,7 @@ export default function BatchesPage() {
             iconColorClass="text-purple-600"
             tooltip="Total students enrolled across all batches"
           />
-        </div>
+        </StatsGrid>
 
         <DataTable<Batch>
           columns={buildBatchColumns()}

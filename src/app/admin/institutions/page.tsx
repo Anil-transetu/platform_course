@@ -6,7 +6,7 @@ import { buildInstitutionColumns } from "./columns";
 import InstitutionFormModal from "./InstitutionFormModal";
 import InstitutionDeleteDialog from "./InstitutionDeleteDialog";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Toaster } from "@/components/ui/sonner";
@@ -198,42 +198,42 @@ export default function InstitutionsPage() {
       {isLoading ? (
         <InstitutionPageSkeleton />
       ) : (
-        <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
-          <StatsCard 
-            title="Total Institutions" 
-            value={stats?.total_institutions ?? totalCount} 
-            icon={<Building size={20} />} 
-            iconBgClass="bg-blue-50" 
-            iconColorClass="text-blue-600" 
-            tooltip="Total number of registered institutions on the platform" 
-          />
-          <StatsCard 
-            title="Active Institutions" 
-            value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length} 
-            icon={<CheckCircle size={20} />} 
-            iconBgClass="bg-green-50" 
-            iconColorClass="text-green-600" 
-            tooltip="Institutions currently active and operational" 
-          />
-          <StatsCard 
-            title="Avg. Courses / Inst." 
-            value={stats?.average_courses_per_institution?.toFixed(1) ?? "0"} 
-            icon={<BookOpen size={20} />} 
-            iconBgClass="bg-purple-50" 
-            iconColorClass="text-purple-600" 
-            tooltip="Average number of courses offered per institution" 
-          />
-          <StatsCard 
-            title="Pending Registrations" 
-            value={stats?.pending_registrations ?? 0} 
-            icon={<Clock size={20} />} 
-            iconBgClass="bg-orange-50" 
-            iconColorClass="text-orange-600" 
-            tooltip="Institutions awaiting approval or registration completion" 
-          />
-        </div>
+          <StatsGrid>
+            <StatsCard 
+              title="Total Institutions" 
+              value={stats?.total_institutions ?? totalCount} 
+              icon={<Building size={20} />} 
+              iconBgClass="bg-blue-50" 
+              iconColorClass="text-blue-600" 
+              tooltip="Total number of registered institutions on the platform" 
+            />
+            <StatsCard 
+              title="Active Institutions" 
+              value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length} 
+              icon={<CheckCircle size={20} />} 
+              iconBgClass="bg-green-50" 
+              iconColorClass="text-green-600" 
+              tooltip="Institutions currently active and operational" 
+            />
+            <StatsCard 
+              title="Avg. Courses / Inst." 
+              value={stats?.average_courses_per_institution?.toFixed(1) ?? "0"} 
+              icon={<BookOpen size={20} />} 
+              iconBgClass="bg-purple-50" 
+              iconColorClass="text-purple-600" 
+              tooltip="Average number of courses offered per institution" 
+            />
+            <StatsCard 
+              title="Pending Registrations" 
+              value={stats?.pending_registrations ?? 0} 
+              icon={<Clock size={20} />} 
+              iconBgClass="bg-orange-50" 
+              iconColorClass="text-orange-600" 
+              tooltip="Institutions awaiting approval or registration completion" 
+            />
+          </StatsGrid>
 
         <DataTable<Institution>
           columns={buildInstitutionColumns()}

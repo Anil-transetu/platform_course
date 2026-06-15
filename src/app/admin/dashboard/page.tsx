@@ -11,7 +11,7 @@ import {
   Eye
 } from "lucide-react"
 import Link from "next/link"
-import StatsCard from "@/components/ui/StatsCard"
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard"
 
 export default function DashboardPage() {
   return (
@@ -40,60 +40,56 @@ export default function DashboardPage() {
 
       <h2 className="font-semibold mb-4 text-foreground">Quick Navigation</h2>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-10">
+      <div className="mb-10">
+        <StatsGrid>
+          {/* Institutions */}
+          <Link href="/admin/institutions" className="block w-full">
+            <StatsCard
+              title="Institutions"
+              value="42 Units"
+              icon={<Building2 size={20} />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              rightIcon={<Eye size={16} />}
+            />
+          </Link>
 
-        {/* Institutions */}
+          {/* Batches */}
+          <Link href="/admin/batches" className="block w-full">
+            <StatsCard
+              title="Batches"
+              value="156 Active"
+              icon={<Layers size={20} />}
+              iconBgClass="bg-purple-50"
+              iconColorClass="text-purple-600"
+              rightIcon={<Eye size={16} />}
+            />
+          </Link>
 
-        <Link href="/admin/institutions" className="block w-full">
-          <StatsCard
-            title="Institutions"
-            value="42 Units"
-            icon={<Building2 size={20} />}
-            iconBgClass="bg-blue-50"
-            iconColorClass="text-blue-600"
-            rightIcon={<Eye size={16} />}
-          />
-        </Link>
+          {/* Courses */}
+          <Link href="/admin/courses" className="block w-full">
+            <StatsCard
+              title="Courses"
+              value="84 Courses"
+              icon={<BookOpen size={20} />}
+              iconBgClass="bg-orange-50"
+              iconColorClass="text-orange-600"
+              rightIcon={<Eye size={16} />}
+            />
+          </Link>
 
-        {/* Batches */}
-
-        <Link href="/admin/batches" className="block w-full">
-          <StatsCard
-            title="Batches"
-            value="156 Active"
-            icon={<Layers size={20} />}
-            iconBgClass="bg-purple-50"
-            iconColorClass="text-purple-600"
-            rightIcon={<Eye size={16} />}
-          />
-        </Link>
-
-        {/* Courses */}
-
-        <Link href="/admin/courses" className="block w-full">
-          <StatsCard
-            title="Courses"
-            value="84 Courses"
-            icon={<BookOpen size={20} />}
-            iconBgClass="bg-orange-50"
-            iconColorClass="text-orange-600"
-            rightIcon={<Eye size={16} />}
-          />
-        </Link>
-
-        {/* Tutors */}
-
-        <Link href="/admin/tutors" className="block w-full">
-          <StatsCard
-            title="Tutors"
-            value="892 Staff"
-            icon={<Users size={20} />}
-            iconBgClass="bg-red-50"
-            iconColorClass="text-red-500"
-            rightIcon={<Eye size={16} />}
-          />
-        </Link>
-
+          {/* Tutors */}
+          <Link href="/admin/tutors" className="block w-full">
+            <StatsCard
+              title="Tutors"
+              value="892 Staff"
+              icon={<Users size={20} />}
+              iconBgClass="bg-red-50"
+              iconColorClass="text-red-500"
+              rightIcon={<Eye size={16} />}
+            />
+          </Link>
+        </StatsGrid>
       </div>
 
       {/* Creation Hub */}

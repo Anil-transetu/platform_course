@@ -5,7 +5,7 @@ import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
@@ -271,13 +271,13 @@ export default function CoursesPage() {
       {isLoading ? (
         <CoursePageSkeleton />
       ) : (
-        <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
         {/* CARDS */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard title="Total Courses" value={coursesData.length} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
           <StatsCard title="Active Courses" value={coursesData.filter(c => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
           <StatsCard title="Draft Courses" value={coursesData.filter(c => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
-        </div>
+        </StatsGrid>
 
         {/* TABS */}
         <div className="flex gap-6 border-b flex-shrink-0">
