@@ -106,7 +106,7 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
             placeholder="e.g. Design Principles Guide.pdf"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -189,7 +189,7 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
             placeholder="Enter image name..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -285,7 +285,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
             placeholder="Enter a title for this video..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -313,7 +313,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
 
         <div className="relative py-2">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-100"></span>
+            <span className="w-full border-t border-gray-100 dark:border-border/50"></span>
           </div>
           <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest">
             <span className="bg-card px-4 text-gray-300">OR</span>
@@ -329,7 +329,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
               placeholder="Paste YouTube or Vimeo link here..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
             />
           </div>
         </div>
@@ -381,7 +381,7 @@ function UrlModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
             placeholder="e.g., External Documentation"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+            className="w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
           />
         </div>
 
@@ -394,7 +394,7 @@ function UrlModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
               placeholder="https://example.com/resource"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
+              className="w-full pl-12 pr-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground"
             />
           </div>
         </div>

@@ -49,7 +49,7 @@ export default function EvaluationMatrixBuilder({ criteria, onChange, error }: P
               value={c.name}
               onChange={(e) => handleUpdateCriteria(i, "name", e.target.value)}
               placeholder="e.g. Code Quality and Best Practices"
-              className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+              className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
             />
           </div>
           <div className="col-span-3 md:col-span-2">
@@ -57,7 +57,7 @@ export default function EvaluationMatrixBuilder({ criteria, onChange, error }: P
               type="number"
               value={c.marks}
               onChange={(e) => handleUpdateCriteria(i, "marks", e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+              className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
               min="0"
             />
           </div>

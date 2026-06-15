@@ -62,7 +62,7 @@ export default function AssignmentLibraryPage() {
           {assignmentTitle ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
-              <div className="flex items-start justify-between bg-card p-8 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="flex items-start justify-between bg-card p-8 rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm">
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full uppercase">
@@ -70,7 +70,7 @@ export default function AssignmentLibraryPage() {
                     </span>
                   </div>
                   <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">{assignmentTitle}</h1>
-                  <p className="text-gray-500 text-sm max-w-2xl">
+                  <p className="text-gray-500 dark:text-muted-foreground text-sm max-w-2xl">
                     This assignment has been added to your lesson. Students must submit their deliverables before passing.
                   </p>
                 </div>
@@ -80,16 +80,16 @@ export default function AssignmentLibraryPage() {
                   </button>
                   <button 
                     onClick={() => updateAssignment(activeModuleId!, activeLessonId!, activeAssignmentId!, { title: "" })}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 shadow-sm"
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 dark:text-muted-foreground font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 dark:border-border/70 shadow-sm"
                   >
                     <RefreshCcw size={16} /> Replace Assignment
                   </button>
                 </div>
               </div>
 
-              <div className="bg-card rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-card rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
                 <div className="px-8 py-5 border-b border-gray-50 bg-muted/30">
-                  <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                  <h3 className="font-bold text-gray-700 dark:text-foreground flex items-center gap-2">
                     <ClipboardList size={18} className="text-indigo-500" />
                     Preview: Instructions & Deliverables
                   </h3>
@@ -97,7 +97,7 @@ export default function AssignmentLibraryPage() {
                 <div className="p-8 flex flex-col gap-8">
                   <div>
                     <h4 className="font-bold text-foreground mb-2">Instructions</h4>
-                    <p className="text-sm text-gray-500 leading-relaxed max-w-3xl">
+                    <p className="text-sm text-gray-500 dark:text-muted-foreground leading-relaxed max-w-3xl">
                       In this assignment, you will be applying the concepts learned in this lesson to a real-world scenario. 
                       Please ensure you follow all guidelines and utilize the templates provided. Your submission should be 
                       comprehensive and clearly demonstrate your understanding of the core material.
@@ -107,15 +107,15 @@ export default function AssignmentLibraryPage() {
                   <div>
                     <h4 className="font-bold text-foreground mb-3">Deliverables</h4>
                     <ul className="flex flex-col gap-2">
-                      <li className="flex items-center gap-3 text-sm text-gray-600">
+                      <li className="flex items-center gap-3 text-sm text-gray-600 dark:text-muted-foreground">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                         1x PDF Report summarizing your findings (Max 3 pages)
                       </li>
-                      <li className="flex items-center gap-3 text-sm text-gray-600">
+                      <li className="flex items-center gap-3 text-sm text-gray-600 dark:text-muted-foreground">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                         Source files or link to your repository
                       </li>
-                      <li className="flex items-center gap-3 text-sm text-gray-600">
+                      <li className="flex items-center gap-3 text-sm text-gray-600 dark:text-muted-foreground">
                         <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
                         A 2-minute Loom video explaining your approach
                       </li>
@@ -125,13 +125,13 @@ export default function AssignmentLibraryPage() {
                   <div>
                     <h4 className="font-bold text-foreground mb-3">Grading Criteria</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl border border-gray-100 bg-muted/30">
+                      <div className="p-4 rounded-xl border border-gray-100 dark:border-border/50 bg-muted/30">
                         <span className="font-bold text-sm text-foreground block mb-1">Completeness (40%)</span>
-                        <span className="text-xs text-gray-500">All deliverables are submitted and meet minimum requirements.</span>
+                        <span className="text-xs text-gray-500 dark:text-muted-foreground">All deliverables are submitted and meet minimum requirements.</span>
                       </div>
-                      <div className="p-4 rounded-xl border border-gray-100 bg-muted/30">
+                      <div className="p-4 rounded-xl border border-gray-100 dark:border-border/50 bg-muted/30">
                         <span className="font-bold text-sm text-foreground block mb-1">Quality (60%)</span>
-                        <span className="text-xs text-gray-500">The work demonstrates high quality and attention to detail.</span>
+                        <span className="text-xs text-gray-500 dark:text-muted-foreground">The work demonstrates high quality and attention to detail.</span>
                       </div>
                     </div>
                   </div>
@@ -143,12 +143,12 @@ export default function AssignmentLibraryPage() {
             <>
               <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold text-foreground tracking-tight">Assignment Library</h1>
-                <p className="text-gray-500 text-sm">Browse and add pre-existing assignments to your module.</p>
+                <p className="text-gray-500 dark:text-muted-foreground text-sm">Browse and add pre-existing assignments to your module.</p>
               </div>
 
               {/* SEARCH BAR */}
-              <div className="bg-card border border-gray-200 rounded-2xl p-2 flex items-center shadow-sm">
-                <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-muted rounded-xl border border-gray-100">
+              <div className="bg-card border border-gray-200 dark:border-border/70 rounded-2xl p-2 flex items-center shadow-sm">
+                <div className="flex-1 flex items-center gap-3 px-4 py-2 bg-muted rounded-xl border border-gray-100 dark:border-border/50">
                   <Search size={18} className="text-gray-400" />
                   <input 
                     type="text" 
@@ -169,20 +169,20 @@ export default function AssignmentLibraryPage() {
               {/* GRID */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentItems.map((assignment) => (
-                  <div key={assignment.id} className="bg-card border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+                  <div key={assignment.id} className="bg-card border border-gray-200 dark:border-border/70 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
                     <div className="flex justify-between items-start mb-6">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${assignment.bg} ${assignment.color}`}>
                         <assignment.icon size={20} strokeWidth={2.5} />
                       </div>
-                      <span className="text-[10px] font-bold tracking-widest uppercase bg-muted text-gray-500 px-3 py-1 rounded-lg">
+                      <span className="text-[10px] font-bold tracking-widest uppercase bg-muted text-gray-500 dark:text-muted-foreground px-3 py-1 rounded-lg">
                         {assignment.type}
                       </span>
                     </div>
                     
                     <h3 className="font-bold text-foreground text-lg mb-3 leading-tight">{assignment.title}</h3>
-                    <p className="text-gray-500 text-sm mb-8 leading-relaxed flex-1">{assignment.desc}</p>
+                    <p className="text-gray-500 dark:text-muted-foreground text-sm mb-8 leading-relaxed flex-1">{assignment.desc}</p>
                     
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-100 mt-auto">
+                    <div className="flex items-center justify-between pt-6 border-t border-gray-100 dark:border-border/50 mt-auto">
                       <span className="text-xs font-bold text-gray-400 w-16">{assignment.time}</span>
                       <button 
                         onClick={() => handleAddToCourse(assignment.title)}

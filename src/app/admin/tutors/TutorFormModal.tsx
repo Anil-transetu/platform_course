@@ -131,15 +131,15 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         {/* Row 1: Full Name & Email Address */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Full Name
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. Dr. John Doe"
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
-                errors.name ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
+                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.name && (
@@ -147,7 +147,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             )}
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Email Address
             </label>
             <input
@@ -156,8 +156,8 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="john.doe@example.com"
               autoComplete="new-email"
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
-                errors.email ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
+                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.email && (
@@ -169,7 +169,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         {/* Row 2: Contact Number & Password */}
         <div className="grid grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Contact Number
             </label>
             <input
@@ -177,8 +177,8 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               placeholder="+1 (234) 567-8900"
               autoComplete="new-phone"
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
-                errors.phone ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
+                errors.phone ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.phone && (
@@ -186,7 +186,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             )}
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Password
             </label>
             <div className="relative">
@@ -196,14 +196,14 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder={mode === "edit" ? "••••••••" : "••••••••"}
                 autoComplete="new-password"
-                className={`w-full border rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${
-                  errors.password ? "border-red-500" : "border-gray-200"
+                className={`w-full border rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
+                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -216,10 +216,10 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
         {/* Row 3: Domains */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
             Domains
           </label>
-          <div className="w-full border border-gray-200 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
+          <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
             {form.domains.map((domain) => (
               <span key={domain} className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
                 {domain}
@@ -241,10 +241,10 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
         {/* Row 4: Tags */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
             Tags
           </label>
-          <div className="w-full border border-gray-200 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
+          <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-2 py-1.5 min-h-[46px] flex flex-wrap items-center gap-2 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors">
             {form.tags.map((tag, i) => (
               <span key={tag} className={`text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 ${i % 2 === 0 ? 'bg-purple-50 text-purple-600' : 'bg-orange-50 text-orange-600'}`}>
                 {tag}
@@ -268,7 +268,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         <div className="flex justify-end gap-3 pt-6">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm rounded-xl text-gray-600 hover:bg-gray-100 font-semibold transition-colors"
+            className="px-6 py-2.5 text-sm rounded-xl text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:bg-muted font-semibold transition-colors"
           >
             Cancel
           </button>

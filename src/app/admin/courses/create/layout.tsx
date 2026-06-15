@@ -35,7 +35,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   return (
     <div className="bg-muted min-h-screen flex flex-col">
       {/* CENTRALIZED HEADER / BREADCRUMB */}
-      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 shadow-sm shrink-0">
+      <div className="flex justify-between items-center p-6 bg-card border-b border-gray-100 dark:border-border/50 shadow-sm shrink-0">
         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
           {/* Base Course Breadcrumb */}
           {isRootLevel ? (

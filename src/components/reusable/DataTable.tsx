@@ -258,7 +258,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 return (
                   <React.Fragment key={rowId}>
                     <TableRow
-                      className={`border-b border-gray-100 transition-colors ${
+                      className={`border-b border-gray-100 dark:border-border/50 transition-colors ${
                         actions || onRowClick
                           ? "cursor-pointer hover:bg-muted"
                           : ""
@@ -283,7 +283,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                     </TableRow>
                     {isExpanded && renderExpandedRow && (
                       <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
-                        <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="p-0 border-b border-gray-100">
+                        <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="p-0 border-b border-gray-100 dark:border-border/50">
                           {renderExpandedRow(row)}
                         </TableCell>
                       </TableRow>

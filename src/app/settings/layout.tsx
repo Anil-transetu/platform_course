@@ -27,11 +27,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               <h1 className="text-3xl font-bold mb-1 tracking-tight">ANIL SAI NUNNA</h1>
               <div className="flex items-center gap-3 text-sm text-gray-400">
                 <span>@ANIL</span>
-                <span className="px-2.5 py-0.5 bg-white/10 text-white rounded-full text-[11px] font-medium tracking-wide">Pro Plan</span>
+                <span className="px-2.5 py-0.5 bg-white dark:bg-card/10 text-white rounded-full text-[11px] font-medium tracking-wide">Pro Plan</span>
               </div>
             </div>
           </div>
-          <button className="flex items-center justify-center gap-2 px-4 py-2 bg-transparent hover:bg-white/5 border border-white/20 rounded-lg text-sm font-medium transition-colors md:mb-2 w-fit">
+          <button className="flex items-center justify-center gap-2 px-4 py-2 bg-transparent hover:bg-white dark:bg-card/5 border border-white/20 rounded-lg text-sm font-medium transition-colors md:mb-2 w-fit">
             <Share2 className="w-4 h-4" />
             Share Profile
           </button>

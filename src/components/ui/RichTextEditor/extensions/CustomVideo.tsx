@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 const VideoComponent = (props: any) => {
   return (
     <NodeViewWrapper className="relative group inline-block max-w-full w-full mt-4 mb-4">
-      <div className="relative pt-[56.25%] w-full rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+      <div className="relative pt-[56.25%] w-full rounded-xl overflow-hidden border border-gray-100 dark:border-border/50 shadow-sm">
         <iframe
           src={props.node.attrs.src}
           className="absolute top-0 left-0 w-full h-full"

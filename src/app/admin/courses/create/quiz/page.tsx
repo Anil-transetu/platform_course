@@ -8,11 +8,11 @@ import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 
 const MOCK_QUIZZES = [
-  { id: "q1", title: "Introduction to UX", desc: "A fundamental assessment covering basic UX principles and methodologies.", questions: 20, time: "15 mins", diff: "Beginner", diffColor: "bg-gray-100 text-gray-600", icon: "brain" },
+  { id: "q1", title: "Introduction to UX", desc: "A fundamental assessment covering basic UX principles and methodologies.", questions: 20, time: "15 mins", diff: "Beginner", diffColor: "bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground", icon: "brain" },
   { id: "q2", title: "Color Theory Basics", desc: "Deep dive into the psychology of colors, contrast ratios, and palettes.", questions: 15, time: "10 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "palette" },
   { id: "q3", title: "Typography Mastery", desc: "Complex concepts including variable fonts, kerning, and hierarchy.", questions: 35, time: "45 mins", diff: "Advanced", diffColor: "bg-red-100 text-red-700", icon: "type" },
   { id: "q4", title: "Information Architecture", desc: "Testing knowledge on site mapping, card sorting, and user flows.", questions: 25, time: "20 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "git-merge" },
-  { id: "q5", title: "Responsive Design 101", desc: "Understanding breakpoints, fluid grids, and adaptive media queries.", questions: 18, time: "12 mins", diff: "Beginner", diffColor: "bg-gray-100 text-gray-600", icon: "smartphone" },
+  { id: "q5", title: "Responsive Design 101", desc: "Understanding breakpoints, fluid grids, and adaptive media queries.", questions: 18, time: "12 mins", diff: "Beginner", diffColor: "bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground", icon: "smartphone" },
   { id: "q6", title: "Accessibility Auditing", desc: "Advanced WCAG 2.1 compliance testing, ARIA roles, and screen readers.", questions: 40, time: "50 mins", diff: "Advanced", diffColor: "bg-red-100 text-red-700", icon: "bar-chart" },
   { id: "q7", title: "Prototyping Workflows", desc: "Interactive states, variables, and advanced component logic in Figma.", questions: 30, time: "30 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "layers" },
 ];
@@ -70,7 +70,7 @@ export default function QuizLibraryPage() {
           {quizTitle ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
-              <div className="flex items-start justify-between bg-card p-8 rounded-2xl border border-gray-100 shadow-sm">
+              <div className="flex items-start justify-between bg-card p-8 rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm">
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <span className="bg-blue-100 text-blue-700 text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full uppercase">
@@ -81,7 +81,7 @@ export default function QuizLibraryPage() {
                     </span>
                   </div>
                   <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">{quizTitle}</h1>
-                  <p className="text-gray-500 text-sm max-w-2xl">
+                  <p className="text-gray-500 dark:text-muted-foreground text-sm max-w-2xl">
                     This quiz has been attached to your lesson. Students will be required to complete it before progressing.
                   </p>
                 </div>
@@ -91,55 +91,55 @@ export default function QuizLibraryPage() {
                   </button>
                   <button 
                     onClick={() => updateQuiz(activeModuleId!, activeLessonId!, activeQuizId!, { title: "" })}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 shadow-sm"
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 dark:text-muted-foreground font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 dark:border-border/70 shadow-sm"
                   >
                     <RefreshCcw size={16} /> Replace Quiz
                   </button>
                 </div>
               </div>
 
-              <div className="bg-card rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-card rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
                 <div className="px-8 py-5 border-b border-gray-50 bg-muted/30">
-                  <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                  <h3 className="font-bold text-gray-700 dark:text-foreground flex items-center gap-2">
                     <HelpCircle size={18} className="text-blue-500" />
                     Preview: Sample Questions
                   </h3>
                 </div>
                 <div className="p-8 flex flex-col gap-6">
                   {/* Mock Question 1 */}
-                  <div className="p-6 border border-gray-100 rounded-xl">
+                  <div className="p-6 border border-gray-100 dark:border-border/50 rounded-xl">
                     <h4 className="font-bold text-foreground mb-4">1. Which of the following is a primary color?</h4>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500 bg-blue-50/50">
                         <CheckCircle2 size={18} className="text-blue-500" />
                         <span className="text-sm font-medium text-blue-900">Red</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200" />
-                        <span className="text-sm font-medium text-gray-600">Green</span>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
+                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">Green</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200" />
-                        <span className="text-sm font-medium text-gray-600">Orange</span>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
+                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">Orange</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Mock Question 2 */}
-                  <div className="p-6 border border-gray-100 rounded-xl">
+                  <div className="p-6 border border-gray-100 dark:border-border/50 rounded-xl">
                     <h4 className="font-bold text-foreground mb-4">2. What is the recommended minimum contrast ratio for text?</h4>
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500 bg-blue-50/50">
                         <CheckCircle2 size={18} className="text-blue-500" />
                         <span className="text-sm font-medium text-blue-900">4.5:1</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200" />
-                        <span className="text-sm font-medium text-gray-600">3.0:1</span>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
+                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">3.0:1</span>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200" />
-                        <span className="text-sm font-medium text-gray-600">2.5:1</span>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
+                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
+                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">2.5:1</span>
                       </div>
                     </div>
                   </div>
@@ -151,12 +151,12 @@ export default function QuizLibraryPage() {
             <>
               <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-bold text-foreground tracking-tight">Quiz Library</h1>
-                <p className="text-gray-500 text-sm">Select an existing quiz to add to your course structure.</p>
+                <p className="text-gray-500 dark:text-muted-foreground text-sm">Select an existing quiz to add to your course structure.</p>
               </div>
 
               {/* SEARCH BAR */}
               <div className="flex items-center gap-4 mt-2">
-                <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-card rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-card rounded-xl border border-gray-200 dark:border-border/70 shadow-sm">
                   <Search size={18} className="text-gray-400" />
                   <input 
                     type="text" 
@@ -177,7 +177,7 @@ export default function QuizLibraryPage() {
               {/* GRID */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentItems.map((quiz) => (
-                  <div key={quiz.id} className="bg-card border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
+                  <div key={quiz.id} className="bg-card border border-gray-200 dark:border-border/70 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
                     <div className="flex justify-between items-start mb-6">
                       {getIcon(quiz.icon)}
                       <span className={`text-[11px] font-bold tracking-widest px-3 py-1.5 rounded-full ${quiz.diffColor}`}>
@@ -186,14 +186,14 @@ export default function QuizLibraryPage() {
                     </div>
                     
                     <h3 className="font-bold text-foreground text-lg mb-3 leading-tight">{quiz.title}</h3>
-                    <p className="text-gray-500 text-sm mb-6 leading-relaxed flex-1">{quiz.desc}</p>
+                    <p className="text-gray-500 dark:text-muted-foreground text-sm mb-6 leading-relaxed flex-1">{quiz.desc}</p>
                     
                     <div className="flex items-center gap-6 mb-6">
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-muted-foreground">
                         <HelpCircle size={14} />
                         <span className="text-xs font-semibold">{quiz.questions} Questions</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-500">
+                      <div className="flex items-center gap-2 text-gray-500 dark:text-muted-foreground">
                         <Clock size={14} />
                         <span className="text-xs font-semibold">{quiz.time}</span>
                       </div>

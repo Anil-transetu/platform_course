@@ -132,7 +132,7 @@ export default function QuizzesPage() {
             </span>
           ))}
           {(row.tags || []).length > 3 && (
-            <span className="rounded-md bg-gray-100 px-2 py-1 text-[10px] font-semibold tracking-wide text-gray-600">
+            <span className="rounded-md bg-gray-100 dark:bg-muted px-2 py-1 text-[10px] font-semibold tracking-wide text-gray-600 dark:text-muted-foreground">
               +{(row.tags || []).length - 3}
             </span>
           )}

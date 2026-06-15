@@ -107,15 +107,15 @@ export default function CoursesPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Enrolled Courses</h1>
-          <p className="text-gray-500 mt-1 font-medium">Manage your active learning journey and track your progress.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground tracking-tight">Enrolled Courses</h1>
+          <p className="text-gray-500 dark:text-muted-foreground mt-1 font-medium">Manage your active learning journey and track your progress.</p>
         </div>
-        <div className="flex items-center gap-1 p-1 bg-white border border-gray-100 rounded-xl shadow-sm">
+        <div className="flex items-center gap-1 p-1 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-xl shadow-sm">
           <button 
             onClick={() => setView("card")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all",
-              view === "card" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 hover:text-gray-900"
+              view === "card" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:text-foreground"
             )}
           >
             <LayoutGrid size={14} />
@@ -125,7 +125,7 @@ export default function CoursesPage() {
             onClick={() => setView("table")}
             className={cn(
               "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all",
-              view === "table" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 hover:text-gray-900"
+              view === "table" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:text-foreground"
             )}
           >
             <List size={14} />
@@ -141,12 +141,12 @@ export default function CoursesPage() {
           <input 
             type="text" 
             placeholder="Search for courses, instructors, or tags..." 
-            className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm"
+            className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:bg-gray-50 transition-all font-bold text-sm text-gray-700">
+        <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm hover:bg-gray-50 dark:bg-muted/50 transition-all font-bold text-sm text-gray-700 dark:text-foreground">
           <Filter size={18} />
           Filter
         </button>
@@ -158,7 +158,7 @@ export default function CoursesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
               <Link key={course.id} href={`/student/courses/${course.id}`} className="block group">
-                <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl transition-all overflow-hidden h-full flex flex-col">
+                <div className="bg-white dark:bg-card rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm hover:shadow-xl transition-all overflow-hidden h-full flex flex-col">
                   {/* Course Header Image/Pattern */}
                   <div className={cn(
                   "h-48 relative overflow-hidden flex items-center justify-center",
@@ -201,7 +201,7 @@ export default function CoursesPage() {
                     )}
                   </div>
                   
-                  <button className="absolute bottom-4 right-4 w-10 h-10 bg-white/90 backdrop-blur rounded-full flex items-center justify-center text-gray-900 shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                  <button className="absolute bottom-4 right-4 w-10 h-10 bg-white dark:bg-card/90 backdrop-blur rounded-full flex items-center justify-center text-gray-900 dark:text-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
                     <PlayCircle size={20} />
                   </button>
                 </div>
@@ -210,12 +210,12 @@ export default function CoursesPage() {
                 <div className="p-8 flex-1 flex flex-col">
                   <div className="flex gap-2 mb-4">
                     {course.tech.map((t, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-gray-50 text-gray-500 text-[10px] font-bold uppercase tracking-tighter rounded-md border border-gray-100">
+                      <span key={i} className="px-2 py-0.5 bg-gray-50 dark:bg-muted/50 text-gray-500 dark:text-muted-foreground text-[10px] font-bold uppercase tracking-tighter rounded-md border border-gray-100 dark:border-border/50">
                         {t}
                       </span>
                     ))}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 leading-tight group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-foreground mb-6 leading-tight group-hover:text-blue-600 transition-colors">
                     {course.name}
                   </h3>
                   
@@ -225,7 +225,7 @@ export default function CoursesPage() {
                         <span>Progress</span>
                         <span>{course.progress}%</span>
                       </div>
-                      <div className="w-full h-2 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                      <div className="w-full h-2 bg-gray-50 dark:bg-muted/50 rounded-full overflow-hidden border border-gray-100 dark:border-border/50">
                         <div 
                           className={cn(
                             "h-full rounded-full transition-all duration-1000",
@@ -256,7 +256,7 @@ export default function CoursesPage() {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-card rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -273,11 +273,11 @@ export default function CoursesPage() {
                   {filteredCourses.map((course) => (
                     <tr 
                       key={course.id} 
-                      className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                      className="hover:bg-gray-50 dark:bg-muted/50/50 transition-colors group cursor-pointer"
                       onClick={() => window.location.href = `/student/courses/${course.id}`}
                     >
                       <td className="px-8 py-5">
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-lg border border-gray-200">
+                        <span className="px-3 py-1 bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground text-[10px] font-bold rounded-lg border border-gray-200 dark:border-border/70">
                           {course.id}
                         </span>
                       </td>
@@ -293,7 +293,7 @@ export default function CoursesPage() {
                             <course.icon size={20} />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{course.name}</p>
+                            <p className="text-sm font-bold text-gray-900 dark:text-foreground group-hover:text-blue-600 transition-colors">{course.name}</p>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{course.category}</p>
                           </div>
                         </div>
@@ -305,14 +305,14 @@ export default function CoursesPage() {
                           alt={course.instructor} 
                           width={32}
                           height={32}
-                          className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200" 
+                          className="w-8 h-8 rounded-full bg-gray-100 dark:bg-muted border border-gray-200 dark:border-border/70" 
                         />
-                          <p className="text-sm font-medium text-gray-600">{course.instructor}</p>
+                          <p className="text-sm font-medium text-gray-600 dark:text-muted-foreground">{course.instructor}</p>
                         </div>
                       </td>
                       <td className="px-8 py-5 w-48">
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-muted rounded-full overflow-hidden">
                             <div 
                               className={cn(
                                 "h-full rounded-full transition-all duration-1000",
@@ -327,9 +327,9 @@ export default function CoursesPage() {
                           <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">{course.progress}%</span>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-sm font-medium text-gray-500">{course.lastAccessed}</td>
+                      <td className="px-8 py-5 text-sm font-medium text-gray-500 dark:text-muted-foreground">{course.lastAccessed}</td>
                       <td className="px-8 py-5 text-right">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
+                        <button className="p-2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:bg-muted rounded-lg transition-all">
                           <MoreVertical size={18} />
                         </button>
                       </td>
@@ -340,32 +340,32 @@ export default function CoursesPage() {
             </div>
 
             {/* Pagination / Info Bar matching design */}
-            <div className="px-8 py-6 bg-gray-50/50 flex items-center justify-between border-t border-gray-100">
+            <div className="px-8 py-6 bg-gray-50 dark:bg-muted/50/50 flex items-center justify-between border-t border-gray-100 dark:border-border/50">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                 Showing 1 - {filteredCourses.length} of 24
               </p>
               <div className="flex items-center gap-8">
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Rows per page:</span>
-                  <select className="bg-transparent text-xs font-bold text-gray-900 focus:outline-none cursor-pointer">
+                  <select className="bg-transparent text-xs font-bold text-gray-900 dark:text-foreground focus:outline-none cursor-pointer">
                     <option>5</option>
                     <option>10</option>
                     <option>20</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-900 border border-gray-200 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
+                  <button className="p-2 text-gray-400 hover:text-gray-900 dark:text-foreground border border-gray-200 dark:border-border/70 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
                     <ChevronLeft size={16} />
                   </button>
                   {[1, 2, 3].map(p => (
                     <button key={p} className={cn(
                       "w-8 h-8 text-[10px] font-bold rounded-lg transition-all",
-                      p === 1 ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-400 hover:bg-white border border-transparent hover:border-gray-200"
+                      p === 1 ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-400 hover:bg-white dark:bg-card border border-transparent hover:border-gray-200 dark:border-border/70"
                     )}>
                       {p}
                     </button>
                   ))}
-                  <button className="p-2 text-gray-400 hover:text-gray-900 border border-gray-200 rounded-lg">
+                  <button className="p-2 text-gray-400 hover:text-gray-900 dark:text-foreground border border-gray-200 dark:border-border/70 rounded-lg">
                     <ChevronRight size={16} />
                   </button>
                 </div>
@@ -374,12 +374,12 @@ export default function CoursesPage() {
           </div>
         )
       ) : (
-        <div className="bg-white p-20 rounded-[32px] border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-          <div className="p-6 bg-gray-50 rounded-[28px] text-gray-300 mb-6">
+        <div className="bg-white dark:bg-card p-20 rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm flex flex-col items-center justify-center text-center">
+          <div className="p-6 bg-gray-50 dark:bg-muted/50 rounded-[28px] text-gray-300 mb-6">
             <SearchX size={48} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No courses found</h3>
-          <p className="text-gray-500 max-w-sm">We couldn&apos;t find any courses matching your search criteria. Try using different keywords.</p>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-foreground mb-2">No courses found</h3>
+          <p className="text-gray-500 dark:text-muted-foreground max-w-sm">We couldn&apos;t find any courses matching your search criteria. Try using different keywords.</p>
         </div>
       )}
     </div>

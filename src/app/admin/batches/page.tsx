@@ -27,7 +27,7 @@ export default function BatchesPage() {
   const visibleData = batches.slice(start, start + rowsPerPage);
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="p-8 bg-gray-100 dark:bg-muted min-h-screen">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">

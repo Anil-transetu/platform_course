@@ -62,14 +62,14 @@ export default function AttendancePage() {
       {/* Header Section */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Attendance Tracking</h1>
-          <p className="text-gray-500 mt-1 font-medium">Monitor your daily presence and consistency.</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground tracking-tight">Attendance Tracking</h1>
+          <p className="text-gray-500 dark:text-muted-foreground mt-1 font-medium">Monitor your daily presence and consistency.</p>
         </div>
         <div className="flex gap-2">
-          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 bg-white">
+          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 dark:border-border/50 bg-white dark:bg-card">
             <Bell size={20} />
           </button>
-          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 bg-white">
+          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 dark:border-border/50 bg-white dark:bg-card">
             <Moon size={20} />
           </button>
         </div>
@@ -78,7 +78,7 @@ export default function AttendancePage() {
       {/* Summary Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {summaryStats.map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm flex items-center gap-6 group hover:shadow-md transition-all">
+          <div key={i} className="bg-white dark:bg-card p-6 rounded-[28px] border border-gray-100 dark:border-border/50 shadow-sm flex items-center gap-6 group hover:shadow-md transition-all">
             <div className={cn(
               "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
               stat.color === "blue" ? "bg-blue-600 shadow-blue-500/20" :
@@ -89,21 +89,21 @@ export default function AttendancePage() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900 tabular-nums">{stat.value}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-foreground tabular-nums">{stat.value}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* Heatmap Section */}
-      <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-card p-8 rounded-[40px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Attendance History</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight">Attendance History</h2>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Less</span>
               <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm bg-gray-50 border border-gray-100"></div>
+                <div className="w-3 h-3 rounded-sm bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50"></div>
                 <div className="w-3 h-3 rounded-sm bg-emerald-100/50"></div>
                 <div className="w-3 h-3 rounded-sm bg-emerald-300"></div>
                 <div className="w-3 h-3 rounded-sm bg-emerald-500"></div>
@@ -134,7 +134,7 @@ export default function AttendancePage() {
                       key={di} 
                       className={cn(
                         "w-3.5 h-3.5 rounded-sm transition-all hover:scale-125 hover:z-10 cursor-pointer shadow-sm",
-                        day === 0 ? "bg-gray-50 border border-gray-100" :
+                        day === 0 ? "bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50" :
                         day === 1 ? "bg-emerald-100 border border-emerald-200/20" :
                         day === 2 ? "bg-emerald-300 shadow-[0_0_4px_rgba(110,231,183,0.3)]" :
                         "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
@@ -149,15 +149,15 @@ export default function AttendancePage() {
       </div>
 
       {/* Detailed Logs Page */}
-      <div className="bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-card rounded-[40px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden flex flex-col">
         <div className="p-8 border-b border-gray-50 flex items-center justify-between flex-wrap gap-4">
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Detailed Logs</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight">Detailed Logs</h2>
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 border border-gray-100 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-100 transition-all">
+            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-xl font-bold text-xs text-gray-700 dark:text-foreground hover:bg-gray-100 dark:bg-muted transition-all">
               Status
               <ChevronLeft size={14} className="-rotate-90" />
             </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 border border-gray-100 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-100 transition-all shadow-sm">
+            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-xl font-bold text-xs text-gray-700 dark:text-foreground hover:bg-gray-100 dark:bg-muted transition-all shadow-sm">
               <Download size={14} />
               Export
             </button>
@@ -167,7 +167,7 @@ export default function AttendancePage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/20">
+              <tr className="bg-gray-50 dark:bg-muted/50/20">
                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</th>
                 <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Course</th>
@@ -176,17 +176,17 @@ export default function AttendancePage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {attendanceLogs.map((log, i) => (
-                <tr key={i} className="hover:bg-gray-50/50 transition-all group">
+                <tr key={i} className="hover:bg-gray-50 dark:bg-muted/50/50 transition-all group">
                   <td className="px-8 py-7">
-                    <p className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <p className="text-sm font-bold text-gray-900 dark:text-foreground group-hover:text-blue-600 transition-colors">
                       {log.date}
                     </p>
                   </td>
                   <td className="px-8 py-7">
-                    <p className="text-sm font-medium text-gray-500 whitespace-nowrap">{log.day}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground whitespace-nowrap">{log.day}</p>
                   </td>
                   <td className="px-8 py-7">
-                    <p className="text-sm font-medium text-gray-500">{log.course}</p>
+                    <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground">{log.course}</p>
                   </td>
                   <td className="px-8 py-7">
                     <span className={cn(
@@ -205,15 +205,15 @@ export default function AttendancePage() {
         </div>
 
         {/* Footer info bar */}
-        <div className="px-8 py-8 flex items-center justify-between bg-gray-50/30">
+        <div className="px-8 py-8 flex items-center justify-between bg-gray-50 dark:bg-muted/50/30">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
             Showing 1 - 5 of 24
           </p>
           <div className="flex items-center gap-10">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Rows per page:</span>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-lg">
-                <span className="text-xs font-bold text-gray-900">5</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-lg">
+                <span className="text-xs font-bold text-gray-900 dark:text-foreground">5</span>
                 <ChevronLeft size={14} className="-rotate-90 text-gray-300" />
               </div>
             </div>
@@ -222,15 +222,15 @@ export default function AttendancePage() {
                 <ChevronLeft size={20} />
               </button>
               <button className="w-9 h-9 text-[10px] font-bold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">1</button>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white hover:text-gray-600">2</button>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white hover:text-gray-600">3</button>
+              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">2</button>
+              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">3</button>
               <span className="text-gray-300">...</span>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white hover:text-gray-600">5</button>
+              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">5</button>
               <button className="p-2 text-gray-400 hover:text-blue-600">
                 <ChevronRight size={20} />
               </button>
             </div>
-            <div className="font-bold text-gray-700 bg-gray-100 px-4 py-2 rounded-xl text-xs hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
+            <div className="font-bold text-gray-700 dark:text-foreground bg-gray-100 dark:bg-muted px-4 py-2 rounded-xl text-xs hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
               Next
             </div>
           </div>

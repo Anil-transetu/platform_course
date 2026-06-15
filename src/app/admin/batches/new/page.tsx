@@ -118,7 +118,7 @@ export default function CreateBatchPage() {
 
   return (
 
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-muted flex items-center justify-center p-8">
 
       <div className="bg-card w-[850px] rounded-xl shadow-xl p-8">
 

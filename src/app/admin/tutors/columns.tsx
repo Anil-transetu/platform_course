@@ -49,7 +49,7 @@ export function buildTutorColumns(): Column<Tutor>[] {
       render: (_, row) => (
         <div>
           <p className="text-foreground font-medium text-sm">{row.email}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{row.phone}</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">{row.phone}</p>
         </div>
       ),
     },
@@ -61,7 +61,7 @@ export function buildTutorColumns(): Column<Tutor>[] {
           {row.batches && row.batches.map((b: string) => (
             <span
               key={b}
-              className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase"
+              className="bg-gray-100 dark:bg-muted text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase"
             >
               {b}
             </span>

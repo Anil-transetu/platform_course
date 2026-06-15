@@ -99,9 +99,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     );
 
     return (
-      <div className={`border border-gray-100 rounded-xl overflow-hidden shadow-sm bg-card flex flex-col ${className || ''}`}>
+      <div className={`border border-gray-100 dark:border-border/50 rounded-xl overflow-hidden shadow-sm bg-card flex flex-col ${className || ''}`}>
         {/* TOOLBAR */}
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-muted border-b border-gray-100 shrink-0">
+        <div className="flex flex-wrap items-center gap-1 p-2 bg-muted border-b border-gray-100 dark:border-border/50 shrink-0">
           <ToolbarButton 
             onClick={() => editor.chain().focus().toggleBold().run()} 
             isActive={editor.isActive('bold')}

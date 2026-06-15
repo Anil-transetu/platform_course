@@ -18,13 +18,13 @@ import {
 import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Check, X } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
-function ActionMenu({ 
-  onEdit, 
-  onDelete, 
-  isPending 
-}: { 
-  onEdit: () => void; 
-  onDelete: () => void; 
+function ActionMenu({
+  onEdit,
+  onDelete,
+  isPending
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
   isPending: boolean;
 }) {
   return (
@@ -149,11 +149,11 @@ export default function UsersPage() {
   const statsTotalUsers = stats ? ((stats.admins || 0) + (stats.representatives || 0)) : 0;
   // Prioritize the API's returned total (which may be nested in `pagination`). If missing, fallback to stats or list length.
   const apiTotal = !Array.isArray(usersData) ? (usersData?.pagination?.total ?? usersData?.total) : undefined;
-  const totalCount = apiTotal !== undefined 
-    ? apiTotal 
+  const totalCount = apiTotal !== undefined
+    ? apiTotal
     : Math.max(statsTotalUsers, usersList.length);
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
-  
+
   // Only slice locally if the backend returned more items than rowsPerPage (meaning it didn't paginate properly)
   let visibleData = usersList;
   const start = (page - 1) * rowsPerPage;
@@ -205,79 +205,79 @@ export default function UsersPage() {
       ) : (
         <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
-          
-          {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-shrink-0">
-          <StatsCard
-            title="TOTAL ADMINS"
-            value={stats?.admins ?? "..."}
-            icon={<ShieldCheck className="w-5 h-5" />}
-            iconBgClass="bg-blue-50"
-            iconColorClass="text-blue-600"
-            tooltip="Administrators with full system access"
-          />
-          <StatsCard
-            title="INSTITUTION REPS"
-            value={stats?.representatives ?? "..."}
-            icon={<Users className="w-5 h-5" />}
-            iconBgClass="bg-purple-50"
-            iconColorClass="text-purple-600"
-            tooltip="Users representing their respective institutions"
-          />
-          <StatsCard
-            title="TOTAL INSTITUTIONS"
-            value={stats?.institutions ?? "..."}
-            icon={<Building className="w-5 h-5" />}
-            iconBgClass="bg-green-50"
-            iconColorClass="text-green-600"
-            tooltip="Total institutions linked to registered users"
-          />
-        </div>
 
-        {/* TABS */}
-        <div className="flex items-center gap-6 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab("accepted")}
-            className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
+          {/* STATS CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-shrink-0">
+            <StatsCard
+              title="TOTAL ADMINS"
+              value={stats?.admins ?? "..."}
+              icon={<ShieldCheck className="w-5 h-5" />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              tooltip="Administrators with full system access"
+            />
+            <StatsCard
+              title="INSTITUTION REPS"
+              value={stats?.representatives ?? "..."}
+              icon={<Users className="w-5 h-5" />}
+              iconBgClass="bg-purple-50"
+              iconColorClass="text-purple-600"
+              tooltip="Users representing their respective institutions"
+            />
+            <StatsCard
+              title="TOTAL INSTITUTIONS"
+              value={stats?.institutions ?? "..."}
+              icon={<Building className="w-5 h-5" />}
+              iconBgClass="bg-green-50"
+              iconColorClass="text-green-600"
+              tooltip="Total institutions linked to registered users"
+            />
+          </div>
+
+          {/* TABS */}
+          <div className="flex items-center gap-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab("accepted")}
+              className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
               ${activeTab === "accepted" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-900"}
             `}
-          >
-            Accepted Requests
-          </button>
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
+            >
+              Accepted Requests
+            </button>
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
               ${activeTab === "pending" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-900"}
             `}
-          >
-            Pending
-          </button>
-        </div>
+            >
+              Pending
+            </button>
+          </div>
 
-        {/* DATA TABLE */}
-        <DataTable<User>
-          columns={buildUserColumns(activeTab)}
-          data={visibleData}
-          loading={isLoading || isFetching}
-          search={searchConfig}
-          filters={filterConfig}
-          actions={(user) => (
-            <div className="flex justify-center">
-              <ActionMenu 
-                onEdit={() => setFormModal({ open: true, mode: "edit", user })}
-                onDelete={() => setDeleteDialog({ open: true, user })}
-                isPending={activeTab === "pending"}
-              />
-            </div>
-          )}
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={setRowsPerPage}
-          paginationInfo={paginationInfo}
-          showPagination={true}
-        />
+          {/* DATA TABLE */}
+          <DataTable<User>
+            columns={buildUserColumns(activeTab)}
+            data={visibleData}
+            loading={isLoading || isFetching}
+            search={searchConfig}
+            filters={filterConfig}
+            actions={(user) => (
+              <div className="flex justify-center">
+                <ActionMenu
+                  onEdit={() => setFormModal({ open: true, mode: "edit", user })}
+                  onDelete={() => setDeleteDialog({ open: true, user })}
+                  isPending={activeTab === "pending"}
+                />
+              </div>
+            )}
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={setRowsPerPage}
+            paginationInfo={paginationInfo}
+            showPagination={true}
+          />
         </div>
       )}
 

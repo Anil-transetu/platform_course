@@ -37,18 +37,18 @@ function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => 
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:bg-muted rounded-lg text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground transition-colors"
         >
           <MoreVertical size={16} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+      <DropdownMenuContent align="end" className="bg-white dark:bg-card rounded-xl shadow-md border border-gray-100 dark:border-border/50 p-1 min-w-[120px] z-50">
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
             onView();
           }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
         >
           <Eye size={14} className="text-gray-400" />
           View
@@ -179,7 +179,7 @@ export default function CoursesPage() {
     <div className="flex gap-3">
       <button 
         onClick={() => setIsDomainOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
+        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
       >
         <Plus size={16} /> Create New Domain
       </button>
@@ -215,7 +215,7 @@ export default function CoursesPage() {
             className={`pb-2 font-medium transition-all text-sm ${
               activeTab === "courses"
                 ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground"
             }`}
           >
             Courses
@@ -225,7 +225,7 @@ export default function CoursesPage() {
             className={`pb-2 font-medium transition-all text-sm ${
               activeTab === "domains"
                 ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground"
             }`}
           >
             Domains

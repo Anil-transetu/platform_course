@@ -115,21 +115,21 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     >
       <div className="space-y-4">
         {mode === "add" && (
-          <p className="text-sm text-gray-500 mb-2">Fill in the details to add a new team member.</p>
+          <p className="text-sm text-gray-500 dark:text-muted-foreground mb-2">Fill in the details to add a new team member.</p>
         )}
         
         <div className="flex flex-col gap-4">
           {/* Full Name */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Full Name
             </label>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g. John Doe"
-              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                errors.name ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.name && (
@@ -139,7 +139,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
 
           {/* Email Address */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Email Address
             </label>
             <input
@@ -148,8 +148,8 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="john.doe@example.com"
               autoComplete="new-email"
-              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                errors.email ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.email && (
@@ -159,7 +159,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
 
           {/* Password */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Initial Password
             </label>
             <div className="relative">
@@ -169,14 +169,14 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder={mode === "edit" ? "Leave blank to keep current" : "password123"}
                 autoComplete="new-password"
-                className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white ${
-                  errors.password ? "border-red-500" : "border-gray-200"
+                className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -188,14 +188,14 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
 
           {/* Role */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Select Role
             </label>
             <select
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className={`w-full border bg-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 ${
-                errors.role ? "border-red-500" : "border-gray-200"
+              className={`w-full border bg-white dark:bg-card rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 dark:text-foreground ${
+                errors.role ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             >
               <option value="">Select a role</option>
@@ -211,7 +211,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           {/* Conditional Institution Field */}
           {form.role === "Institution Representative" && (
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
                 Select Institution
               </label>
               <div className="relative">
@@ -219,8 +219,8 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
                 <select
                   value={form.institution_id}
                   onChange={(e) => setForm({ ...form, institution_id: e.target.value })}
-                  className={`w-full border bg-white rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 appearance-none ${
-                    errors.institution_id ? "border-red-500" : "border-gray-200"
+                  className={`w-full border bg-white dark:bg-card rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 dark:text-foreground appearance-none ${
+                    errors.institution_id ? "border-red-500" : "border-gray-200 dark:border-border/70"
                   }`}
                   style={{
                     backgroundImage: `url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239CA3AF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")`,
@@ -248,7 +248,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
         <div className="flex justify-end gap-3 pt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-sm rounded-lg text-gray-700 font-semibold transition-colors bg-white hover:bg-gray-50"
+            className="px-4 py-2.5 text-sm rounded-lg text-gray-700 dark:text-foreground font-semibold transition-colors bg-white dark:bg-card hover:bg-gray-50 dark:bg-muted/50"
           >
             Cancel
           </button>
