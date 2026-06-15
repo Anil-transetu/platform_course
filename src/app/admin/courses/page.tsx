@@ -11,36 +11,28 @@ import {
   Pencil, 
   Trash2, 
   ArrowLeft, 
-  SquareArrowOutUpRight
+  Terminal, 
+  Settings, 
+  ExternalLink 
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
-import { buildCourseColumns, buildDomainColumns, Course } from "./columns";
-import { Domain } from "@/types/domain";
+import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
+import { Toaster, toast } from "react-hot-toast";
 import {
   useDomains,
-  useDomain,
   useDomainStats,
   useCreateDomain,
   useUpdateDomain,
   useDeleteDomain
 } from "@/features/admin/domains/api/domain-api";
 import { useAssignments } from "@/features/admin/assignments/api/use-assignments";
-import {
-  useCourses,
-  useCourseStats,
-  useDeleteCourse
-} from "@/features/admin/courses/api/course-api";
-import CourseDetailViewer from "./CourseDetailViewer";
-import AssignmentDetailViewer from "./AssignmentDetailViewer";
-import { useCourseStore } from "@/store/useCourseStore";
-import { useDebounce } from "@/hooks/use-debounce";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -65,6 +57,16 @@ const getAvatarColor = (id: string | number) => {
 };
 
 // Master list of all possible courses to map tags and associate course details
+const ALL_COURSES_DETAILS = [
+  { id: "CRS-001", name: "Advanced Web Development", category: "Web Development", modules: 12, status: "Active" },
+  { id: "CRS-014", name: "React & Redux Masterclass", category: "Frontend Frameworks", modules: 8, status: "Active" },
+  { id: "CRS-022", name: "Cloud Architecture on AWS", category: "Infrastructure", modules: 15, status: "Draft" },
+  { id: "CRS-035", name: "DevOps Pipelines for Beginners", category: "DevOps", modules: 10, status: "Active" },
+  { id: "CRS-042", name: "Python for Machine Learning", category: "Data Science", modules: 8, status: "Active" },
+  { id: "CRS-056", name: "Ethical Hacking Fundamentals", category: "Cybersecurity", modules: 15, status: "Active" },
+  { id: "CRS-078", name: "UI/UX Strategy & Design", category: "Design", modules: 6, status: "Active" },
+  { id: "CRS-090", name: "MERN Stack Bootcamp", category: "Web Development", modules: 14, status: "Draft" },
+];
 
 function CoursePageSkeleton() {
   return (
@@ -111,7 +113,6 @@ function CoursePageSkeleton() {
     </div>
   );
 }
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -121,7 +122,14 @@ import {
 
 
 
-function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
+const initialDomains: Domain[] = [
+  { id: 1, name: "Web Development", category: "Technology", courses: 12, updated: "Oct 24, 2023", status: "Active" },
+  { id: 2, name: "Data Science", category: "Science", courses: 8, updated: "Oct 20, 2023", status: "Active" },
+  { id: 3, name: "Cybersecurity", category: "Security", courses: 15, updated: "Oct 18, 2023", status: "Active" },
+  { id: 4, name: "Design", category: "Creative", courses: 6, updated: "Oct 15, 2023", status: "Active" },
+];
+
+function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -143,18 +151,6 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
           <Eye size={14} className="text-gray-400" />
           View
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
-        >
-          <Pencil size={14} className="text-gray-400" />
-          Edit
-        </DropdownMenuItem>
-
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -175,17 +171,10 @@ export default function CoursesPage() {
   const searchParams = useSearchParams();
   const viewId = searchParams.get("view");
   const [activeTab, setActiveTab] = useState<"courses" | "domains">("courses");
+  const [coursesData, setCoursesData] = useState<Course[]>(initialCourses);
+  
   // Track domain selected for details viewing
   const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
-  // Track course selected for details viewing
-  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
-  const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (viewId && activeTab === "courses") {
-      router.push(`/admin/courses/view?id=${viewId}`);
-    }
-  }, [viewId, activeTab, router]);
 
   // States for Associated Courses list in Domain Detail View
   const [courseSearch, setCourseSearch] = useState("");
@@ -218,26 +207,9 @@ export default function CoursesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-
-  const debouncedSearch = useDebounce(search, 300);
   
-  // Courses React Query hook
-  const {
-    data: coursesResponse,
-    isLoading: isLoadingCourses,
-    isFetching: isFetchingCourses
-  } = useCourses(
-    activeTab === "courses" ? page : 1,
-    rowsPerPage,
-    debouncedSearch,
-    statusFilter,
-    { enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
-  );
-
-  const { data: courseStatsRaw } = useCourseStats({
-    enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId
-  });
-  const deleteCourseMutation = useDeleteCourse();
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [isFetchingCourses, setIsFetchingCourses] = useState(false);
 
   // Queries & Mutations for domains
   const {
@@ -247,34 +219,39 @@ export default function CoursesPage() {
   } = useDomains(
     activeTab === "domains" ? page : 1,
     rowsPerPage,
-    debouncedSearch,
-    statusFilter,
-    { enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
+    search,
+    statusFilter
   );
 
-  const { data: domainStats } = useDomainStats({
-    enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId
-  });
-
-  const { data: assignmentsRes } = useAssignments(1, 100, undefined, undefined, {
-    enabled: !!viewingDomain && !viewingAssignmentId
-  });
+  const { data: domainStats } = useDomainStats();
+  const { data: assignmentsRes } = useAssignments(1, 100);
   const availableAssignments = assignmentsRes?.data || [];
 
   const createDomainMutation = useCreateDomain();
   const updateDomainMutation = useUpdateDomain();
   const deleteDomainMutation = useDeleteDomain();
 
-  // Fetch latest domain details dynamically when viewing a domain
-  const { data: latestDomain } = useDomain(viewingDomain?.id || "");
-  const activeDomain = latestDomain || viewingDomain;
-
-  // Normalize Lists
+  // Normalize Domain List
   const domainsList: Domain[] = domainsResponse?.data || (Array.isArray(domainsResponse) ? domainsResponse : []);
   const totalDomainsCount = domainsResponse?.pagination?.total || domainsResponse?.total || domainsList.length;
 
-  const coursesList = coursesResponse?.data || [];
-  const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
+  // Simulate courses initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoadingCourses(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Simulate courses fetching on filter changes
+  useEffect(() => {
+    if (isLoadingCourses) return;
+    setIsFetchingCourses(true);
+    const timer = setTimeout(() => {
+      setIsFetchingCourses(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, statusFilter, isLoadingCourses]);
 
   // Reset page & filters when switching tabs
   useEffect(() => {
@@ -283,68 +260,63 @@ export default function CoursesPage() {
     setSearch("");
   }, [activeTab]);
 
-  const handleSaveDomain = async (data: Record<string, unknown>) => {
+  const handleSaveDomain = async (data: Record<string, any>) => {
     try {
       if (domainModal.mode === "add") {
         await createDomainMutation.mutateAsync(data);
-        toast.success("Domain created successfully!");
+        toast.success("Domain created successfully");
       } else if (domainModal.domain) {
         await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data });
-        toast.success("Domain updated successfully!");
+        toast.success("Domain updated successfully");
         
         // Update local viewing state if currently viewing this domain
         if (viewingDomain && viewingDomain.id === domainModal.domain.id) {
           setViewingDomain({
             ...viewingDomain,
-            name: (data.name as string) || viewingDomain.name,
-            description: (data.description as string) || viewingDomain.description,
-            tags: typeof data.tags === 'string'
-              ? data.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
-              : (data.tags as string[]) || viewingDomain.tags,
-            assignment_ids: Array.isArray(data.assignment_ids)
-              ? data.assignment_ids.map(Number)
-              : viewingDomain.assignment_ids,
-            status: (data.status as string) || viewingDomain.status
+            name: data.name || viewingDomain.name,
+            description: data.description || viewingDomain.description,
+            tags: data.tags || viewingDomain.tags,
+            assignment_ids: data.assignment_ids || viewingDomain.assignment_ids,
+            status: data.status || viewingDomain.status
           });
         }
       }
       setDomainModal({ open: false, mode: "add", domain: null });
-    } catch (err) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to save domain");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save domain");
     }
   };
 
   const handleDelete = async () => {
-    if (deleteDialog.type === "course" && deleteDialog.item) {
-      try {
-        await deleteCourseMutation.mutateAsync(deleteDialog.item.id);
-        toast.success("Course deleted successfully!");
-      } catch (err) {
-        const error = err as Error;
-        toast.error(error.message || "Failed to delete course");
-      }
+    if (deleteDialog.type === "course") {
+      setCoursesData(coursesData.filter(c => c.id !== deleteDialog.item?.id));
+      toast.success("Course deleted successfully (local simulation)");
     } else if (deleteDialog.item) {
       try {
         await deleteDomainMutation.mutateAsync(deleteDialog.item.id);
-        toast.success("Domain deleted successfully!");
+        toast.success("Domain deleted successfully");
         if (viewingDomain && viewingDomain.id === deleteDialog.item.id) {
           setViewingDomain(null);
         }
-      } catch (err) {
-        const error = err as Error;
-        toast.error(error.message || "Failed to delete domain");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete domain");
       }
     }
   };
 
-  const currentData = activeTab === "courses" ? coursesList : domainsList;
-  const totalCount = activeTab === "courses" ? totalCoursesCount : totalDomainsCount;
+  const filteredCourses = coursesData.filter((c) => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "All" || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const currentData = activeTab === "courses" ? filteredCourses : domainsList;
+  const totalCount = activeTab === "courses" ? filteredCourses.length : totalDomainsCount;
   const totalPages = activeTab === "courses" 
-    ? (coursesResponse?.pagination?.totalPages || Math.max(1, Math.ceil(totalCoursesCount / rowsPerPage)))
+    ? Math.max(1, Math.ceil(filteredCourses.length / rowsPerPage))
     : Math.max(1, Math.ceil(totalDomainsCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = currentData;
+  const visibleData = activeTab === "courses" ? currentData.slice(start, start + rowsPerPage) : currentData;
 
   const searchConfig = {
     enabled: true,
@@ -383,13 +355,13 @@ export default function CoursesPage() {
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(start + (activeTab === "courses" ? rowsPerPage : visibleData.length), totalCount)} of ${totalCount}`
+    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
     <div className="flex gap-3">
       <button 
-        onClick={() => setDomainModal({ open: true, mode: "add", domain: null })}
+        onClick={() => setIsDomainOpen(true)}
         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
       >
         <Plus size={16} /> Create New Domain
@@ -408,41 +380,17 @@ export default function CoursesPage() {
 
   const isScreenLoading = activeTab === "courses" ? isLoadingCourses : isDomainsLoading;
 
-  // Render Assignment Detail View
-  if (viewingAssignmentId) {
-    return (
-      <AssignmentDetailViewer
-        assignmentId={viewingAssignmentId}
-        onBack={() => setViewingAssignmentId(null)}
-      />
-    );
-  }
-
-  // Render Course Detail View
-  if (viewingCourse) {
-    return (
-      <CourseDetailViewer 
-        courseId={viewingCourse.id} 
-        onBack={() => {
-          setViewingCourse(null);
-          router.push("/admin/courses");
-        }} 
-        onEdit={() => router.push(`/admin/courses/create?id=${viewingCourse.id}`)}
-      />
-    );
-  }
-
   // Render Domain Detail View
-  if (activeDomain) {
-    // Determine courses associated with the domain
-    const associatedCoursesList = activeDomain.courses_list || [];
+  if (viewingDomain) {
+    // Determine courses associated with the domain tags
+    const associatedCoursesList = ALL_COURSES_DETAILS.filter(c => 
+      viewingDomain.tags?.some(tag => tag.toLowerCase() === c.name.toLowerCase())
+    );
 
     // Apply local search and status filtering on the Associated Courses
     const filteredAssociatedCourses = associatedCoursesList.filter((c) => {
       const matchesSearch = c.name.toLowerCase().includes(courseSearch.toLowerCase());
-      const matchesStatus = courseStatusFilter === "All" || 
-        (c.status || "").toLowerCase() === courseStatusFilter.toLowerCase() ||
-        (courseStatusFilter.toLowerCase() === "active" && (c.status === "in_progress" || c.status === "active" || c.status === "published"));
+      const matchesStatus = courseStatusFilter === "All" || c.status.toLowerCase() === courseStatusFilter.toLowerCase();
       return matchesSearch && matchesStatus;
     });
 
@@ -459,28 +407,28 @@ export default function CoursesPage() {
       {
         key: "id",
         label: "ID",
-        render: (val: unknown, row: Course) => <span className="text-slate-500 font-medium">{row.id}</span>
+        render: (val: any, row: any) => <span className="text-slate-500 font-medium">{row.id}</span>
       },
       {
         key: "name",
         label: "COURSE NAME",
-        render: (val: unknown, row: Course) => <span className="font-bold text-slate-800 text-sm">{row.name}</span>
+        render: (val: any, row: any) => <span className="font-bold text-slate-800 text-sm">{row.name}</span>
       },
       {
         key: "category",
         label: "CATEGORY",
-        render: (val: unknown, row: Course) => <span className="text-slate-500 text-sm max-w-[200px] truncate block">{row.category || row.description || "N/A"}</span>
+        render: (val: any, row: any) => <span className="text-slate-500 text-sm">{row.category}</span>
       },
       {
         key: "modules",
         label: "TOTAL MODULES",
-        render: (val: unknown, row: Course) => <span className="text-slate-600 font-medium text-sm text-center block w-full">{row.no_of_modules || (Array.isArray(row.modules) ? row.modules.length : 0) || 0}</span>
+        render: (val: any, row: any) => <span className="text-slate-600 font-medium text-sm text-center block w-full">{row.modules}</span>
       },
       {
         key: "status",
         label: "STATUS",
-        render: (val: unknown, row: Course) => {
-          const isActive = row.status === "Active" || row.status === "active" || row.status === "published" || row.status === "in_progress";
+        render: (val: any, row: any) => {
+          const isActive = row.status === "Active" || row.status === "active";
           return (
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
               isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-orange-50 text-orange-600 border border-orange-100"
@@ -494,8 +442,11 @@ export default function CoursesPage() {
 
     // Find Final Assignment details
     const matchedAssignment = availableAssignments.find(a => 
-      activeDomain.assignment_ids?.includes(Number(a.id))
+      viewingDomain.assignment_ids?.includes(Number(a.id))
     );
+    const finalAssignmentName = matchedAssignment 
+      ? matchedAssignment.title || matchedAssignment.assignment_title 
+      : `Capstone Project: ${viewingDomain.name}`;
 
     const associatedCoursesSearchConfig = {
       enabled: true,
@@ -526,8 +477,8 @@ export default function CoursesPage() {
     ];
 
     const handleOpenAssignment = () => {
-      if (activeDomain.assignment_ids && activeDomain.assignment_ids.length > 0) {
-        setViewingAssignmentId(String(activeDomain.assignment_ids[0]));
+      if (viewingDomain.assignment_ids && viewingDomain.assignment_ids.length > 0) {
+        router.push(`/admin/assignments/${viewingDomain.assignment_ids[0]}`);
       } else {
         toast.error("No final assignment assigned to this domain yet.");
       }
@@ -553,36 +504,27 @@ export default function CoursesPage() {
 
           {/* Domain card info */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex gap-4 items-start">
-            {activeDomain.domain_image_url ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={activeDomain.domain_image_url}
-                alt={activeDomain.name}
-                className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-100 shadow-sm"
-              />
-            ) : (
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 ${getAvatarColor(activeDomain.id)}`}>
-                {getInitials(activeDomain.name)}
-              </div>
-            )}
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 ${getAvatarColor(viewingDomain.id)}`}>
+              {getInitials(viewingDomain.name)}
+            </div>
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">{activeDomain.name}</h2>
-                  <p className="text-slate-500 text-sm mt-1">{activeDomain.description || "No description provided."}</p>
+                  <h2 className="text-lg font-bold text-slate-800">{viewingDomain.name}</h2>
+                  <p className="text-slate-500 text-sm mt-1">{viewingDomain.description || "No description provided."}</p>
                 </div>
                 {/* Status Badge */}
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                  activeDomain.status === "Active" ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
+                  viewingDomain.status === "Active" ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
                 }`}>
-                  {activeDomain.status}
+                  {viewingDomain.status}
                 </span>
               </div>
               
-              {activeDomain.tags && activeDomain.tags.length > 0 && (
+              {viewingDomain.tags && viewingDomain.tags.length > 0 && (
                 <div className="flex items-center gap-2 mt-4 flex-wrap">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">Related Tags:</span>
-                  {activeDomain.tags.map((tag, i) => (
+                  {viewingDomain.tags.map((tag, i) => (
                     <span 
                       key={i} 
                       className="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-blue-100"
@@ -601,11 +543,11 @@ export default function CoursesPage() {
             
             {/* Courses Table using reusable DataTable built-in search and filters */}
             <div className="border border-gray-100 rounded-xl overflow-hidden flex flex-col">
-              <DataTable<Course>
+              <DataTable<any>
                 data={visibleCourses}
                 columns={associatedCourseColumns}
                 loading={false}
-                rowKey={(item: Course) => String(item.id)}
+                rowKey={(item) => String(item.id)}
                 bodyHeight="auto"
                 rowsPerPage={courseRowsPerPage}
                 currentPage={coursePage}
@@ -618,7 +560,7 @@ export default function CoursesPage() {
                 filters={associatedCoursesFilterConfig}
                 actions={(course) => (
                   <button 
-                    onClick={() => router.push(`/admin/courses/view?id=${course.id}`)}
+                    onClick={() => router.push(`/admin/courses/create?id=${course.id}`)}
                     className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
                   >
                     <Eye size={14} />
@@ -630,64 +572,30 @@ export default function CoursesPage() {
           </div>
 
           {/* Final Assessment Card */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center border-b border-gray-100 pb-3">
-              <h2 className="text-base font-bold text-slate-800">Final Assessment</h2>
-            </div>
-            
-            {matchedAssignment ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-base font-bold text-blue-600">
-                    {matchedAssignment.title || matchedAssignment.assignment_title || "Untitled Assignment"}
-                  </h3>
-                  <button
-                    onClick={handleOpenAssignment}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-150 flex-shrink-0"
-                  >
-                    <SquareArrowOutUpRight size={15} />
-                    Open Full Assessment Page
-                  </button>
-                </div>
-                
-                {matchedAssignment.description && (
-                  <div 
-                    className="text-sm text-slate-600 leading-relaxed prose prose-slate max-w-none"
-                    dangerouslySetInnerHTML={{ __html: matchedAssignment.description }}
-                  />
-                )}
-                
-                {matchedAssignment.evaluation_matrix && matchedAssignment.evaluation_matrix.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <h4 className="text-sm font-bold text-slate-700 mb-3">Evaluation Rubric</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {matchedAssignment.evaluation_matrix.map((criteria: { name: string; marks: number | string }, cIdx: number) => (
-                        <div key={cIdx} className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
-                          <span className="font-semibold text-sm text-slate-800 block">{criteria.name}</span>
-                          <span className="text-xs font-medium text-slate-500 block">Max Score: {criteria.marks}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 py-4 italic text-center bg-slate-50 rounded-xl">
-                No final assessment has been assigned to this domain yet.
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-bold text-slate-800">Final Assessment</h2>
+              <p className="text-base font-bold text-slate-800 pt-1">
+                {finalAssignmentName}
               </p>
-            )}
+            </div>
+
+            <button
+              onClick={handleOpenAssignment}
+              className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl shadow-sm text-sm font-semibold flex items-center gap-2 transition-colors self-start sm:self-center flex-shrink-0"
+            >
+              <ExternalLink size={16} /> Open Assignment
+            </button>
           </div>
         </div>
 
-        {domainModal.open && (
-          <CreateDomainModal 
-            isOpen={domainModal.open} 
-            onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-            onSubmit={handleSaveDomain} 
-            mode={domainModal.mode}
-            domain={domainModal.domain}
-          />
-        )}
+        <CreateDomainModal 
+          isOpen={domainModal.open} 
+          onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
+          onSubmit={handleSaveDomain} 
+          mode={domainModal.mode}
+          domain={domainModal.domain}
+        />
       </ListingScreenTemplate>
     );
   }
@@ -701,6 +609,7 @@ export default function CoursesPage() {
       buttonOnclick={() => {}}
       extraActions={extraHeaderActions}
     >
+      <Toaster position="top-right" />
       {isScreenLoading ? (
         <CoursePageSkeleton />
       ) : (
@@ -708,9 +617,9 @@ export default function CoursesPage() {
         {/* CARDS */}
         {activeTab === "courses" ? (
           <StatsGrid>
-            <StatsCard title="Total Courses" value={courseStatsRaw?.total_courses ?? courseStatsRaw?.total ?? totalCoursesCount} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
-            <StatsCard title="Active Courses" value={courseStatsRaw?.active_courses ?? courseStatsRaw?.active ?? coursesList.filter((c: Course) => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
-            <StatsCard title="Draft Courses" value={courseStatsRaw?.draft_courses ?? courseStatsRaw?.draft ?? coursesList.filter((c: Course) => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
+            <StatsCard title="Total Courses" value={coursesData.length} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
+            <StatsCard title="Active Courses" value={coursesData.filter(c => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
+            <StatsCard title="Draft Courses" value={coursesData.filter(c => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
           </StatsGrid>
         ) : (
           <StatsGrid>
@@ -748,7 +657,7 @@ export default function CoursesPage() {
         <div className="flex-grow min-h-0">
           <DataTable<Course | Domain>
             data={visibleData}
-            columns={(activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()) as unknown as Column<Course | Domain>[]}
+            columns={activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()}
             loading={activeTab === "courses" ? (isLoadingCourses || isFetchingCourses) : (isDomainsLoading || isDomainsFetching)}
             rowKey={(item) => String(item.id)}
             search={searchConfig}
@@ -758,16 +667,16 @@ export default function CoursesPage() {
                 <ActionMenu 
                   onView={() => {
                     if (activeTab === "courses") {
-                      router.push(`/admin/courses/view?id=${item.id}`);
+                      router.push("/admin/courses/create");
                     } else {
-                      setViewingDomain(item as Domain);
+                      setViewingDomain(item);
                     }
                   }}
                   onEdit={() => {
                     if (activeTab === "courses") {
                       router.push(`/admin/courses/create?id=${item.id}`);
                     } else {
-                      setDomainModal({ open: true, mode: "edit", domain: item as Domain });
+                      setDomainModal({ open: true, mode: "edit", domain: item });
                     }
                   }}
                   onDelete={() => setDeleteDialog({ open: true, item, type: activeTab === "courses" ? "course" : "domain" })}
@@ -790,15 +699,13 @@ export default function CoursesPage() {
       </div>
       )}
 
-      {domainModal.open && (
-        <CreateDomainModal 
-          isOpen={domainModal.open} 
-          onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-          onSubmit={handleSaveDomain} 
-          mode={domainModal.mode}
-          domain={domainModal.domain}
-        />
-      )}
+      <CreateDomainModal 
+        isOpen={domainModal.open} 
+        onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
+        onSubmit={handleSaveDomain} 
+        mode={domainModal.mode}
+        domain={domainModal.domain}
+      />
       
       <CourseDeleteDialog
         open={deleteDialog.open}
