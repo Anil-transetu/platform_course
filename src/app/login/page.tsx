@@ -7,8 +7,11 @@ import Link from "next/link";
 
 import { loginToApi } from "@/features/login/api/login-api";
 import ForgotPasswordPage from "./forgot-password";
+import { useAuthStore } from "@/store/useAuthStore";
+import { RoleDashboards, DEFAULT_REDIRECT } from "@/constants/roles";
 
 export default function LoginPage() {
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,22 +30,38 @@ export default function LoginPage() {
     try {
       const data = await loginToApi(email, password);
       
-      // Normalize role and add admin fallback for the user's email
-      const rawRole = data?.role || (
-        email.toLowerCase().includes("admin") || 
-        email.toLowerCase() === "prasanthitransetu@gmail.com" ? "admin" : "student"
-      );
+      // Normalize role and add fallback based on email if backend role is missing
+      let rawRole = data?.role;
+      if (!rawRole) {
+        const lowerEmail = email.toLowerCase();
+        if (lowerEmail.includes("admin")) {
+          rawRole = "admin";
+        } else if (lowerEmail.includes("tutor")) {
+          rawRole = "tutor";
+        } else if (lowerEmail.includes("institution") || lowerEmail.includes("rep")) {
+          rawRole = "institution";
+        } else {
+          rawRole = "student";
+        }
+      }
       const role = rawRole.toLowerCase();
       
       document.cookie = `mock_auth_role=${role}; path=/;`;
       
-      if (data?.token || data?.accessToken) {
-        document.cookie = `token=${data.token || data.accessToken}; path=/;`;
+      const token = data?.token || data?.accessToken;
+      if (token) {
+        document.cookie = `token=${token}; path=/;`;
+        
+        // Update global auth state
+        setAuth(token, role, data?.user);
       }
+
+      // Determine redirect path
+      const redirectPath = RoleDashboards[role] || DEFAULT_REDIRECT;
 
       // Use full page navigation so the server-side middleware
       // picks up the newly set cookie on the next request.
-      window.location.href = "/admin/dashboard";
+      window.location.href = redirectPath;
     } catch (error: unknown) {
       console.error("Login Error:", error);
       const message = error instanceof Error ? error.message : "Access Denied: Unrecognized role or invalid credentials.";

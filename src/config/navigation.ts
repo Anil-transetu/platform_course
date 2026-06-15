@@ -10,7 +10,8 @@ import {
   FileEdit,
   FileText,
   CalendarCheck,
-  GraduationCap
+  GraduationCap,
+  LineChart
 } from "lucide-react";
 
 export type NavItem = {
@@ -76,7 +77,7 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
       }
     },
     mainNav: [
-      { label: "Dashboard", href: "/student", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/student/dashboard", icon: LayoutDashboard },
       { label: "Courses", href: "/student/courses", icon: BookOpen },
       { label: "Assignments", href: "/student/assignments", icon: FileText },
       { label: "Attendance", href: "/student/attendance", icon: CalendarCheck },
@@ -98,8 +99,7 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
     },
     mainNav: [
       { label: "Dashboard", href: "/tutor/dashboard", icon: LayoutDashboard },
-      { label: "My Courses", href: "/tutor/courses", icon: BookOpen },
-      { label: "Students", href: "/tutor/students", icon: Users },
+      { label: "Quizzes", href: "/tutor/quizzes", icon: HelpCircle },
       { label: "Assignments", href: "/tutor/assignments", icon: FileEdit },
     ],
   },
@@ -117,10 +117,10 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
       },
     },
     mainNav: [
-      { label: "Overview", href: "/institution/overview", icon: LayoutDashboard },
-      { label: "Departments", href: "/institution/departments", icon: Building2 },
-      { label: "Users", href: "/institution/users", icon: User },
-      { label: "Reports", href: "/institution/reports", icon: FileText },
+      { label: "Dashboard", href: "/institutional-representative/dashboard", icon: LayoutDashboard },
+      { label: "Batches", href: "/institutional-representative/batches", icon: Layers },
+      { label: "Student Performance", href: "/institutional-representative/student-performance", icon: LineChart },
+      { label: "Reports", href: "/institutional-representative/reports", icon: FileText },
     ],
   },
 };
