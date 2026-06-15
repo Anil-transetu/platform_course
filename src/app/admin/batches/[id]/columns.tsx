@@ -3,8 +3,22 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Column } from "@/components/reusable/DataTable";
-import { EnrolledStudent } from "./dummyData";
+import { EnrolledStudent } from "@/types/batch";
 import { cn } from "@/lib/utils";
+import { ProgressWithLabel } from "@/components/ui/progress";
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColor = (id: string | number) => {
+  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  return avatarColors[index];
+};
 
 export function buildEnrolledStudentColumns(): Column<EnrolledStudent>[] {
   return [
@@ -20,13 +34,18 @@ export function buildEnrolledStudentColumns(): Column<EnrolledStudent>[] {
       label: "STUDENT NAME",
       render: (value, row) => (
         <div className="flex items-center gap-3">
-          <div className="relative h-9 w-9 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-            {row.avatar ? (
+          {row.avatar ? (
+            <div className="relative h-9 w-9 rounded-full overflow-hidden flex-shrink-0">
               <img src={row.avatar} alt={row.name} className="object-cover w-full h-full" />
-            ) : (
-              <span className="text-xs font-bold text-gray-500">{row.name.charAt(0)}</span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className={cn(
+              "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
+              getAvatarColor(row.id)
+            )}>
+              <span>{row.name.charAt(0).toUpperCase()}</span>
+            </div>
+          )}
           <span className="font-semibold text-slate-900 text-sm">
             {row.name}
           </span>
@@ -56,10 +75,6 @@ export function buildEnrolledStudentColumns(): Column<EnrolledStudent>[] {
       label: "COMPLETION %",
       render: (value, row) => {
         const percentage = row.completionPercentage;
-        // The color seems to change based on the value: 100% blue, other values green or orange.
-        // I will match the image:
-        // 85% green, 100% green (wait, in image 100% progress bar is green, text is blue?), 
-        // actually let's just make it dynamic
         let barColor = "bg-green-500";
         if (percentage < 50) barColor = "bg-orange-400";
         else if (percentage === 100) barColor = "bg-blue-600";
@@ -67,17 +82,16 @@ export function buildEnrolledStudentColumns(): Column<EnrolledStudent>[] {
         else barColor = "bg-green-400";
 
         return (
-          <div className="flex flex-col gap-1 w-32">
-            <div className="flex items-center justify-between text-[11px] font-bold">
-              <span className="text-slate-400">Progress</span>
-              <span className="text-blue-600">{percentage}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className={cn("h-full rounded-full", barColor)}
-                style={{ width: `${percentage}%` }}
-              ></div>
-            </div>
+          <div className="w-32">
+            <ProgressWithLabel 
+              value={percentage} 
+              label="Progress"
+              id={`progress-${row.id}`}
+              className="max-w-full"
+              indicatorClassName={barColor}
+              labelClassName="text-[11px] font-bold text-slate-400"
+              valueClassName="text-blue-600 font-bold"
+            />
           </div>
         );
       },

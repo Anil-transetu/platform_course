@@ -9,6 +9,7 @@ import DataTable from "@/components/reusable/DataTable";
 import { useRouter } from "next/navigation";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
+import { useBatches, useBatchesDashboardStats } from "@/hooks/use-batches";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -121,48 +122,40 @@ export default function BatchesPage() {
   const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
 
-  // Simulate loading on mount
+  // Debounce search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Debounce search and simulate fetching
-  useEffect(() => {
-    if (!isLoading) {
-      setIsFetching(true);
-    }
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-      if (!isLoading) {
-        setIsFetching(false);
-      }
     }, 400);
     return () => clearTimeout(timer);
-  }, [search, isLoading]);
+  }, [search]);
 
   // Reset page when search or status changes
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, status]);
 
-  // Filter data locally
-  const filteredData = DUMMY_BATCHES.filter((b) => {
-    const matchesSearch = b.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-                          (b.instructor?.toLowerCase() || "").includes(debouncedSearch.toLowerCase());
-    const matchesStatus = status === "All" || b.status === status;
-    return matchesSearch && matchesStatus;
-  });
+  // Load live data
+  const { data: batchesData, isLoading, isFetching } = useBatches(
+    page,
+    rowsPerPage,
+    debouncedSearch || undefined,
+    status
+  );
 
-  const totalCount = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
-  const start = (page - 1) * rowsPerPage;
-  const visibleData = filteredData.slice(start, start + rowsPerPage);
+  const { data: statsData } = useBatchesDashboardStats();
+
+  const batchesList = batchesData?.data || [];
+  const totalCount = batchesData?.meta?.total || batchesList.length;
+  const totalPages = batchesData?.meta?.totalPages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  // local paging fallback if backend returned everything without limit
+  let visibleData = batchesList;
+  if (batchesList.length > rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    visibleData = batchesList.slice(start, start + rowsPerPage);
+  }
 
   const searchConfig = {
     enabled: true,
@@ -183,10 +176,8 @@ export default function BatchesPage() {
         { value: "Inactive", label: "Inactive" },
       ],
       onChange: (val: string | string[]) => {
-        setIsFetching(true);
         const selected = Array.isArray(val) ? val[0] : val;
         setStatus((selected || "All") as "All" | "Active" | "Inactive");
-        setTimeout(() => setIsFetching(false), 400);
       },
     },
   ];
@@ -195,11 +186,16 @@ export default function BatchesPage() {
     ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
+  const totalBatches = statsData?.totalBatches ?? 0;
+  const activeBatches = statsData?.activeBatches ?? 0;
+  const inactiveBatches = totalBatches - activeBatches;
+  const totalStudents = totalBatches * (statsData?.averageStudentsPerBatch ?? 0);
+
   return (
     <ListingScreenTemplate
-      headerText="Batches Dashboard"
-      subHeaderText="Manage batches, institutions, courses, and enrollments."
-      buttonLabel="Add Batch"
+      headerText="Batch Management"
+      subHeaderText="Efficiently organize batches and enroll existing students"
+      buttonLabel="Create New Batch"
       buttonRequired={true}
       buttonOnclick={() => setFormModal({ open: true, mode: "add", batch: null })}
     >
@@ -212,7 +208,7 @@ export default function BatchesPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
           <StatsCard
             title="Total Batches"
-            value={DUMMY_BATCHES.length}
+            value={totalBatches}
             icon={<Layers className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -220,7 +216,7 @@ export default function BatchesPage() {
           />
           <StatsCard
             title="Active Batches"
-            value={DUMMY_BATCHES.filter(b => b.status === "Active").length}
+            value={activeBatches}
             icon={<CheckCircle className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -228,7 +224,7 @@ export default function BatchesPage() {
           />
           <StatsCard
             title="Inactive Batches"
-            value={DUMMY_BATCHES.filter(b => b.status === "Inactive").length}
+            value={inactiveBatches >= 0 ? inactiveBatches : 0}
             icon={<XCircle className="w-5 h-5" />}
             iconBgClass="bg-red-50"
             iconColorClass="text-red-600"
@@ -236,7 +232,7 @@ export default function BatchesPage() {
           />
           <StatsCard
             title="Total Students"
-            value={DUMMY_BATCHES.reduce((sum, b) => sum + b.students, 0)}
+            value={totalStudents}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
@@ -251,7 +247,7 @@ export default function BatchesPage() {
           search={searchConfig}
           filters={filterConfig}
           actions={(batch) => (
-            <div className="flex justify-center">
+            <div className="flex items-center justify-center">
               <ActionMenu 
                 onView={() => router.push(`/admin/batches/${batch.id}`)}
                 onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
