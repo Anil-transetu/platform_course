@@ -1,20 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  BookOpen, 
-  CheckCircle, 
-  FileText, 
-  Plus, 
-  Eye, 
-  MoreVertical, 
-  Pencil, 
-  Trash2, 
-  ArrowLeft, 
-  Terminal, 
-  Settings, 
-  ExternalLink 
-} from "lucide-react";
+import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
@@ -22,8 +9,7 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
-import { buildCourseColumns, buildDomainColumns, Course } from "./columns";
-import { Domain } from "@/types/domain";
+import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -120,7 +106,6 @@ function CoursePageSkeleton() {
     </div>
   );
 }
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -135,7 +120,14 @@ const initialCourses: Course[] = [
   { id: 4, name: "UI/UX Strategy & Design", category: "Design", modules: 6, updated: "Oct 15, 2023", status: "Published" },
 ];
 
-function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
+const initialDomains: Domain[] = [
+  { id: 1, name: "Web Development", category: "Technology", courses: 12, updated: "Oct 24, 2023", status: "Active" },
+  { id: 2, name: "Data Science", category: "Science", courses: 8, updated: "Oct 20, 2023", status: "Active" },
+  { id: 3, name: "Cybersecurity", category: "Security", courses: 15, updated: "Oct 18, 2023", status: "Active" },
+  { id: 4, name: "Design", category: "Creative", courses: 6, updated: "Oct 15, 2023", status: "Active" },
+];
+
+function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -157,18 +149,6 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
           <Eye size={14} className="text-gray-400" />
           View
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
-        >
-          <Pencil size={14} className="text-gray-400" />
-          Edit
-        </DropdownMenuItem>
-
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -283,31 +263,16 @@ export default function CoursesPage() {
     setSearch("");
   }, [activeTab]);
 
-  const handleSaveDomain = async (data: Record<string, any>) => {
-    try {
-      if (domainModal.mode === "add") {
-        await createDomainMutation.mutateAsync(data);
-        toast.success("Domain created successfully");
-      } else if (domainModal.domain) {
-        await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data });
-        toast.success("Domain updated successfully");
-        
-        // Update local viewing state if currently viewing this domain
-        if (viewingDomain && viewingDomain.id === domainModal.domain.id) {
-          setViewingDomain({
-            ...viewingDomain,
-            name: data.name || viewingDomain.name,
-            description: data.description || viewingDomain.description,
-            tags: data.tags || viewingDomain.tags,
-            assignment_ids: data.assignment_ids || viewingDomain.assignment_ids,
-            status: data.status || viewingDomain.status
-          });
-        }
-      }
-      setDomainModal({ open: false, mode: "add", domain: null });
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save domain");
-    }
+  const handleCreateDomain = (newDomain: Record<string, unknown>) => {
+    const nextId = domainsData.length ? Math.max(...domainsData.map(d => d.id)) + 1 : 1;
+    setDomainsData([...domainsData, { 
+      id: nextId,
+      name: newDomain.name as string,
+      category: newDomain.category as string,
+      courses: (newDomain.courses as number) || 0,
+      updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      status: (newDomain.status as string) || "Active"
+    }]);
   };
 
   const handleDelete = async () => {
@@ -376,7 +341,7 @@ export default function CoursesPage() {
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(start + (activeTab === "courses" ? rowsPerPage : visibleData.length), totalCount)} of ${totalCount}`
+    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
@@ -640,7 +605,6 @@ export default function CoursesPage() {
       buttonOnclick={() => {}}
       extraActions={extraHeaderActions}
     >
-      <Toaster position="top-right" />
       {isScreenLoading ? (
         <CoursePageSkeleton />
       ) : (
@@ -689,7 +653,7 @@ export default function CoursesPage() {
           <DataTable<any>
             data={visibleData}
             columns={activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()}
-            loading={activeTab === "courses" ? (isLoadingCourses || isFetchingCourses) : (isDomainsLoading || isDomainsFetching)}
+            loading={isScreenLoading}
             rowKey={(item) => String(item.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -733,7 +697,7 @@ export default function CoursesPage() {
       <CreateDomainModal 
         isOpen={domainModal.open} 
         onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-        onSubmit={handleSaveDomain} 
+        onSubmit={() => {}} 
         mode={domainModal.mode}
         domain={domainModal.domain}
       />
