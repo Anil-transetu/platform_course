@@ -1,4 +1,28 @@
 import { Column } from "@/components/reusable/DataTable";
+import { cn } from "@/lib/utils";
+import { Domain } from "@/types/domain";
+
+const getInitials = (name?: string) => {
+  if (!name) return "C";
+  const parts = name.split(" ");
+  if (parts.length > 1) {
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColor = (id: string | number) => {
+  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  return avatarColors[index];
+};
 
 export interface Course extends Record<string, unknown> {
   id: number;
@@ -11,14 +35,6 @@ export interface Course extends Record<string, unknown> {
   no_of_modules?: number;
 }
 
-export interface Domain {
-  id: number;
-  name: string;
-  category: string;
-  courses: number;
-  updated: string;
-  status: string;
-}
 
 export const buildCourseColumns = (): Column<Course>[] => [
   {
