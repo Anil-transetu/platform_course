@@ -22,7 +22,8 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
-import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
+import { buildCourseColumns, buildDomainColumns, Course } from "./columns";
+import { Domain } from "@/types/domain";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -113,6 +114,7 @@ function CoursePageSkeleton() {
     </div>
   );
 }
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -122,14 +124,7 @@ import {
 
 
 
-const initialDomains: Domain[] = [
-  { id: 1, name: "Web Development", category: "Technology", courses: 12, updated: "Oct 24, 2023", status: "Active" },
-  { id: 2, name: "Data Science", category: "Science", courses: 8, updated: "Oct 20, 2023", status: "Active" },
-  { id: 3, name: "Cybersecurity", category: "Security", courses: 15, updated: "Oct 18, 2023", status: "Active" },
-  { id: 4, name: "Design", category: "Creative", courses: 6, updated: "Oct 15, 2023", status: "Active" },
-];
-
-function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => void }) {
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -151,6 +146,18 @@ function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => 
           <Eye size={14} className="text-gray-400" />
           View
         </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
+        >
+          <Pencil size={14} className="text-gray-400" />
+          Edit
+        </DropdownMenuItem>
+
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -355,13 +362,13 @@ export default function CoursesPage() {
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
+    ? `${start + 1}-${Math.min(start + (activeTab === "courses" ? rowsPerPage : visibleData.length), totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
     <div className="flex gap-3">
       <button 
-        onClick={() => setIsDomainOpen(true)}
+        onClick={() => setDomainModal({ open: true, mode: "add", domain: null })}
         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
       >
         <Plus size={16} /> Create New Domain
