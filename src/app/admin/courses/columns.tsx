@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
+import { Domain } from "@/types/domain";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -33,14 +34,6 @@ export interface Course {
   status: string;
 }
 
-export interface Domain {
-  id: number;
-  name: string;
-  category: string;
-  courses: number;
-  updated: string;
-  status: string;
-}
 
 export const buildCourseColumns = (): Column<Course>[] => [
   {

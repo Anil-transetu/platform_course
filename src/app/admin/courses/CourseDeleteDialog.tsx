@@ -2,7 +2,8 @@
 
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Course, Domain } from "./columns";
+import { Course } from "./columns";
+import { Domain } from "@/types/domain";
 
 interface CourseDeleteDialogProps {
   open: boolean;

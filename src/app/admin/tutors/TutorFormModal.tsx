@@ -13,6 +13,18 @@ interface Props {
   onSave?: (data: any) => void;
 }
 
+// Emoji detection
+const hasEmoji = (str: string) => {
+  const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+  return emojiRegex.test(str);
+};
+
+// Emoji stripping
+const stripEmojis = (str: string) => {
+  const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+  return str.replace(emojiRegex, "");
+};
+
 export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: Props) {
   const [form, setForm] = useState({
     name: "",
@@ -60,12 +72,30 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
   const validate = () => {
     const e: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.email.trim()) e.email = "Email is required";
-    if (!form.phone.trim()) e.phone = "Contact number is required";
+    if (!form.name.trim()) {
+      e.name = "Name is required";
+    } else if (hasEmoji(form.name)) {
+      e.name = "Emojis are not allowed in name";
+    }
+
+    if (!form.email.trim()) {
+      e.email = "Email is required";
+    } else if (hasEmoji(form.email)) {
+      e.email = "Emojis are not allowed in email";
+    }
+
+    if (!form.phone.trim()) {
+      e.phone = "Contact number is required";
+    } else if (form.phone.length !== 10) {
+      e.phone = "Contact number must be exactly 10 digits";
+    }
+
     if (mode === "add" && !form.password.trim()) {
       e.password = "Password is required";
+    } else if (form.password && hasEmoji(form.password)) {
+      e.password = "Emojis are not allowed in password";
     }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -84,11 +114,20 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     onClose();
   };
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/[^0-9]/g, ""); // Keep only numbers
+    if (val.length <= 10) {
+      setForm({ ...form, phone: val });
+      if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }));
+    }
+  };
+
   const handleAddDomain = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && domainInput.trim()) {
       e.preventDefault();
-      if (!form.domains.includes(domainInput.trim().toUpperCase())) {
-        setForm({ ...form, domains: [...form.domains, domainInput.trim().toUpperCase()] });
+      const cleanedDomain = stripEmojis(domainInput.trim().toUpperCase());
+      if (cleanedDomain && !form.domains.includes(cleanedDomain)) {
+        setForm({ ...form, domains: [...form.domains, cleanedDomain] });
       }
       setDomainInput("");
     }
@@ -101,8 +140,9 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      if (!form.tags.includes(tagInput.trim().toUpperCase())) {
-        setForm({ ...form, tags: [...form.tags, tagInput.trim().toUpperCase()] });
+      const cleanedTag = stripEmojis(tagInput.trim().toUpperCase());
+      if (cleanedTag && !form.tags.includes(cleanedTag)) {
+        setForm({ ...form, tags: [...form.tags, cleanedTag] });
       }
       setTagInput("");
     }
@@ -124,28 +164,36 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Full Name
+              Full Name <span className="text-red-500">*</span>
             </label>
             <input
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                const cleanedVal = stripEmojis(e.target.value);
+                setForm({ ...form, name: cleanedVal });
+                if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+              }}
               placeholder="e.g. Dr. John Doe"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
                 errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.name && (
-              <p className="text-red-500 text-xs mt-1.5">{errors.name}</p>
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.name}</p>
             )}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Email Address
+              Email Address <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => {
+                const cleanedVal = stripEmojis(e.target.value);
+                setForm({ ...form, email: cleanedVal });
+                if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+              }}
               placeholder="john.doe@example.com"
               autoComplete="new-email"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
@@ -153,7 +201,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               }`}
             />
             {errors.email && (
-              <p className="text-red-500 text-xs mt-1.5">{errors.email}</p>
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.email}</p>
             )}
           </div>
         </div>
@@ -162,30 +210,34 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Contact Number
+              Contact Number <span className="text-red-500">*</span>
             </label>
             <input
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="+1 (234) 567-8900"
+              onChange={handlePhoneChange}
+              placeholder="10-digit number"
               autoComplete="new-phone"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
                 errors.phone ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.phone && (
-              <p className="text-red-500 text-xs mt-1.5">{errors.phone}</p>
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.phone}</p>
             )}
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Password
+              Password {mode === "add" && <span className="text-red-500">*</span>}
             </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
                 value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                onChange={(e) => {
+                  const cleanedVal = stripEmojis(e.target.value);
+                  setForm({ ...form, password: cleanedVal });
+                  if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
+                }}
                 placeholder={mode === "edit" ? "••••••••" : "••••••••"}
                 autoComplete="new-password"
                 className={`w-full border rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors ${
@@ -201,7 +253,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               </button>
             </div>
             {errors.password && (
-              <p className="text-red-500 text-xs mt-1.5">{errors.password}</p>
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.password}</p>
             )}
           </div>
         </div>
@@ -223,7 +275,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             <input
               type="text"
               value={domainInput}
-              onChange={(e) => setDomainInput(e.target.value)}
+              onChange={(e) => setDomainInput(stripEmojis(e.target.value))}
               onKeyDown={handleAddDomain}
               placeholder={form.domains.length === 0 ? "Add domain..." : ""}
               className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400 min-w-[120px]"
@@ -248,7 +300,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             <input
               type="text"
               value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
+              onChange={(e) => setTagInput(stripEmojis(e.target.value))}
               onKeyDown={handleAddTag}
               placeholder={form.tags.length === 0 ? "Add tag..." : ""}
               className="flex-1 bg-transparent border-0 outline-none px-2 py-1 text-sm placeholder-gray-400 min-w-[120px]"
