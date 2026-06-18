@@ -219,89 +219,16 @@ export default function BatchesListingPage() {
   }
 
   return (
-    <ListingScreenTemplate
-      headerText="Batch Management"
-      subHeaderText="Monitor progress, attendance, and performance across your institution's active cohorts."
-      extraActions={extraHeaderActions}
-    >
-      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1">
-        {/* Statistics Grid */}
-        <StatsGrid>
-          <StatsCard
-            title="Total Batches"
-            value={statsLoading ? "..." : stats.totalBatches}
-            icon={<Layers className="w-5 h-5" />}
-            iconBgClass="bg-blue-50"
-            iconColorClass="text-blue-600"
-            tooltip="Total learning cohorts assigned to your institution."
-          />
-          <StatsCard
-            title="Active Students"
-            value={statsLoading ? "..." : stats.activeStudents}
-            icon={<Users className="w-5 h-5" />}
-            iconBgClass="bg-green-50"
-            iconColorClass="text-green-600"
-            tooltip="Total students enrolled across all active cohorts."
-          />
-          <StatsCard
-            title="Avg Progress"
-            value={statsLoading ? "..." : `${stats.avgProgress}%`}
-            icon={<TrendingUp className="w-5 h-5" />}
-            iconBgClass="bg-yellow-50"
-            iconColorClass="text-yellow-600"
-            tooltip="Average completion rate across all courses."
-          />
-          <StatsCard
-            title="At-Risk Students"
-            value={statsLoading ? "..." : stats.atRiskStudents}
-            icon={<AlertTriangle className="w-5 h-5" />}
-            iconBgClass="bg-purple-50"
-            iconColorClass="text-purple-600"
-            tooltip="Students whose performance or attendance is below threshold."
-          />
-        </StatsGrid>
-
-        {/* Batches Table Container */}
-        <div className="flex-1 overflow-hidden min-h-0 flex flex-col gap-4">
-          <h2 className="text-lg font-semibold text-foreground">Active Batches</h2>
-          {error ? (
-            <div className="p-8 text-center text-red-600 font-medium">
-              Error loading batches: {error.message}
-            </div>
-          ) : (
-            <div className="flex-1 overflow-hidden min-h-0">
-              <DataTable<any>
-                data={paginatedBatches}
-                columns={columns as any}
-                rowKey={(row) => row.id}
-                currentPage={displayPage}
-                totalPages={displayTotalPages}
-                onPageChange={setPage}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={(rows) => {
-                  setRowsPerPage(rows);
-                  setPage(1);
-                }}
-                paginationInfo={paginationInfo}
-                showPagination={true}
-                search={searchConfig}
-                filters={filterConfig}
-                bodyHeight="h-full"
-                loading={isLoading || isFetching}
-                actions={(batch) => (
-                  <button
-                    onClick={() => router.push(`/institutional-representative/batches/${batch.id}`)}
-                    className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border border-blue-100"
-                  >
-                    View Details
-                    <ChevronRight size={14} />
-                  </button>
-                )}
-              />
-            </div>
-          )}
+    <div className="p-8 h-full min-h-[70vh] flex flex-col justify-center items-center">
+      <div className="max-w-md w-full border-2 border-dashed border-slate-200 dark:border-border/60 rounded-[32px] p-12 text-center flex flex-col items-center justify-center gap-4 bg-white dark:bg-card/40 shadow-sm">
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-2">
+          <Layers size={32} />
         </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-foreground">Batches Module</h2>
+        <p className="text-sm text-slate-500 dark:text-muted-foreground max-w-xs leading-relaxed">
+          The Batches module is coming soon. Features are currently under development.
+        </p>
       </div>
-    </ListingScreenTemplate>
+    </div>
   );
 }

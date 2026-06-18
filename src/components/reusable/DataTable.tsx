@@ -2,6 +2,7 @@
 
 import React, { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -38,6 +39,7 @@ export interface FilterConfig {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   clearable?: boolean;
+  className?: string;
   className?: string;
 }
 
