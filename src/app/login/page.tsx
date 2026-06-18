@@ -31,7 +31,7 @@ export default function LoginPage() {
       const data = await loginToApi(email, password);
       
       // Normalize role and add fallback based on email if backend role is missing
-      let rawRole = data?.role;
+      let rawRole = data?.role || (data as any)?.user?.role;
       if (!rawRole) {
         const lowerEmail = email.toLowerCase();
         if (lowerEmail.includes("admin")) {

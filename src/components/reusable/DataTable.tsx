@@ -1,6 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,6 +38,7 @@ export interface FilterConfig {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   clearable?: boolean;
+  className?: string;
 }
 
 export interface SearchConfig {
@@ -118,7 +120,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
           {/* FILTER SELECTS — fixed width, aligned right */}
           {filters && filters.length > 0 && (
-            <div className="flex gap-2 sm:gap-3 flex-wrap items-center w-full md:w-auto">
+            <div className="flex gap-2 sm:gap-3 flex-wrap items-center w-full md:w-auto md:ml-auto md:justify-end">
               {filters.map((filter) => (
                 <div key={filter.id} className="relative flex-1 sm:flex-initial min-w-[120px] sm:min-w-0">
                   {filter.type === "select" && (
@@ -126,7 +128,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       value={Array.isArray(filter.value) ? "" : (filter.value || "")}
                       onValueChange={(val) => filter.onChange(val)}
                     >
-                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -150,7 +152,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         filter.onChange(val ? val.split(",") : [])
                       }
                     >
-                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -169,7 +171,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       placeholder={filter.placeholder || filter.label}
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
                     />
                   )}
 
@@ -178,7 +180,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       type="date"
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
                     />
                   )}
 
