@@ -109,10 +109,50 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
       subtitle: "Organization Portal",
       logoIcon: undefined,
       theme: {
-        background: "#0b1221",
+        background: "#111827",
         foreground: "#f8fafc",
-        border: "#1f2937",
-        accent: "#7c3aed",
+        border: "#334155",
+        accent: "#2563eb",
+        accentForeground: "#ffffff",
+      },
+    },
+    mainNav: [
+      { label: "Dashboard", href: "/institutional-representative/dashboard", icon: LayoutDashboard },
+      { label: "Batches", href: "/institutional-representative/batches", icon: Layers },
+      { label: "Student Performance", href: "/institutional-representative/student-performance", icon: LineChart },
+      { label: "Reports", href: "/institutional-representative/reports", icon: FileText },
+    ],
+  },
+  INSTITUTION_REPRESENTATIVE: {
+    brand: {
+      title: "Institution",
+      subtitle: "Organization Portal",
+      logoIcon: undefined,
+      theme: {
+        background: "#111827",
+        foreground: "#f8fafc",
+        border: "#334155",
+        accent: "#2563eb",
+        accentForeground: "#ffffff",
+      },
+    },
+    mainNav: [
+      { label: "Dashboard", href: "/institutional-representative/dashboard", icon: LayoutDashboard },
+      { label: "Batches", href: "/institutional-representative/batches", icon: Layers },
+      { label: "Student Performance", href: "/institutional-representative/student-performance", icon: LineChart },
+      { label: "Reports", href: "/institutional-representative/reports", icon: FileText },
+    ],
+  },
+  INSTITUTION_REP: {
+    brand: {
+      title: "Institution",
+      subtitle: "Organization Portal",
+      logoIcon: undefined,
+      theme: {
+        background: "#111827",
+        foreground: "#f8fafc",
+        border: "#334155",
+        accent: "#2563eb",
         accentForeground: "#ffffff",
       },
     },
