@@ -15,10 +15,8 @@ import {
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRepAttendanceCalendar, CalendarDay } from "@/features/institutional-representative/api/batches-api";
-import { useStudentProfile } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 interface AttendanceCalendarPageProps {
   params: Promise<{ batchId: string; studentId: string }>;
@@ -83,26 +81,13 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
   const batchId = decodeURIComponent(resolvedParams.batchId);
   const studentId = decodeURIComponent(resolvedParams.studentId);
 
-  // Initialize with the actual current year and month dynamically
-  const [currentMonthStr, setCurrentMonthStr] = useState(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}`;
-  });
+  // Initialize with current year and month (e.g. "2026-06" as current month based on metadata)
+  const [currentMonthStr, setCurrentMonthStr] = useState("2026-06");
 
   // Fetch Attendance Calendar from backend
   const { data, isLoading, error } = useRepAttendanceCalendar(batchId, studentId, currentMonthStr);
 
-  const { data: freshProfile } = useStudentProfile(studentId);
-
-  const studentName = useMemo(() => {
-    if (freshProfile) {
-      return `${freshProfile.first_name || ""} ${freshProfile.last_name || ""}`.trim();
-    }
-    return data?.student_name || "Student Profile";
-  }, [data?.student_name, freshProfile]);
-
+  const studentName = data?.student_name || "Student Profile";
   const displayStudentId = data?.student_id || `#${studentId}`;
   const batchName = data?.batch_name || `Batch #${batchId}`;
   const calendarDays = data?.calendar_days || [];
@@ -159,63 +144,6 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
     </button>
   );
 
-  if (isLoading) {
-    return (
-      <ListingScreenTemplate
-        headerText="Attendance Calendar"
-        extraActions={extraHeaderActions}
-      >
-        <div className="flex flex-col gap-6 p-6 h-full flex-1 overflow-auto bg-slate-50/50">
-          {/* Header Skeleton */}
-          <div className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <Skeleton className="w-14 h-14 rounded-full" />
-            <div>
-              <Skeleton className="h-6 w-48 mb-2" />
-              <Skeleton className="h-4 w-64" />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            {/* Calendar Skeleton */}
-            <div className="lg:col-span-2 flex flex-col gap-4">
-              <Card className="border border-slate-100 shadow-sm bg-white">
-                <CardContent className="p-6 flex flex-col gap-4">
-                  <div className="flex justify-center mb-4">
-                    <Skeleton className="h-8 w-48" />
-                  </div>
-                  <Skeleton className="h-10 w-full" />
-                  <div className="grid grid-cols-7 gap-2 min-h-[300px]">
-                    {[...Array(28)].map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full rounded-lg" />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Stats Panel Skeleton */}
-            <div>
-              <Card className="border border-slate-100 shadow-sm overflow-hidden bg-white">
-                <CardContent className="p-6 space-y-4">
-                  <Skeleton className="h-5 w-40 mb-4" />
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 rounded-xl border border-gray-100 bg-gray-50/30">
-                      <div className="space-y-2">
-                        <Skeleton className="h-3 w-28" />
-                        <Skeleton className="h-6 w-12" />
-                      </div>
-                      <Skeleton className="w-10 h-10 rounded-xl" />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </ListingScreenTemplate>
-    );
-  }
-
   return (
     <ListingScreenTemplate
       headerText="Attendance Calendar"
@@ -225,17 +153,9 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
         
         {/* Profile Card Header */}
         <div className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-          {freshProfile?.profile_image ? (
-            <img
-              src={freshProfile.profile_image}
-              alt={studentName}
-              className="w-14 h-14 rounded-full object-cover shrink-0 shadow-sm"
-            />
-          ) : (
-            <div className="w-14 h-14 rounded-full font-bold text-lg flex items-center justify-center shrink-0 shadow-sm bg-blue-100 text-blue-600">
-              {studentName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div className="w-14 h-14 rounded-full font-bold text-lg flex items-center justify-center shrink-0 shadow-sm bg-blue-100 text-blue-600">
+            {studentName.charAt(0).toUpperCase()}
+          </div>
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">{studentName}</h2>
             <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-2">

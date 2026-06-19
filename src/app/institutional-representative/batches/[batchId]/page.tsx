@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, use, useEffect } from "react";
+import React, { useState, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -14,21 +14,43 @@ import {
   Loader2
 } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
-import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   useRepBatchOverview,
   useRepBatchStudents,
   getExportBatchReportUrl,
+  BatchStudent,
   downloadAuthenticatedFile
 } from "@/features/institutional-representative/api/batches-api";
-import { buildBatchStudentColumns } from "./columns";
-import { useStudentProfiles, enrichStudentData } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 interface BatchDetailsPageProps {
   params: Promise<{ batchId: string }>;
 }
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColorClass = (id: string | number) => {
+  if (typeof id === "number") {
+    return avatarColors[id % avatarColors.length];
+  }
+  const str = String(id);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarColors.length;
+  return avatarColors[index];
+};
 
 export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const router = useRouter();
@@ -36,44 +58,113 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const batchId = decodeURIComponent(resolvedParams.batchId);
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Debounce search: reset page and update debounced value together so React
-  // batches both into ONE re-render (and ONE API call) instead of two.
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setPage(1);
-      setDebouncedSearch(search);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [search]);
-
   // Fetch API hooks
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useRepBatchOverview(batchId);
-  const { data: studentsData, isLoading: studentsLoading, isFetching: studentsFetching, error: studentsError } = useRepBatchStudents(
+  const { data: studentsData, isLoading: studentsLoading, error: studentsError } = useRepBatchStudents(
     batchId,
     page,
     rowsPerPage,
-    debouncedSearch,
+    search,
     selectedStatus
   );
 
   const students = studentsData?.students || [];
-
-  const studentIds = useMemo(() => students.map((s) => s.student_id), [students]);
-  const { data: freshProfiles } = useStudentProfiles(studentIds);
-
-  const enrichedStudents = useMemo(() => {
-    return enrichStudentData(students, freshProfiles);
-  }, [students, freshProfiles]);
-
   const totalCount = studentsData?.pagination?.total || 0;
   const totalPages = studentsData?.pagination?.totalPages || 1;
 
-  const columns = useMemo(() => buildBatchStudentColumns(), []);
+  // Columns Configuration
+  const columns: Column<BatchStudent>[] = useMemo(() => [
+    {
+      key: "student_name",
+      label: "Student Name",
+      width: "w-1/4",
+      render: (value, row) => (
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm transition-transform hover:scale-105",
+            getAvatarColorClass(row.student_id)
+          )}>
+            {row.student_name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <span className="font-semibold text-foreground text-sm truncate block">
+              {row.student_name}
+            </span>
+            <span className="text-xs text-muted-foreground truncate block">
+              ID: #{row.student_id}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "attendance_percent",
+      label: "Attendance %",
+      width: "w-[180px]",
+      render: (value, row) => {
+        const attendance = row.attendance_percent || 0;
+        let barColor = "bg-green-500";
+        if (attendance < 70) {
+          barColor = "bg-rose-500";
+        } else if (attendance < 90) {
+          barColor = "bg-blue-600";
+        }
+
+        return (
+          <div className="flex flex-col gap-1 w-full max-w-[150px]">
+            <div className="flex justify-between items-center text-[10px] font-semibold text-muted-foreground">
+              <span>Attendance</span>
+              <span className="text-foreground">{attendance}%</span>
+            </div>
+            <Progress value={attendance} className="h-1.5" indicatorClassName={barColor} />
+          </div>
+        );
+      },
+    },
+    {
+      key: "quiz_avg",
+      label: "Quiz Average",
+      render: (value, row) => (
+        <span className="font-bold text-slate-800 text-sm">
+          {(row.quiz_avg || 0).toFixed(1)}%
+        </span>
+      ),
+    },
+    {
+      key: "assignments",
+      label: "Assignments",
+      render: (value, row) => (
+        <span className="text-slate-600 font-semibold text-sm">
+          {row.assignments_completed || 0} / {row.assignments_total || 0}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (value, row) => {
+        const status = row.status || "active";
+        const statusLower = status.toLowerCase();
+
+        let badgeStyles = "bg-blue-50 text-blue-700 hover:bg-blue-100 border-none";
+        if (statusLower === "at_risk" || statusLower === "at risk") {
+          badgeStyles = "bg-red-50 text-red-700 hover:bg-red-100 border-none";
+        } else if (statusLower === "excellent") {
+          badgeStyles = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-none";
+        }
+
+        return (
+          <Badge className={cn("px-3 py-1 text-[10px] font-bold tracking-wider uppercase", badgeStyles)}>
+            {status.replace("_", " ")}
+          </Badge>
+        );
+      },
+    },
+  ], []);
 
   const searchConfig = {
     enabled: true,
@@ -81,6 +172,7 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
+      setPage(1);
     },
   };
 
@@ -97,7 +189,6 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
         { value: "excellent", label: "Excellent" },
       ],
       onChange: (val: string | string[]) => {
-        // Reset page here; React 18 batches this with setSelectedStatus into one render.
         setSelectedStatus(Array.isArray(val) ? val[0] : val);
         setPage(1);
       },
@@ -130,50 +221,6 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
     </div>
   );
 
-  if (overviewLoading || studentsLoading) {
-    return (
-      <ListingScreenTemplate
-        headerText={`Batch #${batchId}`}
-        subHeaderText={
-          <div className="flex items-center gap-2 mt-1">
-            <Skeleton className="h-4 w-32" />
-            <span>•</span>
-            <Skeleton className="h-4 w-24" />
-          </div>
-        }
-        extraActions={extraHeaderActions}
-      >
-        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1 bg-slate-50/50">
-          <StatsGrid>
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 rounded-xl bg-white dark:bg-card border border-gray-100 dark:border-border/50 flex justify-between items-center shadow-sm">
-                <div className="flex-1">
-                  <Skeleton className="h-4 w-28 mb-3" />
-                  <Skeleton className="h-8 w-36" />
-                </div>
-                <Skeleton className="w-10 h-10 rounded-full" />
-              </div>
-            ))}
-          </StatsGrid>
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border/60 shadow-sm overflow-hidden flex flex-col flex-1">
-            <div className="p-6 border-b border-slate-100 dark:border-border/60">
-              <Skeleton className="h-6 w-40" />
-            </div>
-            <div className="p-4 border-b border-gray-100 dark:border-border/50 flex justify-between gap-4">
-              <Skeleton className="h-10 w-full sm:w-[300px] rounded-lg" />
-              <Skeleton className="h-10 w-[200px] rounded-lg" />
-            </div>
-            <div className="p-6 space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-            </div>
-          </div>
-        </div>
-      </ListingScreenTemplate>
-    );
-  }
-
   if (overviewError) {
     return (
       <div className="p-8 text-center">
@@ -197,20 +244,21 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
       headerText={`${currentBatchName}: ${currentCourseName}`}
       subHeaderText={
         overviewLoading ? (
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-1">
             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-            <span className="text-sm text-muted-foreground">Loading overview stats...</span>
+            <span className="text-xs text-muted-foreground">Loading overview stats...</span>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-3 mt-2">
-            <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-medium border border-slate-200 shadow-sm">
-              <Users size={15} />
-              Tutor: <span className="font-semibold text-slate-900">{overview?.tutor || "N/A"}</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-100 shadow-sm">
-              <UserCheck size={15} />
-              <span className="font-bold">{overview?.total_active_students || 0}</span> Active Students
-            </div>
+          <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
+            <span className="flex items-center gap-1">
+              <Users size={14} />
+              Tutor: <span className="font-semibold text-foreground">{overview?.tutor || "N/A"}</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1">
+              <UserCheck size={14} />
+              {overview?.total_active_students || 0} Active Students
+            </span>
           </div>
         )
       }
@@ -255,7 +303,7 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
           ) : (
             <div className="flex-1 overflow-hidden min-h-0">
               <DataTable<any>
-                data={enrichedStudents}
+                data={students}
                 columns={columns as any}
                 rowKey={(row) => row.student_id}
                 currentPage={page}
@@ -271,7 +319,7 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-full"
-                loading={studentsLoading || studentsFetching}
+                loading={studentsLoading}
                 actions={(student) => (
                   <button
                     onClick={() => router.push(`/institutional-representative/batches/${batchId}/${student.student_id}`)}

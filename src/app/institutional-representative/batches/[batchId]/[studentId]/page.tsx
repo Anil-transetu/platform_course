@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, use, useEffect } from "react";
+import React, { useState, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -10,32 +10,41 @@ import {
   Award,
   CalendarCheck
 } from "lucide-react";
-import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useRepStudentStats,
-  useRepStudentAcademicPerformance
+  useRepStudentAcademicPerformance,
+  Submission
 } from "@/features/institutional-representative/api/batches-api";
-import { getAvatarColorClass } from "@/lib/avatar";
-import { useStudentProfile, enrichSingleStudent } from "@/features/institutional-representative/hooks/use-student-profiles";
-import { buildSubmissionColumns } from "./columns";
-
-const getInitials = (name?: string) => {
-  if (!name) return "S";
-  const parts = name.trim().split(" ");
-  if (parts.length > 1) {
-    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-  }
-  return name.charAt(0).toUpperCase();
-};
 
 interface StudentProfilePageProps {
   params: Promise<{ batchId: string; studentId: string }>;
 }
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColorClass = (id: string | number) => {
+  if (typeof id === "number") {
+    return avatarColors[id % avatarColors.length];
+  }
+  const str = String(id);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarColors.length;
+  return avatarColors[index];
+};
 
 export default function StudentProfilePage({ params }: StudentProfilePageProps) {
   const router = useRouter();
@@ -44,47 +53,103 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
   const studentId = decodeURIComponent(resolvedParams.studentId);
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  // Debounce search: reset page and update debounced value together so React
-  // batches both into ONE re-render (and ONE API call) instead of two.
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setPage(1);
-      setDebouncedSearch(search);
-    }, 500);
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  // No separate useEffect needed for filter page-reset.
-  // setPage(1) is called directly inside the filter onChange handler below,
-  // which React 18 batches with the filter state update into one render.
-
   // Fetch backend data
   const { data: statsData, isLoading: statsLoading, error: statsError } = useRepStudentStats(batchId, studentId);
-  const { data: performanceData, isLoading: performanceLoading, isFetching: performanceFetching, error: performanceError } = useRepStudentAcademicPerformance(
+  const { data: performanceData, isLoading: performanceLoading, error: performanceError } = useRepStudentAcademicPerformance(
     batchId,
     studentId,
     page,
     rowsPerPage,
     selectedType === "All" ? "all" : selectedType,
-    debouncedSearch
+    search
   );
-
-  const { data: freshProfile } = useStudentProfile(studentId);
-  const studentInfo = useMemo(() => {
-    return enrichSingleStudent(statsData?.student_info, freshProfile);
-  }, [statsData?.student_info, freshProfile]);
 
   const submissions = performanceData?.submissions || [];
   const totalCount = performanceData?.pagination?.total || 0;
   const totalPages = performanceData?.pagination?.totalPages || 0;
 
   // Columns Configuration
-  const columns = useMemo(() => buildSubmissionColumns(), []);
+  const columns: Column<Submission>[] = useMemo(() => [
+    {
+      key: "title",
+      label: "Title",
+      width: "w-2/5",
+      render: (value, row) => {
+        const moduleName = row.moduleName || row.module_name;
+        return (
+          <div className="min-w-0">
+            <span className="font-semibold text-foreground text-sm truncate block">
+              {row.title}
+            </span>
+            {moduleName && (
+              <span className="text-xs text-muted-foreground truncate block mt-0.5">
+                {moduleName}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "type",
+      label: "Type",
+      width: "w-[12%]",
+      render: (value, row) => {
+        const isQuiz = String(row.type).toLowerCase() === "quiz";
+        return (
+          <Badge className={cn(
+            "px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border-none",
+            isQuiz 
+              ? "bg-purple-50 text-purple-700 hover:bg-purple-100" 
+              : "bg-blue-50 text-blue-700 hover:bg-blue-100"
+          )}>
+            {row.type}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: "submissionDate",
+      label: "Submission Date",
+      width: "w-1/4",
+      render: (value, row) => {
+        const dateStr = row.submissionDate || row.submission_date || "N/A";
+        // Format if it's ISO date
+        let formattedDate = dateStr;
+        if (dateStr.includes("T")) {
+          formattedDate = new Date(dateStr).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+          });
+        }
+        return (
+          <span className="text-slate-600 font-medium text-sm">
+            {formattedDate}
+          </span>
+        );
+      },
+    },
+    {
+      key: "score",
+      label: "Score / Marks",
+      width: "w-1/5",
+      render: (value, row) => {
+        const score = row.score || 0;
+        const maxScore = row.maxScore ?? row.max_score ?? 100;
+        const percent = row.percentage ?? (maxScore > 0 ? Math.round((score / maxScore) * 100) : 0);
+        return (
+          <span className="font-bold text-slate-800 text-sm">
+            {score}/{maxScore} <span className="text-xs text-muted-foreground font-normal">({percent}%)</span>
+          </span>
+        );
+      },
+    },
+  ], []);
 
   const searchConfig = {
     enabled: true,
@@ -92,6 +157,7 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     value: search,
     onChange: (val: string) => {
       setSearch(val);
+      setPage(1);
     },
   };
 
@@ -107,7 +173,6 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
         { value: "Assignment", label: "Assignments" },
       ],
       onChange: (val: string | string[]) => {
-        // Reset page here; React 18 batches this with setSelectedType into one render.
         setSelectedType(Array.isArray(val) ? val[0] : val);
         setPage(1);
       },
@@ -137,55 +202,6 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     </div>
   );
 
-  if (statsLoading || performanceLoading) {
-    return (
-      <ListingScreenTemplate
-        headerText="Student Profile"
-        extraActions={extraHeaderActions}
-      >
-        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1 bg-slate-50/50">
-          {/* Banner Skeleton */}
-          <div className="bg-card rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-white">
-            <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" />
-            <div className="flex-1 text-center sm:text-left min-w-0">
-              <Skeleton className="h-6 w-48 mb-2 mx-auto sm:mx-0" />
-              <Skeleton className="h-4 w-64 mx-auto sm:mx-0" />
-            </div>
-          </div>
-          
-          {/* Stats Grid Skeleton */}
-          <StatsGrid>
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-4 rounded-xl bg-white dark:bg-card border border-gray-100 dark:border-border/50 flex justify-between items-center shadow-sm">
-                <div className="flex-1">
-                  <Skeleton className="h-4 w-28 mb-3" />
-                  <Skeleton className="h-8 w-36" />
-                </div>
-                <Skeleton className="w-10 h-10 rounded-full" />
-              </div>
-            ))}
-          </StatsGrid>
-          
-          {/* Table Skeleton */}
-          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border/60 shadow-sm overflow-hidden flex flex-col flex-1">
-            <div className="p-6 border-b border-slate-100 dark:border-border/60">
-              <Skeleton className="h-6 w-40" />
-            </div>
-            <div className="p-4 border-b border-gray-100 dark:border-border/50 flex justify-between gap-4">
-              <Skeleton className="h-10 w-full sm:w-[300px] rounded-lg" />
-              <Skeleton className="h-10 w-[200px] rounded-lg" />
-            </div>
-            <div className="p-6 space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-            </div>
-          </div>
-        </div>
-      </ListingScreenTemplate>
-    );
-  }
-
   if (statsError) {
     return (
       <div className="p-8 text-center">
@@ -201,6 +217,7 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     );
   }
 
+  const studentInfo = statsData?.student_info;
   const attendance = statsData?.attendance;
   const assessments = statsData?.assessments;
   const quizzes = statsData?.quizzes;
@@ -219,20 +236,12 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
         
         {/* Student Details Banner */}
         <div className="bg-card rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-white">
-          {studentInfo?.avatar_url ? (
-            <img
-              src={studentInfo.avatar_url}
-              alt={currentStudentName}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 shadow-sm"
-            />
-          ) : (
-            <div className={cn(
-              "w-16 h-16 sm:w-20 sm:h-20 rounded-full font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm",
-              getAvatarColorClass(studentId)
-            )}>
-              {getInitials(currentStudentName)}
-            </div>
-          )}
+          <div className={cn(
+            "w-16 h-16 sm:w-20 sm:h-20 rounded-full font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm",
+            getAvatarColorClass(studentId)
+          )}>
+            {currentStudentName.charAt(0).toUpperCase()}
+          </div>
           <div className="flex-1 text-center sm:text-left min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground truncate">{currentStudentName}</h2>
@@ -309,7 +318,7 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-52"
-                loading={performanceLoading || performanceFetching}
+                loading={performanceLoading}
               />
             </div>
           )}
