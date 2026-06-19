@@ -29,7 +29,15 @@ const avatarColors = [
 ];
 
 const getAvatarColorClass = (id: string | number) => {
-  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  if (typeof id === "number") {
+    return avatarColors[id % avatarColors.length];
+  }
+  const str = String(id);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarColors.length;
   return avatarColors[index];
 };
 
@@ -282,7 +290,7 @@ export default function InstitutionalDashboard() {
             />
             <StatsCard
               title="Total Batches"
-              value={`${stats?.total_batches?.active_count ?? 0} Active`}
+              value={stats?.total_batches?.active_count ?? 0}
               icon={<Star className="w-5 h-5" />}
               iconBgClass="bg-yellow-50"
               iconColorClass="text-yellow-600"
@@ -290,7 +298,7 @@ export default function InstitutionalDashboard() {
             />
             <StatsCard
               title="At Risk Students"
-              value={`${stats?.at_risk_students?.count ?? 0} Students`}
+              value={stats?.at_risk_students?.count ?? 0}
               icon={<UserPlus className="w-5 h-5" />}
               iconBgClass="bg-purple-50"
               iconColorClass="text-purple-600"
