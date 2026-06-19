@@ -321,7 +321,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       role={actions || onRowClick ? "button" : undefined}
                     >
                       {columns.map((column) => (
-                        <TableCell key={String(column.key)} className="text-card-foreground py-3 px-4 whitespace-nowrap">
+                        <TableCell key={String(column.key)} className={cn("text-card-foreground py-3 px-4 whitespace-nowrap", column.width)}>
                           {column.render
                             ? column.render(row[column.key as keyof T], row, isExpanded, () => toggleExpand(rowId))
                             : (row[column.key as keyof T] as ReactNode)}

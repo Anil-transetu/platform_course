@@ -1,20 +1,288 @@
 "use client";
 
-import React from "react";
-import { Layers } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Layers, Users, AlertTriangle, TrendingUp, ChevronRight, Download, Loader2 } from "lucide-react";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
+import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { useRepBatches, getDownloadBatchListUrl, BatchItem, downloadAuthenticatedFile } from "@/features/institutional-representative/api/batches-api";
 
-export default function BatchesPage() {
-  return (
-    <div className="p-8 h-full min-h-[70vh] flex flex-col justify-center items-center">
-      <div className="max-w-md w-full border-2 border-dashed border-slate-200 dark:border-border/60 rounded-[32px] p-12 text-center flex flex-col items-center justify-center gap-4 bg-white dark:bg-card/40 shadow-sm">
-        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-2">
-          <Layers size={32} />
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColorClass = (id: string | number) => {
+  if (typeof id === "number") {
+    return avatarColors[id % avatarColors.length];
+  }
+  const str = String(id);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % avatarColors.length;
+  return avatarColors[index];
+};
+
+export default function BatchesListingPage() {
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [selectedDept, setSelectedDept] = useState<string>("All");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // By default, if department is selected, we filter by department.
+  // Otherwise, we query with status=active filter field/value.
+  const filterField = selectedDept !== "All" ? "department" : "status";
+  const filterValue = selectedDept !== "All" ? selectedDept : "active";
+
+  const { data, isLoading, error } = useRepBatches(
+    page,
+    rowsPerPage,
+    search,
+    filterField,
+    filterValue
+  );
+
+  const batches = data?.batches || [];
+  const totalCount = data?.pagination?.total || 0;
+  const totalPages = data?.pagination?.totalPages || 1;
+
+  // Department choices from pagination or static fallback
+  const departmentOptions = useMemo(() => {
+    const backendDepts = data?.filters?.departments || [];
+    const deptsSet = new Set(["All", ...backendDepts]);
+    // Ensure standard fallbacks exist
+    deptsSet.add("Design");
+    deptsSet.add("Computer Science");
+    deptsSet.add("Data Science");
+    deptsSet.add("Software Engineering");
+    
+    return Array.from(deptsSet).map((dept) => ({
+      value: dept,
+      label: dept === "All" ? "All Departments" : dept,
+    }));
+  }, [data]);
+
+  // Summary statistics calculated from the response or list
+  const stats = useMemo(() => {
+    const total = totalCount || batches.length;
+    const activeStudents = batches.reduce((acc, b) => acc + (b.total_students || 0), 0);
+    const avgProgress = batches.length > 0 
+      ? Math.round(batches.reduce((acc, b) => acc + (b.progress_percentage || 0), 0) / batches.length)
+      : 0;
+    
+    const atRiskCount = batches.filter(b => b.progress_status === "at_risk").length;
+    
+    return {
+      totalBatches: total,
+      activeStudents,
+      avgProgress,
+      atRiskStudents: atRiskCount || 0,
+    };
+  }, [batches, totalCount]);
+
+  // Columns Configuration
+  const columns: Column<BatchItem>[] = useMemo(() => [
+    {
+      key: "batch_id",
+      label: "Batch ID",
+      render: (value, row) => (
+        <span className="font-semibold text-slate-600 text-sm">{row.batch_id || `#${row.id}`}</span>
+      ),
+    },
+    {
+      key: "batch_name",
+      label: "Batch & Course Name",
+      width: "w-1/3",
+      render: (value, row) => (
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm",
+            getAvatarColorClass(row.id)
+          )}>
+            {row.batch_name.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <span className="font-semibold text-foreground text-sm truncate block">
+              {row.batch_name}
+            </span>
+            <span className="text-xs text-muted-foreground truncate block">
+              {row.course || "N/A"}
+            </span>
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-foreground">Batches Module</h2>
-        <p className="text-sm text-slate-500 dark:text-muted-foreground max-w-xs leading-relaxed">
-          The Batches module is coming soon. Features are currently under development.
-        </p>
+      ),
+    },
+    {
+      key: "department",
+      label: "Department",
+      render: (value, row) => (
+        <span className="text-slate-600 font-medium text-sm">{row.department}</span>
+      ),
+    },
+    {
+      key: "tutor",
+      label: "Assigned Tutor",
+      render: (value, row) => (
+        <span className="text-slate-600 font-medium text-sm">{row.tutor || "N/A"}</span>
+      ),
+    },
+    {
+      key: "total_students",
+      label: "Total Students",
+      render: (value, row) => (
+        <span className="text-slate-600 font-medium text-sm">{row.total_students} Students</span>
+      ),
+    },
+    {
+      key: "progress_percentage",
+      label: "Average Progress",
+      width: "w-[180px]",
+      render: (value, row) => (
+        <div className="flex flex-col gap-1 w-full max-w-[150px]">
+          <div className="flex justify-between items-center text-[10px] font-semibold text-muted-foreground">
+            <span>Progress</span>
+            <span className="text-blue-600">{row.progress_percentage || 0}%</span>
+          </div>
+          <Progress value={row.progress_percentage || 0} className="h-1.5" indicatorClassName="bg-blue-600" />
+        </div>
+      ),
+    },
+  ], []);
+
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search batches, courses, or tutors...",
+    value: search,
+    onChange: (val: string) => {
+      setSearch(val);
+      setPage(1);
+    },
+  };
+
+  const filterConfig: FilterConfig[] = [
+    {
+      id: "department",
+      label: "All Departments",
+      type: "select",
+      value: selectedDept,
+      options: departmentOptions,
+      onChange: (val: string | string[]) => {
+        setSelectedDept(Array.isArray(val) ? val[0] : val);
+        setPage(1);
+      },
+    },
+  ];
+
+  const paginationInfo = totalCount > 0
+    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+    : "0-0 of 0";
+
+  const extraHeaderActions = (
+    <button
+      onClick={() => {
+        downloadAuthenticatedFile(getDownloadBatchListUrl("pdf"), "batches-list.pdf")
+          .catch(err => console.error("PDF download error:", err));
+      }}
+      className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border border-gray-200 rounded-xl hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
+    >
+      <Download size={16} className="text-gray-500" />
+      Download PDF
+    </button>
+  );
+
+  return (
+    <ListingScreenTemplate
+      headerText="Batch Management"
+      subHeaderText="Monitor progress, attendance, and performance across your institution's active cohorts."
+      extraActions={extraHeaderActions}
+    >
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1">
+        {/* Statistics Grid */}
+        <StatsGrid>
+          <StatsCard
+            title="Total Batches"
+            value={stats.totalBatches}
+            icon={<Layers className="w-5 h-5" />}
+            iconBgClass="bg-blue-50"
+            iconColorClass="text-blue-600"
+            tooltip="Total learning cohorts assigned to your institution."
+          />
+          <StatsCard
+            title="Active Students"
+            value={stats.activeStudents}
+            icon={<Users className="w-5 h-5" />}
+            iconBgClass="bg-green-50"
+            iconColorClass="text-green-600"
+            tooltip="Total students enrolled across all active cohorts."
+          />
+          <StatsCard
+            title="Avg Progress"
+            value={`${stats.avgProgress}%`}
+            icon={<TrendingUp className="w-5 h-5" />}
+            iconBgClass="bg-yellow-50"
+            iconColorClass="text-yellow-600"
+            tooltip="Average completion rate across all courses."
+          />
+          <StatsCard
+            title="At-Risk Students"
+            value={stats.atRiskStudents}
+            icon={<AlertTriangle className="w-5 h-5" />}
+            iconBgClass="bg-purple-50"
+            iconColorClass="text-purple-600"
+            tooltip="Students whose performance or attendance is below threshold."
+          />
+        </StatsGrid>
+
+        {/* Batches Table Container */}
+        <div className="flex-1 overflow-hidden min-h-0 flex flex-col gap-4">
+          <h2 className="text-lg font-semibold text-foreground">Active Batches</h2>
+          {error ? (
+            <div className="p-8 text-center text-red-600 font-medium">
+              Error loading batches: {error.message}
+            </div>
+          ) : (
+            <div className="flex-1 overflow-hidden min-h-0">
+              <DataTable<any>
+                data={batches}
+                columns={columns as any}
+                rowKey={(row) => row.id}
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(rows) => {
+                  setRowsPerPage(rows);
+                  setPage(1);
+                }}
+                paginationInfo={paginationInfo}
+                showPagination={true}
+                search={searchConfig}
+                filters={filterConfig}
+                bodyHeight="h-full"
+                loading={isLoading}
+                actions={(batch) => (
+                  <button
+                    onClick={() => router.push(`/institutional-representative/batches/${batch.id}`)}
+                    className="flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors border border-blue-100"
+                  >
+                    View Details
+                    <ChevronRight size={14} />
+                  </button>
+                )}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </ListingScreenTemplate>
   );
 }
