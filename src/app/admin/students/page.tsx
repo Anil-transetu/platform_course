@@ -9,6 +9,7 @@ import StudentDeleteDialog from "./StudentDeleteDialog";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useRouter, useSearchParams } from "next/navigation";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
@@ -57,6 +58,8 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 }
 
 export default function StudentsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -75,6 +78,13 @@ export default function StudentsPage() {
     open: false,
     student: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", student: null });
+      router.replace("/admin/students");
+    }
+  }, [searchParams, router]);
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
