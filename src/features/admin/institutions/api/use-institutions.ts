@@ -6,6 +6,7 @@ import {
   createInstitution,
   updateInstitution,
   deleteInstitution,
+  fetchInstitutionsLookup,
   Institution,
 } from "./institution-api";
 
@@ -82,5 +83,17 @@ export function useDeleteInstitution() {
       queryClient.invalidateQueries({ queryKey: ["institutions"] });
       queryClient.invalidateQueries({ queryKey: ["institutionStats"] });
     },
+  });
+}
+
+/**
+ * Fetch institutions for lookup (e.g. dropdowns)
+ */
+export function useInstitutionsLookup(search?: string) {
+  return useQuery({
+    queryKey: ["institutionsLookup", search],
+    queryFn: () => fetchInstitutionsLookup(search),
+    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
