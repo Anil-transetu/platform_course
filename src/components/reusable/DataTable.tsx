@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, X, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,9 +21,9 @@ import {
 } from "@/components/ui/table";
 
 export interface Column<T> {
-  key: keyof T;
+  key: keyof T | string;
   label: string;
-  render?: (value: unknown, row: T) => ReactNode;
+  render?: (value: unknown, row: T, isExpanded?: boolean, toggleExpand?: () => void) => ReactNode;
   width?: string;
   sortable?: boolean;
 }
@@ -64,6 +64,7 @@ export interface DataTableProps<T extends Record<string, unknown>> {
   filters?: FilterConfig[];
   loading?: boolean;
   emptyStateMessage?: string;
+  renderExpandedRow?: (row: T) => ReactNode;
 }
 
 export default function DataTable<T extends Record<string, unknown>>({
@@ -84,12 +85,21 @@ export default function DataTable<T extends Record<string, unknown>>({
   filters,
   loading = false,
   emptyStateMessage = "No data found",
+  renderExpandedRow,
 }: DataTableProps<T>) {
+  const [expandedRowKeys, setExpandedRowKeys] = React.useState<Set<string | number>>(new Set());
+
+  const toggleExpand = (rowId: string | number) => {
+    const newSet = new Set(expandedRowKeys);
+    if (newSet.has(rowId)) newSet.delete(rowId);
+    else newSet.add(rowId);
+    setExpandedRowKeys(newSet);
+  };
   return (
     <div className="bg-card rounded-lg shadow-sm border border-border flex flex-col h-full overflow-hidden flex-1 min-h-0">
       {/* SEARCH & FILTERS BAR */}
       {(search?.enabled || (filters && filters.length > 0)) && (
-        <div className="p-4 border-b border-border flex gap-4 items-center bg-card flex-shrink-0">
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-stretch md:items-center bg-card flex-shrink-0">
           {/* SEARCH INPUT — grows to fill all remaining space */}
           {search?.enabled && (
             <div className="flex-1 min-w-0">
@@ -108,15 +118,15 @@ export default function DataTable<T extends Record<string, unknown>>({
 
           {/* FILTER SELECTS — fixed width, aligned right */}
           {filters && filters.length > 0 && (
-            <div className="flex gap-3 flex-wrap items-center flex-shrink-0">
+            <div className="flex gap-2 sm:gap-3 flex-wrap items-center w-full md:w-auto">
               {filters.map((filter) => (
-                <div key={filter.id} className="relative">
+                <div key={filter.id} className="relative flex-1 sm:flex-initial min-w-[120px] sm:min-w-0">
                   {filter.type === "select" && (
                     <Select
                       value={Array.isArray(filter.value) ? "" : (filter.value || "")}
                       onValueChange={(val) => filter.onChange(val)}
                     >
-                      <SelectTrigger className="w-[150px] bg-card border-border">
+                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -140,7 +150,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         filter.onChange(val ? val.split(",") : [])
                       }
                     >
-                      <SelectTrigger className="w-[150px] bg-card border-border">
+                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -159,7 +169,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       placeholder={filter.placeholder || filter.label}
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-[150px] bg-card border-border"
+                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
                     />
                   )}
 
@@ -168,7 +178,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       type="date"
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-[150px] bg-card border-border"
+                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
                     />
                   )}
 
@@ -194,14 +204,14 @@ export default function DataTable<T extends Record<string, unknown>>({
       )}
 
       {/* TABLE */}
-      <div className={`overflow-auto ${bodyHeight}`}>
-        <Table className="border-collapse">
+      <div className={`overflow-auto ${bodyHeight} w-full`}>
+        <Table className="border-collapse w-full min-w-[600px] md:min-w-0">
           <TableHeader className="sticky top-0 bg-muted border-b border-border">
             <TableRow className="border-b border-border hover:bg-transparent">
               {columns.map((column) => (
                 <TableHead
                   key={String(column.key)}
-                  className={`font-semibold text-card-foreground bg-muted ${
+                  className={`font-semibold text-card-foreground bg-muted text-xs sm:text-sm ${
                     column.width || ""
                   } ${column.sortable ? "cursor-pointer hover:bg-accent" : ""}`}
                 >
@@ -217,7 +227,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </TableHead>
               ))}
               {actions && (
-                <TableHead className="text-center font-semibold text-card-foreground bg-muted">
+                <TableHead className="text-center font-semibold text-card-foreground bg-muted text-xs sm:text-sm">
                   Actions
                 </TableHead>
               )}
@@ -228,17 +238,17 @@ export default function DataTable<T extends Record<string, unknown>>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length + (actions ? 1 : 0)}
-                  className="text-center py-8"
+                  className="h-64"
                 >
-                  <div className="flex justify-center items-center gap-2">
-                    <div className="h-4 w-4 bg-blue-600 rounded-full animate-bounce"></div>
-                    <span className="text-muted-foreground">Loading...</span>
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                   </div>
                 </TableCell>
               </TableRow>
             ) : data.length > 0 ? (
               data.map((row, index) => {
                 const rowId = String(rowKey(row, index));
+                const isExpanded = expandedRowKeys.has(rowId);
                 const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>) => {
                   if ((e.key === "Enter" || e.key === " ") && (actions || onRowClick)) {
                     e.preventDefault();
@@ -246,31 +256,39 @@ export default function DataTable<T extends Record<string, unknown>>({
                   }
                 };
                 return (
-                  <TableRow
-                    key={rowId}
-                    className={`border-b border-gray-100 transition-colors ${
-                      actions || onRowClick
-                        ? "cursor-pointer hover:bg-muted"
-                        : ""
-                    }`}
-                    onClick={() => onRowClick?.(row)}
-                    onKeyDown={handleKeyDown}
-                    tabIndex={actions || onRowClick ? 0 : -1}
-                    role={actions || onRowClick ? "button" : undefined}
-                  >
-                    {columns.map((column) => (
-                      <TableCell key={String(column.key)} className="text-card-foreground">
-                        {column.render
-                          ? column.render(row[column.key], row)
-                          : (row[column.key] as ReactNode)}
-                      </TableCell>
-                    ))}
-                    {actions && (
-                      <TableCell className="text-center">
-                        {actions(row)}
-                      </TableCell>
+                  <React.Fragment key={rowId}>
+                    <TableRow
+                      className={`border-b border-gray-100 dark:border-border/50 transition-colors text-xs sm:text-sm ${
+                        actions || onRowClick
+                          ? "cursor-pointer hover:bg-muted"
+                          : ""
+                      }`}
+                      onClick={() => onRowClick?.(row)}
+                      onKeyDown={handleKeyDown}
+                      tabIndex={actions || onRowClick ? 0 : -1}
+                      role={actions || onRowClick ? "button" : undefined}
+                    >
+                      {columns.map((column) => (
+                        <TableCell key={String(column.key)} className="text-card-foreground py-3 px-4">
+                          {column.render
+                            ? column.render(row[column.key as keyof T], row, isExpanded, () => toggleExpand(rowId))
+                            : (row[column.key as keyof T] as ReactNode)}
+                        </TableCell>
+                      ))}
+                      {actions && (
+                        <TableCell className="text-center py-3 px-4">
+                          {actions(row)}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    {isExpanded && renderExpandedRow && (
+                      <TableRow className="bg-slate-50/30 hover:bg-slate-50/30">
+                        <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="p-0 border-b border-gray-100 dark:border-border/50">
+                          {renderExpandedRow(row)}
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </TableRow>
+                  </React.Fragment>
                 );
               })
             ) : (
@@ -289,14 +307,14 @@ export default function DataTable<T extends Record<string, unknown>>({
 
       {/* TABLE FOOTER - Pagination */}
       {showPagination && (
-        <div className="flex-shrink-0 bg-card border-t border-border px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-card-foreground">Rows per page:</span>
+        <div className="flex-shrink-0 bg-card border-t border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start">
+            <span className="text-xs sm:text-sm font-medium text-card-foreground">Rows per page:</span>
             <Select
               value={String(rowsPerPage)}
               onValueChange={(val) => onRowsPerPageChange(Number(val))}
             >
-              <SelectTrigger className="w-[70px] bg-card border-border">
+              <SelectTrigger className="w-[60px] sm:w-[70px] bg-card border-border h-8 sm:h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -307,23 +325,27 @@ export default function DataTable<T extends Record<string, unknown>>({
               </SelectContent>
             </Select>
             {paginationInfo && (
-              <span className="text-sm text-muted-foreground ml-4">
+              <span className="text-xs sm:text-sm text-muted-foreground ml-2 sm:ml-4">
                 {paginationInfo}
               </span>
             )}
           </div>
 
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 sm:gap-4 items-center justify-between w-full sm:w-auto">
             <button
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`text-sm ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:underline"}`}
+              className={`text-xs sm:text-sm ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:underline"}`}
               aria-label="Previous page"
             >
               Previous
             </button>
 
-            <nav aria-label="Pagination" className="flex items-center gap-2">
+            <span className="text-xs sm:hidden font-medium text-card-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+
+            <nav aria-label="Pagination" className="hidden sm:flex items-center gap-2">
               {Array.from({ length: totalPages }).map((_, i) => {
                 const p = i + 1;
                 if (
@@ -339,7 +361,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       key={p}
                       onClick={() => onPageChange(p)}
                       aria-current={isActive ? "page" : undefined}
-                      className={`inline-flex items-center justify-center w-9 h-9 text-sm font-medium ${
+                      className={`inline-flex items-center justify-center w-9 h-9 text-xs sm:text-sm font-medium ${
                         isActive
                           ? "bg-blue-600 text-white rounded-md shadow"
                           : "text-card-foreground"
@@ -365,7 +387,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             <button
               onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`text-sm ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:underline"}`}
+              className={`text-xs sm:text-sm ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:underline"}`}
               aria-label="Next page"
             >
               Next

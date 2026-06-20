@@ -222,7 +222,7 @@ export function DataTable<TData, TValue>({
             <SelectTrigger className="h-10 w-[80px] rounded-xl bg-card border-border font-medium">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-100 bg-gray-100 shadow-xl">
+            <SelectContent className="rounded-xl border-slate-100 bg-gray-100 dark:bg-muted shadow-xl">
               {[5, 20, 30, 50, 100].map((pageSize) => (
                 <SelectItem key={pageSize} value={pageSize.toString()} className="rounded-lg">
                   {pageSize}

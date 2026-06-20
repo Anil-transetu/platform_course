@@ -13,7 +13,7 @@ interface ListingScreenTemplateProps {
   /**
    * Subtitle/description text
    */
-  subHeaderText?: string;
+  subHeaderText?: React.ReactNode;
 
   /**
    * Text for the "Add New" button
@@ -57,20 +57,20 @@ export default function ListingScreenTemplate({
   return (
     <div className="flex flex-col h-full w-full bg-card rounded-2xl">
       {/* Header Section */}
-      <div className="flex items-center justify-between gap-4 p-6 border-b border-slate-100">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">{headerText}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6 border-b border-slate-100">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">{headerText}</h1>
           {subHeaderText && (
-            <p className="text-sm text-muted-foreground mt-1">{subHeaderText}</p>
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">{subHeaderText}</div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap sm:justify-end w-full sm:w-auto">
           {extraActions}
           {buttonRequired && (
             <Button
               onClick={buttonOnclick}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-6 py-2.5 h-auto gap-2 flex items-center"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl px-4 sm:px-6 py-2 sm:py-2.5 h-auto gap-2 flex items-center text-xs sm:text-sm w-full sm:w-auto justify-center"
             >
               <Plus size={18} />
               {buttonLabel}

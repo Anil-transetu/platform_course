@@ -130,10 +130,10 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="min-h-screen bg-muted/50 p-8 font-sans">
-      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
         
         {/* HEADER */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-100">
+        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-border/50">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => router.back()}
@@ -227,7 +227,7 @@ export default function EditForm({ id }: EditFormProps) {
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-gray-100 dark:border-border/50" />
 
           {/* SECTION 2 */}
           <div>
@@ -289,7 +289,7 @@ export default function EditForm({ id }: EditFormProps) {
         </div>
 
         {/* FOOTER */}
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 bg-muted/50">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-100 dark:border-border/50 bg-muted/50">
           <button
             onClick={() => router.push("/admin/assignments")}
             className="px-8 py-2.5 border border-border text-card-foreground font-bold text-sm rounded-lg hover:bg-accent transition shadow-sm"

@@ -1,21 +1,65 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { RoleRoutes, RoleDashboards, Role, DEFAULT_REDIRECT } from '@/constants/roles';
+
+// Add the protected routes that require specific roles
+const protectedRoutes = [
+  ...RoleRoutes[Role.ADMIN],
+  ...RoleRoutes[Role.TUTOR],
+  ...RoleRoutes[Role.INSTITUTION],
+  ...RoleRoutes[Role.STUDENT],
+];
+
+// Add public routes that should be accessible without authentication
+const publicRoutes = ['/login', '/forgot-password', '/unauthorized', '/api/auth/login'];
 
 export function proxy(request: NextRequest) {
-  // Check if the route is an admin route
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    // Check for a mock auth cookie
-    const authCookie = request.cookies.get('mock_auth_role');
-    
-    // If no cookie is present or role is not admin, redirect to login
-    if (!authCookie || authCookie.value.toLowerCase() !== 'admin') {
-      return NextResponse.redirect(new URL('/login', request.url));
+  const { pathname } = request.nextUrl;
+
+    // Bypass for static files, _next, and public routes if needed, 
+    // though matcher handles most of this. Let's explicitly allow public routes.
+    if (publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/') {
+      // Allow users to reach /login even if authenticated so they can test different accounts easily
+      return NextResponse.next();
+    }
+
+  // Check if it's a protected route
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+  if (isProtectedRoute) {
+    const token = request.cookies.get('token')?.value;
+    const role = request.cookies.get('mock_auth_role')?.value;
+
+    // Not authenticated
+    if (!token || !role) {
+      const loginUrl = new URL(DEFAULT_REDIRECT, request.url);
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Role mapping logic
+    const userRoleRoutes = RoleRoutes[role] || [];
+    const hasPermission = userRoleRoutes.some(route => pathname.startsWith(route));
+
+    // Authenticated but unauthorized for this specific route
+    if (!hasPermission) {
+      return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
   }
 
   return NextResponse.next();
 }
 
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+  ],
 };

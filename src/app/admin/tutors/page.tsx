@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Users,
   CheckCircle,
@@ -10,77 +11,28 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
+import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Tutor } from "./TutorFormModal";
+import { Tutor } from "@/types/tutor";
 import TutorFormModal from "./TutorFormModal";
 import TutorDeleteDialog from "./TutorDeleteDialog";
 import { buildTutorColumns } from "./columns";
-import { Toaster } from "react-hot-toast";
-
-const initialTutorsData: Tutor[] = [
-  {
-    id: 1,
-    name: "Sarah Smith",
-    email: "s.smith@example.edu",
-    phone: "+1 (234) 567-8901",
-    domain: ["COMPUTER SCIENCE", "REACT"],
-    batches: ["C1-2024-A", "2024-B"],
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Robert Johnson",
-    email: "r.johnson@example.edu",
-    phone: "+1 (234) 567-8905",
-    domain: ["DATA SCIENCE", "PYTHON"],
-    batches: ["DR-2024-X"],
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Emily Chen",
-    email: "e.chen@example.edu",
-    phone: "+1 (234) 567-8912",
-    domain: ["UI/UX DESIGN"],
-    batches: ["UX-ADV-01"],
-    status: "Inactive",
-  },
-  {
-    id: 4,
-    name: "David Lee",
-    email: "d.lee@example.edu",
-    phone: "+1 (234) 567-8920",
-    domain: ["JAVA", "SPRING"],
-    batches: ["JB-2024"],
-    status: "Active",
-  },
-  {
-    id: 5,
-    name: "Anusha Reddy",
-    email: "anusha@example.edu",
-    phone: "+91 9876543210",
-    domain: ["MACHINE LEARNING"],
-    batches: ["ML-2024"],
-    status: "Active",
-  },
-  {
-    id: 6,
-    name: "Kiran Kumar",
-    email: "kiran@example.edu",
-    phone: "+91 9123456780",
-    domain: ["ANGULAR"],
-    batches: ["ANG-01"],
-    status: "Inactive",
-  },
-];
+import { Toaster, toast } from "react-hot-toast";
+import {
+  useTutors,
+  useTutorStats,
+  useCreateTutor,
+  useUpdateTutor,
+  useDeleteTutor
+} from "@/features/admin/tutor/api/tutor-api";
 
 function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
@@ -88,18 +40,18 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:bg-muted rounded-lg text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground transition-colors"
         >
           <MoreVertical size={16} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+      <DropdownMenuContent align="end" className="bg-white dark:bg-card rounded-xl shadow-md border border-gray-100 dark:border-border/50 p-1 min-w-[120px] z-50">
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
         >
           <Pencil size={14} className="text-gray-400" />
           Edit
@@ -119,9 +71,26 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   );
 }
 
+const PREDEFINED_DOMAINS = [
+  "HTML",
+  "CSS",
+  "JAVASCRIPT",
+  "REACT",
+  "NEXT.JS",
+  "NODE.JS",
+  "PYTHON",
+  "THREE.JS"
+];
+
 export default function TutorsPage() {
-  const [tutorsData, setTutorsData] = useState<Tutor[]>(initialTutorsData);
-  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
+  const [domainFilter, setDomainFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -133,6 +102,13 @@ export default function TutorsPage() {
     tutor: null,
   });
 
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", tutor: null });
+      router.replace("/admin/tutors");
+    }
+  }, [searchParams, router]);
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     tutor: Tutor | null;
@@ -141,34 +117,29 @@ export default function TutorsPage() {
     tutor: null,
   });
 
-  const [search, setSearch] = useState("");
-  const [domainFilter, setDomainFilter] = useState<string>("All");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  // Queries & Mutations
+  const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, search, statusFilter, domainFilter);
+  const { data: tutorStats, isLoading: isStatsLoading } = useTutorStats();
 
-  // Filter tutors
-  const filteredData = tutorsData.filter((tutor) => {
-    const matchesSearch =
-      tutor.name.toLowerCase().includes(search.toLowerCase()) ||
-      tutor.domain.some(d => d.toLowerCase().includes(search.toLowerCase())) ||
-      String(tutor.id).includes(search);
-    
-    const matchesDomain = domainFilter === "All" || tutor.domain.includes(domainFilter);
-    const matchesStatus = statusFilter === "All" || tutor.status === statusFilter;
-    
-    return matchesSearch && matchesDomain && matchesStatus;
-  });
+  const createTutor = useCreateTutor();
+  const updateTutor = useUpdateTutor();
+  const deleteTutor = useDeleteTutor();
 
-  const totalCount = filteredData.length;
+  const tutorsList: Tutor[] = Array.isArray(tutorsData?.data) ? tutorsData.data : (Array.isArray(tutorsData) ? tutorsData : []);
+  const totalCount = tutorsData?.total || tutorsData?.pagination?.total || tutorsList.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = filteredData.slice(start, start + rowsPerPage);
 
-  const activeTutors = tutorsData.filter((t) => t.status === "Active").length;
+  const dynamicDomains = Array.from(new Set(tutorsList.flatMap(t => t.domains || [])))
+    .filter(Boolean)
+    .filter(d => !PREDEFINED_DOMAINS.some(pd => pd.toLowerCase() === d.toLowerCase()));
 
-  // Extract unique domains for filter dropdown
-  const allDomains = Array.from(new Set(tutorsData.flatMap(t => t.domain)));
+  let displayTutors = tutorsList;
+  if (domainFilter !== "All") {
+    displayTutors = displayTutors.filter(t => 
+      t.domains && t.domains.some(d => d.toLowerCase() === domainFilter.toLowerCase())
+    );
+  }
 
   // DataTable configs
   const searchConfig = {
@@ -189,7 +160,8 @@ export default function TutorsPage() {
       value: domainFilter,
       options: [
         { value: "All", label: "All Domain" },
-        ...allDomains.map(d => ({ value: d, label: d }))
+        ...PREDEFINED_DOMAINS.map(d => ({ value: d, label: d })),
+        ...dynamicDomains.map(d => ({ value: d, label: d }))
       ],
       onChange: (val: string | string[]) => {
         setDomainFilter(Array.isArray(val) ? val[0] : val);
@@ -217,28 +189,30 @@ export default function TutorsPage() {
     ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
-  const handleSaveTutor = (data: any) => {
-    if (formModal.mode === "add") {
-      const newTutor: Tutor = {
-        id: Math.max(...tutorsData.map(t => t.id), 0) + 1,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        domain: data.domains,
-        batches: [],
-        status: "Active",
-      };
-      setTutorsData([newTutor, ...tutorsData]);
-    } else if (formModal.tutor) {
-      setTutorsData(tutorsData.map(t => 
-        t.id === formModal.tutor!.id ? { ...t, ...data, domain: data.domains } : t
-      ));
+  const handleSaveTutor = async (data: any) => {
+    try {
+      if (formModal.mode === "add") {
+        await createTutor.mutateAsync(data);
+        toast.success("Tutor registered successfully");
+      } else if (formModal.tutor) {
+        await updateTutor.mutateAsync({ id: formModal.tutor.id, data });
+        toast.success("Tutor updated successfully");
+      }
+      setFormModal({ open: false, mode: "add", tutor: null });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save tutor");
     }
   };
 
-  const handleDeleteTutor = () => {
+  const handleDeleteTutor = async () => {
     if (deleteDialog.tutor) {
-      setTutorsData(tutorsData.filter(t => t.id !== deleteDialog.tutor!.id));
+      try {
+        await deleteTutor.mutateAsync(deleteDialog.tutor.id);
+        toast.success("Tutor deleted successfully");
+        setDeleteDialog({ open: false, tutor: null });
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete tutor");
+      }
     }
   };
 
@@ -250,14 +224,17 @@ export default function TutorsPage() {
       buttonRequired={true}
       buttonOnclick={() => setFormModal({ open: true, mode: "add", tutor: null })}
     >
-      <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+      {isLoading ? (
+        <UserPageSkeleton />
+      ) : (
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
         <Toaster position="top-right" />
         
         {/* STATS CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Tutors"
-            value={tutorsData.length}
+            value={isStatsLoading ? "..." : (tutorStats?.total || totalCount || 0)}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -265,35 +242,36 @@ export default function TutorsPage() {
           />
           <StatsCard
             title="Active Tutors"
-            value={activeTutors}
+            value={isStatsLoading ? "..." : (tutorStats?.active || tutorsList.filter(t => t.status?.toLowerCase() === 'active').length || 0)}
             icon={<CheckCircle className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
             tooltip="Tutors currently active"
           />
           <StatsCard
-            title="Average Rating"
-            value="4.8"
+            title="Inactive Tutors"
+            value={isStatsLoading ? "..." : (tutorStats?.inactive || tutorsList.filter(t => t.status?.toLowerCase() !== 'active').length || 0)}
             icon={<Star className="w-5 h-5" />}
             iconBgClass="bg-yellow-50"
             iconColorClass="text-yellow-600"
-            tooltip="Average rating of all tutors"
+            tooltip="Tutors currently inactive"
           />
           <StatsCard
             title="New Tutors (Month)"
-            value="42"
+            value={isStatsLoading ? "..." : (tutorStats?.newTutors || 0)}
             icon={<UserPlus className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
             tooltip="Tutors onboarded recently"
           />
-        </div>
+        </StatsGrid>
 
         {/* DATA TABLE */}
         <div className="flex-1 overflow-hidden min-h-0">
           <DataTable<Tutor>
-            data={visibleData}
+            data={displayTutors}
             columns={buildTutorColumns()}
+            loading={isLoading}
             rowKey={(tutor) => String(tutor.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -319,6 +297,7 @@ export default function TutorsPage() {
           />
         </div>
       </div>
+      )}
 
       <TutorFormModal
         open={formModal.open}

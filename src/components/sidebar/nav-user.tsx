@@ -11,9 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function NavUser() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, role, logout } = useAuthStore();
+  const displayName = user?.name || user?.email?.split('@')[0] || "User";
+  const displaySubtitle = user?.email || role || "Guest";
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -23,17 +27,18 @@ export default function NavUser() {
               <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
                   <Image 
-                    src="https://ui-avatars.com/api/?name=Alex+Thompson&background=random" 
+                    src={`https://ui-avatars.com/api/?name=${displayName.replace(/\s+/g, '+')}&background=random`} 
                     alt="User" 
                     width={40}
                     height={40}
+                    unoptimized
                   />
                 </div>
 
-                <div className="flex-1 text-left group-data-[collapsible=icon]:hidden">
+                <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
                   {/* in the first p tag we have to pass the user name and in the second one we have to pass the user mail and user profile image is mandatory. */}
-                  <p className="text-sm font-medium text-white leading-tight">Alex Thompson</p>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider">Super Admin</p>
+                  <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider truncate">{displaySubtitle}</p>
                 </div>
 
                 <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
@@ -70,6 +75,7 @@ export default function NavUser() {
             <DropdownMenuItem 
               className="rounded-xl border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-3 py-3 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => {
+                logout();
                 document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                 document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
                 window.location.href = "/login";

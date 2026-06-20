@@ -5,9 +5,8 @@ import { User } from "@/types/user";
 import { buildUserColumns } from "./columns";
 import UserFormModal from "./UserFormModal";
 import UserDeleteDialog from "./UserDeleteDialog";
-import UserViewModal from "./UserViewModal";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import {
@@ -16,18 +15,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Eye, Check, X } from "lucide-react";
-import { Toaster } from "react-hot-toast";
+import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Check, X } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 
-function ActionMenu({ 
-  onEdit, 
-  onDelete, 
-  onView, 
-  isPending 
-}: { 
-  onEdit: () => void; 
-  onDelete: () => void; 
-  onView: () => void;
+function ActionMenu({
+  onEdit,
+  onDelete,
+  isPending
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
   isPending: boolean;
 }) {
   return (
@@ -67,16 +64,6 @@ function ActionMenu({
           </>
         ) : (
           <>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onView();
-              }}
-              className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
-            >
-              <Eye size={14} className="text-gray-400" />
-              View Details
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -122,13 +109,6 @@ export default function UsersPage() {
     open: false,
     user: null,
   });
-  const [viewModal, setViewModal] = useState<{
-    open: boolean;
-    userId: string | number | null;
-  }>({
-    open: false,
-    userId: null,
-  });
 
   // Filters & Pagination state
   const [activeTab, setActiveTab] = useState<"accepted" | "pending">("accepted");
@@ -152,11 +132,11 @@ export default function UsersPage() {
   }, [debouncedSearch, roleFilter, activeTab, rowsPerPage]);
 
   // Data fetching hooks
-  // We don't pass page/limit to useUsers because the User API doesn't provide a reliable total count.
-  // By fetching all matching users (or a high limit), we can accurately determine totalCount and paginate locally.
-  const { data: usersData, isLoading } = useUsers(
-    1,
-    1000,
+  // We pass page and limit to useUsers to enable server-side pagination.
+  // The API uses these params to fetch the appropriate page.
+  const { data: usersData, isLoading, isFetching } = useUsers(
+    page,
+    rowsPerPage,
     debouncedSearch || undefined,
     roleFilter,
     activeTab === "accepted" ? "active" : "pending"
@@ -166,10 +146,14 @@ export default function UsersPage() {
 
   const usersList = Array.isArray(usersData) ? usersData : usersData?.data || [];
 
-  // Determine total count from API or local filtering
-  const totalCount = !Array.isArray(usersData) && usersData?.total !== undefined ? usersData.total : usersList.length;
+  const statsTotalUsers = stats ? ((stats.admins || 0) + (stats.representatives || 0)) : 0;
+  // Prioritize the API's returned total (which may be nested in `pagination`). If missing, fallback to stats or list length.
+  const apiTotal = !Array.isArray(usersData) ? (usersData?.pagination?.total ?? usersData?.total) : undefined;
+  const totalCount = apiTotal !== undefined
+    ? apiTotal
+    : Math.max(statsTotalUsers, usersList.length);
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
-  
+
   // Only slice locally if the backend returned more items than rowsPerPage (meaning it didn't paginate properly)
   let visibleData = usersList;
   const start = (page - 1) * rowsPerPage;
@@ -219,82 +203,80 @@ export default function UsersPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-        <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
-          
           {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-shrink-0">
-          <StatsCard
-            title="TOTAL ADMINS"
-            value={stats?.admins ?? "..."}
-            icon={<ShieldCheck className="w-5 h-5" />}
-            iconBgClass="bg-blue-50"
-            iconColorClass="text-blue-600"
-            tooltip="Administrators with full system access"
-          />
-          <StatsCard
-            title="INSTITUTION REPS"
-            value={stats?.representatives ?? "..."}
-            icon={<Users className="w-5 h-5" />}
-            iconBgClass="bg-purple-50"
-            iconColorClass="text-purple-600"
-            tooltip="Users representing their respective institutions"
-          />
-          <StatsCard
-            title="TOTAL INSTITUTIONS"
-            value={stats?.institutions ?? "..."}
-            icon={<Building className="w-5 h-5" />}
-            iconBgClass="bg-green-50"
-            iconColorClass="text-green-600"
-            tooltip="Total institutions linked to registered users"
-          />
-        </div>
+          <StatsGrid>
+            <StatsCard
+              title="TOTAL ADMINS"
+              value={stats?.admins ?? "..."}
+              icon={<ShieldCheck className="w-5 h-5" />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              tooltip="Administrators with full system access"
+            />
+            <StatsCard
+              title="INSTITUTION REPS"
+              value={stats?.representatives ?? "..."}
+              icon={<Users className="w-5 h-5" />}
+              iconBgClass="bg-purple-50"
+              iconColorClass="text-purple-600"
+              tooltip="Users representing their respective institutions"
+            />
+            <StatsCard
+              title="TOTAL INSTITUTIONS"
+              value={stats?.institutions ?? "..."}
+              icon={<Building className="w-5 h-5" />}
+              iconBgClass="bg-green-50"
+              iconColorClass="text-green-600"
+              tooltip="Total institutions linked to registered users"
+            />
+          </StatsGrid>
 
-        {/* TABS */}
-        <div className="flex items-center gap-6 border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab("accepted")}
-            className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
+          {/* TABS */}
+          <div className="flex items-center gap-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab("accepted")}
+              className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
               ${activeTab === "accepted" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-900"}
             `}
-          >
-            Accepted Requests
-          </button>
-          <button
-            onClick={() => setActiveTab("pending")}
-            className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
+            >
+              Accepted Requests
+            </button>
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`pb-2.5 font-semibold text-sm transition-colors border-b-2
               ${activeTab === "pending" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-900"}
             `}
-          >
-            Pending
-          </button>
-        </div>
+            >
+              Pending
+            </button>
+          </div>
 
-        {/* DATA TABLE */}
-        <DataTable<User>
-          columns={buildUserColumns(activeTab)}
-          data={visibleData}
-          loading={isLoading}
-          search={searchConfig}
-          filters={filterConfig}
-          actions={(user) => (
-            <div className="flex justify-center">
-              <ActionMenu 
-                onEdit={() => setFormModal({ open: true, mode: "edit", user })}
-                onDelete={() => setDeleteDialog({ open: true, user })}
-                onView={() => setViewModal({ open: true, userId: user.id })}
-                isPending={activeTab === "pending"}
-              />
-            </div>
-          )}
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={setRowsPerPage}
-          paginationInfo={paginationInfo}
-          showPagination={true}
-        />
+          {/* DATA TABLE */}
+          <DataTable<User>
+            columns={buildUserColumns(activeTab)}
+            data={visibleData}
+            loading={isLoading || isFetching}
+            search={searchConfig}
+            filters={filterConfig}
+            actions={(user) => (
+              <div className="flex justify-center">
+                <ActionMenu
+                  onEdit={() => setFormModal({ open: true, mode: "edit", user })}
+                  onDelete={() => setDeleteDialog({ open: true, user })}
+                  isPending={activeTab === "pending"}
+                />
+              </div>
+            )}
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={setRowsPerPage}
+            paginationInfo={paginationInfo}
+            showPagination={true}
+          />
         </div>
       )}
 
@@ -309,11 +291,6 @@ export default function UsersPage() {
         open={deleteDialog.open}
         user={deleteDialog.user}
         onClose={() => setDeleteDialog({ open: false, user: null })}
-      />
-      <UserViewModal
-        open={viewModal.open}
-        userId={viewModal.userId}
-        onClose={() => setViewModal({ open: false, userId: null })}
       />
     </ListingScreenTemplate>
   );

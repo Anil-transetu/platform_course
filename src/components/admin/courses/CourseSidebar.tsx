@@ -141,12 +141,12 @@ export default function CourseSidebar() {
                   <div 
                     onClick={() => handleModuleClick(module.id)}
                     className={`rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
-                      isModuleActive && !activeLessonId ? 'bg-card shadow-sm border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                      isModuleActive && !activeLessonId ? 'bg-card shadow-sm border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
                     }`}
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
                       <FolderPlus className={isModuleActive && !activeLessonId ? "text-blue-600" : "text-gray-400"} size={16} />
-                      <span className={`text-sm font-bold truncate uppercase tracking-widest text-[11px] ${isModuleActive && !activeLessonId ? "text-foreground" : "text-gray-500"}`}>
+                      <span className={`text-sm font-bold truncate uppercase tracking-widest text-[11px] ${isModuleActive && !activeLessonId ? "text-foreground" : "text-gray-500 dark:text-muted-foreground"}`}>
                         {module.title || `MODULE ${mIdx + 1}`}
                       </span>
                     </div>
@@ -160,7 +160,7 @@ export default function CourseSidebar() {
                         <div 
                           onClick={() => handleLessonClick(module.id, lesson.id)}
                           className={`rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
-                            isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? 'bg-card shadow-sm border-l-4 border-blue-600 text-foreground' : 'hover:bg-muted text-gray-500'
+                            isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? 'bg-card shadow-sm border-l-4 border-blue-600 text-foreground' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
                           }`}
                         >
                           <div className="flex items-center gap-3 overflow-hidden">
@@ -173,13 +173,13 @@ export default function CourseSidebar() {
 
                         {/* Children of Lesson */}
                         {isLessonActive && (
-                          <div className="flex flex-col pl-4 mt-1 border-l-2 border-gray-100 gap-1 ml-4">
+                          <div className="flex flex-col pl-4 mt-1 border-l-2 border-gray-100 dark:border-border/50 gap-1 ml-4">
                             {lesson.topics?.map((topic, tIdx) => (
                               <div 
                                 key={topic.id}
                                 onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
                                 className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeTopicId === topic.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                                  activeTopicId === topic.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
                                 }`}
                               >
                                 <Target className={activeTopicId === topic.id ? "text-blue-600" : "text-gray-400"} size={14} />
@@ -193,7 +193,7 @@ export default function CourseSidebar() {
                                 key={quiz.id}
                                 onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
                                 className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeQuizId === quiz.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                                  activeQuizId === quiz.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
                                 }`}
                               >
                                 <FileText className={activeQuizId === quiz.id ? "text-blue-600" : "text-gray-400"} size={14} />
@@ -207,7 +207,7 @@ export default function CourseSidebar() {
                                 key={assignment.id}
                                 onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
                                 className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeAssignmentId === assignment.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500'
+                                  activeAssignmentId === assignment.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
                                 }`}
                               >
                                 <ClipboardList className={activeAssignmentId === assignment.id ? "text-blue-600" : "text-gray-400"} size={14} />
@@ -230,7 +230,7 @@ export default function CourseSidebar() {
       
       {/* 2. ADD CONTENT SECTION */}
       {activeModuleId && (
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-gray-100 dark:border-border/50">
           <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
             Add Content
           </h3>
@@ -239,30 +239,30 @@ export default function CourseSidebar() {
               <>
                 <button 
                   onClick={handleAddTopic}
-                  className="w-full flex items-center gap-3 border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                  className="w-full flex items-center gap-3 border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
                 >
                   <Plus size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600">Add Topic</span>
+                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Topic</span>
                 </button>
                 
                 <button 
                   onClick={handleAddQuiz}
-                  className="w-full flex items-center justify-between border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                  className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <FileText size={16} className="text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-600">Add Quiz</span>
+                    <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Quiz</span>
                   </div>
                   <ChevronDown size={14} className="text-gray-400" />
                 </button>
 
                 <button 
                   onClick={handleAddAssignment}
-                  className="w-full flex items-center justify-between border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                  className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <ClipboardList size={16} className="text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-600">Add Assignment</span>
+                    <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Assignment</span>
                   </div>
                   <ChevronDown size={14} className="text-gray-400" />
                 </button>
@@ -271,12 +271,12 @@ export default function CourseSidebar() {
 
             <button 
               onClick={handleAddLesson}
-              className="w-full flex items-center gap-3 border border-gray-200 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+              className="w-full flex items-center gap-3 border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
             >
               <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                 <Plus size={12} strokeWidth={3} />
               </div>
-              <span className="text-sm font-semibold text-gray-600">Add Another Lesson</span>
+              <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Another Lesson</span>
             </button>
           </div>
         </div>

@@ -107,15 +107,15 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
         {/* Row 1: First + Last name */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
               FIRST NAME
             </label>
             <input
               value={form.first_name}
               onChange={(e) => setForm({ ...form, first_name: e.target.value })}
               placeholder="e.g. John"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${
-                errors.first_name ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                errors.first_name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.first_name && (
@@ -123,15 +123,15 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
               LAST NAME
             </label>
             <input
               value={form.last_name}
               onChange={(e) => setForm({ ...form, last_name: e.target.value })}
               placeholder="e.g. Doe"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${
-                errors.last_name ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                errors.last_name ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.last_name && (
@@ -142,7 +142,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
 
         {/* Row 2: Email */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
             EMAIL ADDRESS
           </label>
           <input
@@ -151,8 +151,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="john.doe@example.com"
             autoComplete="new-email"
-            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${
-              errors.email ? "border-red-500" : "border-gray-200"
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+              errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
             }`}
           />
           {errors.email && (
@@ -163,7 +163,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
         {/* Row 3: Mobile + Password */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
               MOBILE NUMBER
             </label>
             <input
@@ -171,8 +171,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
               onChange={(e) => setForm({ ...form, mobile_number: e.target.value })}
               placeholder="+1 (555) 000-0000"
               autoComplete="new-phone"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${
-                errors.mobile_number ? "border-red-500" : "border-gray-200"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                errors.mobile_number ? "border-red-500" : "border-gray-200 dark:border-border/70"
               }`}
             />
             {errors.mobile_number && (
@@ -180,7 +180,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
               PASSWORD
             </label>
             <div className="relative">
@@ -190,14 +190,14 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder={mode === "edit" ? "••••••••" : "Create password"}
                 autoComplete="new-password"
-                className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 ${
-                  errors.password ? "border-red-500" : "border-gray-200"
+                className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
                 }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -211,7 +211,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
         {/* Row 4: Notes */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-gray-500 tracking-wider uppercase">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground tracking-wider uppercase">
               NOTES
             </label>
             <span className="text-xs text-gray-400 font-medium italic">Optional</span>
@@ -221,15 +221,15 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
             placeholder="Add any relevant student notes here..."
             rows={3}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-gray-50/50"
+            className="w-full border border-gray-200 dark:border-border/70 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-gray-50 dark:bg-muted/50/50"
           />
         </div>
 
         {/* Footer actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-border/50">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold transition-colors"
+            className="px-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-border/70 text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 font-semibold transition-colors"
           >
             Cancel
           </button>

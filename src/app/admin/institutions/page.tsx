@@ -5,9 +5,12 @@ import { Institution } from "@/features/admin/institutions/api/institution-api";
 import { buildInstitutionColumns } from "./columns";
 import InstitutionFormModal from "./InstitutionFormModal";
 import InstitutionDeleteDialog from "./InstitutionDeleteDialog";
-import StatsCard from "@/components/ui/StatsCard";
+import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Toaster } from "@/components/ui/sonner";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,18 +25,18 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:bg-muted rounded-lg text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground transition-colors"
         >
           <MoreVertical size={16} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+      <DropdownMenuContent align="end" className="bg-white dark:bg-card rounded-xl shadow-md border border-gray-100 dark:border-border/50 p-1 min-w-[120px] z-50">
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
         >
           <Pencil size={14} className="text-gray-400" />
           Edit
@@ -53,7 +56,49 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   );
 }
 
+const renderExpandedRow = (row: Institution) => {
+  const contacts = row.contacts || [];
+  if (contacts.length === 0) {
+    return <div className="p-4 text-center text-slate-500">No point of contacts available.</div>;
+  }
+
+  const getTitle = (index: number) => {
+    if (index === 0) return "Primary Contact";
+    return `Contact-0${index}`;
+  };
+
+  return (
+    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50/50">
+      {contacts.map((contact: any, idx: number) => (
+        <div key={idx}>
+          <h4 className="text-sm font-bold text-slate-800 mb-3">{getTitle(idx)}</h4>
+          <div className="bg-white dark:bg-card rounded-xl p-4 border border-slate-100 shadow-sm space-y-4">
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">NAME</div>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.name || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ROLE</div>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.role || contact.designation || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">EMAIL</div>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.email || "-"}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">PHONE NUMBER</div>
+              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.phone || "-"}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export default function InstitutionsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -72,6 +117,13 @@ export default function InstitutionsPage() {
     open: false,
     institution: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", institution: null });
+      router.replace("/admin/institutions");
+    }
+  }, [searchParams, router]);
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
@@ -94,7 +146,9 @@ export default function InstitutionsPage() {
   }, [debouncedSearch, statusFilter]);
 
   // Data fetching hooks
-  const { data: institutionsData, isLoading } = useInstitutions(
+  const { data: institutionsData, isLoading, isFetching } = useInstitutions(
+    page,
+    rowsPerPage,
     debouncedSearch || undefined,
     statusFilter
   );
@@ -102,13 +156,14 @@ export default function InstitutionsPage() {
   const { data: stats } = useInstitutionStats();
 
   const institutionsList = Array.isArray(institutionsData) ? institutionsData : institutionsData?.data || [];
-  const totalCount = institutionsData?.total || institutionsList.length || 0;
+  const apiTotal = !Array.isArray(institutionsData) ? institutionsData?.total : undefined;
+  const totalCount = apiTotal !== undefined ? apiTotal : institutionsList.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
   // Local Pagination
   let visibleData = institutionsList;
+  const start = (page - 1) * rowsPerPage;
   if (institutionsList.length > rowsPerPage) {
-    const start = (page - 1) * rowsPerPage;
     visibleData = institutionsList.slice(start, start + rowsPerPage);
   }
 
@@ -150,46 +205,50 @@ export default function InstitutionsPage() {
       buttonRequired={true}
       buttonOnclick={() => setFormModal({ open: true, mode: "add", institution: null })}
     >
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
-          <StatsCard 
-            title="Total Institutions" 
-            value={stats?.total_institutions || totalCount} 
-            icon={<Building size={20} />} 
-            iconBgClass="bg-blue-50" 
-            iconColorClass="text-blue-600" 
-            tooltip="Total number of registered institutions on the platform" 
-          />
-          <StatsCard 
-            title="Active Institutions" 
-            value={stats?.active_institutions || institutionsList.filter((i: any) => i.status === "Active").length} 
-            icon={<CheckCircle size={20} />} 
-            iconBgClass="bg-green-50" 
-            iconColorClass="text-green-600" 
-            tooltip="Institutions currently active and operational" 
-          />
-          <StatsCard 
-            title="Avg. Courses / Inst." 
-            value={stats?.average_courses_per_institution?.toFixed(1) || 12.4} 
-            icon={<BookOpen size={20} />} 
-            iconBgClass="bg-purple-50" 
-            iconColorClass="text-purple-600" 
-            tooltip="Average number of courses offered per institution" 
-          />
-          <StatsCard 
-            title="Pending Registrations" 
-            value={stats?.pending_registrations || 0} 
-            icon={<Clock size={20} />} 
-            iconBgClass="bg-orange-50" 
-            iconColorClass="text-orange-600" 
-            tooltip="Institutions awaiting approval or registration completion" 
-          />
-        </div>
+      {isLoading ? (
+        <InstitutionPageSkeleton />
+      ) : (
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
+          <Toaster position="top-right" />
+          <StatsGrid>
+            <StatsCard 
+              title="Total Institutions" 
+              value={stats?.total_institutions ?? totalCount} 
+              icon={<Building size={20} />} 
+              iconBgClass="bg-blue-50" 
+              iconColorClass="text-blue-600" 
+              tooltip="Total number of registered institutions on the platform" 
+            />
+            <StatsCard 
+              title="Active Institutions" 
+              value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length} 
+              icon={<CheckCircle size={20} />} 
+              iconBgClass="bg-green-50" 
+              iconColorClass="text-green-600" 
+              tooltip="Institutions currently active and operational" 
+            />
+            <StatsCard 
+              title="Avg. Courses / Inst." 
+              value={stats?.average_courses_per_institution?.toFixed(1) ?? "0"} 
+              icon={<BookOpen size={20} />} 
+              iconBgClass="bg-purple-50" 
+              iconColorClass="text-purple-600" 
+              tooltip="Average number of courses offered per institution" 
+            />
+            <StatsCard 
+              title="Pending Registrations" 
+              value={stats?.pending_registrations ?? 0} 
+              icon={<Clock size={20} />} 
+              iconBgClass="bg-orange-50" 
+              iconColorClass="text-orange-600" 
+              tooltip="Institutions awaiting approval or registration completion" 
+            />
+          </StatsGrid>
 
         <DataTable<Institution>
           columns={buildInstitutionColumns()}
           data={visibleData}
-          loading={isLoading}
+          loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
           actions={(institution) => (
@@ -207,8 +266,10 @@ export default function InstitutionsPage() {
           onRowsPerPageChange={setRowsPerPage}
           paginationInfo={paginationInfo}
           showPagination={true}
+          renderExpandedRow={renderExpandedRow}
         />
       </div>
+      )}
 
       {/* Modals */}
       <InstitutionFormModal

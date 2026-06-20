@@ -6,9 +6,11 @@ import { buildStudentColumns } from "./columns";
 import StudentFormModal from "./StudentFormModal";
 import BulkUploadModal from "./BulkUploadModal";
 import StudentDeleteDialog from "./StudentDeleteDialog";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useRouter, useSearchParams } from "next/navigation";
+import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -24,18 +26,18 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
-          className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 hover:bg-gray-100 dark:bg-muted rounded-lg text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground transition-colors"
         >
           <MoreVertical size={16} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
+      <DropdownMenuContent align="end" className="bg-white dark:bg-card rounded-xl shadow-md border border-gray-100 dark:border-border/50 p-1 min-w-[120px] z-50">
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
           }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
+          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
         >
           <Pencil size={14} className="text-gray-400" />
           Edit
@@ -56,6 +58,8 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 }
 
 export default function StudentsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -74,6 +78,13 @@ export default function StudentsPage() {
     open: false,
     student: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", student: null });
+      router.replace("/admin/students");
+    }
+  }, [searchParams, router]);
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
@@ -96,7 +107,7 @@ export default function StudentsPage() {
   }, [debouncedSearch, status]);
 
   // Data fetching hooks
-  const { data: studentsData, isLoading } = useStudents(
+  const { data: studentsData, isLoading, isFetching } = useStudents(
     page,
     rowsPerPage,
     debouncedSearch || undefined,
@@ -149,7 +160,7 @@ export default function StudentsPage() {
   const extraHeaderActions = (
     <button
       onClick={() => setBulkModal(true)}
-      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
+      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
     >
       <Upload size={16} />
       Bulk Upload CSV
@@ -165,13 +176,16 @@ export default function StudentsPage() {
       buttonOnclick={() => setFormModal({ open: true, mode: "add", student: null })}
       extraActions={extraHeaderActions}
     >
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      {isLoading ? (
+        <UserPageSkeleton />
+      ) : (
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="TOTAL STUDENTS"
-            value={stats?.total_students ?? 0}
+            value={stats?.total_students ?? "..."}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -179,7 +193,7 @@ export default function StudentsPage() {
           />
           <StatsCard
             title="ACTIVE STUDENTS"
-            value={stats?.active_students ?? 0}
+            value={stats?.active_students ?? "..."}
             icon={<UserCheck className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -187,18 +201,18 @@ export default function StudentsPage() {
           />
           <StatsCard
             title="AVG. COURSES/STUDENT"
-            value={stats?.average_students_per_course ? stats.average_students_per_course.toFixed(1) : "0.0"}
+            value={stats?.average_students_per_course !== undefined ? stats.average_students_per_course.toFixed(1) : "..."}
             icon={<BookOpen className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
             tooltip="Average number of courses per student"
           />
-        </div>
+        </StatsGrid>
 
         <DataTable<Student>
           columns={buildStudentColumns()}
           data={visibleData}
-          loading={isLoading}
+          loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
           actions={(student) => (
@@ -218,6 +232,7 @@ export default function StudentsPage() {
           showPagination={true}
         />
       </div>
+      )}
 
       {/* Modals */}
       <StudentFormModal
