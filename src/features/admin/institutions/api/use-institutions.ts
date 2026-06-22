@@ -8,6 +8,7 @@ import {
   deleteInstitution,
   fetchInstitutionsLookup,
   Institution,
+  fetchInstitutionsOutlook,
 } from "./institution-api";
 
 /**
@@ -21,6 +22,18 @@ export function useInstitutions(page: number = 1, limit: number = 50, search?: s
     placeholderData: keepPreviousData,
   });
 }
+
+/**
+ * Fetch all institutions from outlook endpoint (no pagination)
+ */
+export function useInstitutionsOutlook() {
+  return useQuery({
+    queryKey: ["institutions", "outlook"],
+    queryFn: () => fetchInstitutionsOutlook(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 
 /**
  * Fetch a single institution by ID
