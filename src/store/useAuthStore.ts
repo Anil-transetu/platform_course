@@ -12,7 +12,9 @@ interface AuthState {
   role: Role | string | null;
   token: string | null;
   isLoading: boolean;
+  isInitializing: boolean;
   setAuth: (token: string, role: string, user?: User) => void;
+  setIsInitializing: (isInitializing: boolean) => void;
   logout: () => void;
   setLoading: (isLoading: boolean) => void;
 }
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   role: null,
   token: null,
   isLoading: true, // Initially true until we verify auth state
+  isInitializing: true,
 
   setAuth: (token, role, user) => set({
     isAuthenticated: true,
@@ -30,17 +33,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     role,
     user: user || null,
     isLoading: false,
+    isInitializing: false,
   }),
 
+  setIsInitializing: (isInitializing) => set({ isInitializing }),
+
   logout: () => {
-    // We also need to clear cookies here, but the actual clearing 
-    // should happen in the component or utility calling this to keep store pure.
+    // Clear cookies explicitly so middleware immediately recognizes unauthenticated state
+    if (typeof document !== 'undefined') {
+      document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'mock_auth_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
+
     set({
       isAuthenticated: false,
       user: null,
       role: null,
       token: null,
       isLoading: false,
+      isInitializing: false,
     });
   },
 

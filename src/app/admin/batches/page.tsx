@@ -97,7 +97,9 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
   );
 }
 
-export default function BatchesPage() {
+import { Suspense } from "react";
+
+function BatchesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formModal, setFormModal] = useState<{
@@ -290,5 +292,13 @@ export default function BatchesPage() {
       />
       
     </ListingScreenTemplate>
+  );
+}
+
+export default function BatchesPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <BatchesPageContent />
+    </Suspense>
   );
 }
