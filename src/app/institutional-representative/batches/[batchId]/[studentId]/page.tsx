@@ -14,6 +14,7 @@ import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useRepStudentStats,
@@ -201,6 +202,55 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
       </button>
     </div>
   );
+
+  if (statsLoading || performanceLoading) {
+    return (
+      <ListingScreenTemplate
+        headerText="Student Profile"
+        extraActions={extraHeaderActions}
+      >
+        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1 bg-slate-50/50">
+          {/* Banner Skeleton */}
+          <div className="bg-card rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-white">
+            <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full" />
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <Skeleton className="h-6 w-48 mb-2 mx-auto sm:mx-0" />
+              <Skeleton className="h-4 w-64 mx-auto sm:mx-0" />
+            </div>
+          </div>
+          
+          {/* Stats Grid Skeleton */}
+          <StatsGrid>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 rounded-xl bg-white dark:bg-card border border-gray-100 dark:border-border/50 flex justify-between items-center shadow-sm">
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-28 mb-3" />
+                  <Skeleton className="h-8 w-36" />
+                </div>
+                <Skeleton className="w-10 h-10 rounded-full" />
+              </div>
+            ))}
+          </StatsGrid>
+          
+          {/* Table Skeleton */}
+          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border/60 shadow-sm overflow-hidden flex flex-col flex-1">
+            <div className="p-6 border-b border-slate-100 dark:border-border/60">
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <div className="p-4 border-b border-gray-100 dark:border-border/50 flex justify-between gap-4">
+              <Skeleton className="h-10 w-full sm:w-[300px] rounded-lg" />
+              <Skeleton className="h-10 w-[200px] rounded-lg" />
+            </div>
+            <div className="p-6 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          </div>
+        </div>
+      </ListingScreenTemplate>
+    );
+  }
 
   if (statsError) {
     return (
