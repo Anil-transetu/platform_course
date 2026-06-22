@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/institution-rep/reports`;
@@ -53,29 +53,8 @@ export interface ReportsResponse {
 /**
  * Fetch Recent Reports
  */
-export async function fetchRecentReports(
-  page: number = 1,
-  limit: number = 10,
-  search?: string,
-  category?: string
-): Promise<ReportsResponse> {
-  let url = `${BASE_URL}/recent`;
-  const query = new URLSearchParams();
-
-  query.append("page", page.toString());
-  query.append("limit", limit.toString());
-
-  if (search && search.trim() !== "") {
-    query.append("search", search);
-  }
-
-  if (category && category !== "All") {
-    query.append("category", category);
-  }
-
-  url += `?${query.toString()}`;
-
-  const response = await fetch(url, {
+export async function fetchRecentReports(): Promise<ReportsResponse> {
+  const response = await fetch(`${BASE_URL}/recent`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -113,16 +92,10 @@ export async function downloadReportPdf(type: string, filename: string): Promise
 /**
  * Query Hooks
  */
-export function useRecentReports(
-  page: number = 1,
-  limit: number = 10,
-  search?: string,
-  category?: string
-) {
+export function useRecentReports() {
   return useQuery({
-    queryKey: ["recentReports", { page, limit, search, category }],
-    queryFn: () => fetchRecentReports(page, limit, search, category),
+    queryKey: ["recentReports"],
+    queryFn: () => fetchRecentReports(),
     staleTime: 1 * 60 * 1000, // 1 minute
-    placeholderData: keepPreviousData,
   });
 }

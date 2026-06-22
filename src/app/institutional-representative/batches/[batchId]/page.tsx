@@ -18,6 +18,7 @@ import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useRepBatchOverview,
@@ -220,6 +221,50 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
       </button>
     </div>
   );
+
+  if (overviewLoading || studentsLoading) {
+    return (
+      <ListingScreenTemplate
+        headerText={`Batch #${batchId}`}
+        subHeaderText={
+          <div className="flex items-center gap-2 mt-1">
+            <Skeleton className="h-4 w-32" />
+            <span>•</span>
+            <Skeleton className="h-4 w-24" />
+          </div>
+        }
+        extraActions={extraHeaderActions}
+      >
+        <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full flex-1 bg-slate-50/50">
+          <StatsGrid>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-4 rounded-xl bg-white dark:bg-card border border-gray-100 dark:border-border/50 flex justify-between items-center shadow-sm">
+                <div className="flex-1">
+                  <Skeleton className="h-4 w-28 mb-3" />
+                  <Skeleton className="h-8 w-36" />
+                </div>
+                <Skeleton className="w-10 h-10 rounded-full" />
+              </div>
+            ))}
+          </StatsGrid>
+          <div className="bg-white dark:bg-card rounded-2xl border border-slate-100 dark:border-border/60 shadow-sm overflow-hidden flex flex-col flex-1">
+            <div className="p-6 border-b border-slate-100 dark:border-border/60">
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <div className="p-4 border-b border-gray-100 dark:border-border/50 flex justify-between gap-4">
+              <Skeleton className="h-10 w-full sm:w-[300px] rounded-lg" />
+              <Skeleton className="h-10 w-[200px] rounded-lg" />
+            </div>
+            <div className="p-6 space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          </div>
+        </div>
+      </ListingScreenTemplate>
+    );
+  }
 
   if (overviewError) {
     return (
