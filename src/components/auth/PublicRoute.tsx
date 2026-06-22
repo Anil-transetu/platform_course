@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
-import { RoleDashboards } from "@/constants/roles";
-import { Role } from "@/types/user";
+import { RoleDashboards, Role } from "@/constants/roles";
 import { Loader2 } from "lucide-react";
 
 export default function PublicRoute({ children }: { children: React.ReactNode }) {
