@@ -2,11 +2,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
-import { FileText, Download, Search, ChevronDown, Info, X } from "lucide-react";
+import { Search, ChevronDown, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch, useUploadBatchStudentsCsv } from "@/hooks/use-batches";
-import { useInstitutions } from "@/features/admin/institutions/api/use-institutions";
+import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
+import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
 import { useTutors } from "@/features/admin/tutor/api/tutor-api";
 import { useStudents } from "@/hooks/use-students";
 
@@ -35,27 +35,32 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [instructorSearch, setInstructorSearch] = useState("");
   const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
 
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
   const tutorDropdownRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevInstitutionIdRef = useRef(form.institution_id);
 
   // API hooks
-  const { data: institutionsData } = useInstitutions(1, 100);
+  const { data: institutions } = useInstitutionsOutlook();
   const { data: tutorsData } = useTutors(1, 100);
-  const { data: studentsData } = useStudents(1, 100);
+  const { data: studentsData } = useStudents(
+    1,
+    500,
+    undefined,
+    undefined,
+    undefined,
+    form.institution_id || undefined
+  );
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
 
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
-  const uploadCsvMutation = useUploadBatchStudentsCsv();
 
-  const institutions = institutionsData?.data || [];
   const tutors = tutorsData?.data || (Array.isArray(tutorsData) ? tutorsData : []);
-  const allStudents = studentsData?.data || (Array.isArray(studentsData) ? studentsData : []);
+  const allStudents = form.institution_id
+    ? (studentsData?.data || (Array.isArray(studentsData) ? studentsData : []))
+    : [];
 
   // Click outside listener for student and tutor search dropdowns
   useEffect(() => {
@@ -96,6 +101,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         } else {
           setSelectedStudents([]);
         }
+        prevInstitutionIdRef.current = String(activeBatch.institution_id || "");
       } else {
         setForm({
           name: "",
@@ -107,15 +113,23 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           status: "active",
         });
         setSelectedStudents([]);
+        prevInstitutionIdRef.current = "";
       }
       setStudentSearch("");
       setInstructorSearch("");
       setDropdownOpen(false);
       setInstructorDropdownOpen(false);
-      setCsvFile(null);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
+
+  // Clear selected students if institution changes after initial load
+  useEffect(() => {
+    if (open && form.institution_id !== prevInstitutionIdRef.current) {
+      setSelectedStudents([]);
+      prevInstitutionIdRef.current = form.institution_id;
+    }
+  }, [form.institution_id, open]);
 
   // Filter students based on search input
   const filteredStudents = allStudents.filter(
@@ -150,8 +164,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
     if (!form.course_key) newErrors.course_key = "Course is required";
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
-    if (selectedStudents.length === 0 && !csvFile) {
-      newErrors.enroll_students = "Enroll Students (or a CSV upload) is required";
+    if (selectedStudents.length === 0) {
+      newErrors.enroll_students = "Enroll Students is required";
     }
     if (!form.start_date.trim()) newErrors.start_date = "Start Date is required";
     if (!form.end_date.trim()) newErrors.end_date = "End Date is required";
@@ -170,7 +184,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: null, // as in POST body example
+      course_id: null,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
@@ -179,96 +193,21 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
     if (mode === "add") {
       createMutation.mutate(payload, {
-        onSuccess: (res: any) => {
-          const newBatchId = res.data?.id || res.id;
-          if (csvFile && newBatchId) {
-            uploadCsvMutation.mutate({ id: newBatchId, file: csvFile }, {
-              onSuccess: () => {
-                toast.success("Batch created and students bulk enrolled successfully!");
-                onClose();
-              }
-            });
-          } else {
-            onClose();
-          }
+        onSuccess: () => {
+          onClose();
         }
       });
     } else if (batch?.id) {
       updateMutation.mutate({ id: batch.id, data: payload }, {
         onSuccess: () => {
-          if (csvFile) {
-            uploadCsvMutation.mutate({ id: batch.id, file: csvFile }, {
-              onSuccess: () => onClose()
-            });
-          } else {
-            onClose();
-          }
+          onClose();
         }
       });
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size exceeds 10MB limit.");
-        return;
-      }
-      setCsvFile(file);
-      toast.success(`Selected file: ${file.name}`);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setCsvFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    toast.success("File removed successfully");
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        toast.error("Only CSV files are allowed.");
-        return;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("File size exceeds 10MB limit.");
-        return;
-      }
-      setCsvFile(file);
-      toast.success(`Selected file: ${file.name}`);
-    }
-  };
-
-  const handleDownloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,first_name,last_name,email,status\nJohn,Doe,john.doe@example.com,active\nJane,Smith,jane.smith@example.com,active";
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "batch_student_enrollment_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const selectedTutor = tutors.find((t: any) => String(t.id) === form.tutor_id);
-  const isPending = createMutation.isPending || updateMutation.isPending || uploadCsvMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Modal
@@ -279,22 +218,20 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     >
       <div className="space-y-4 mt-1">
         
-        {/* BATCH NAME */}
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            BATCH NAME <span className="text-red-500">*</span>
-          </label>
-          <input
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. Computer Science - 2024 - Section A"
-            className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.name ? "border-red-500" : "border-gray-200"}`}
-          />
-          {errors.name && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.name}</p>}
-        </div>
-
-        {/* SELECT INSTITUTION & SELECT COURSE */}
+        {/* BATCH NAME & SELECT INSTITUTION */}
         <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              BATCH NAME <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. Computer Science - 2024 - Section A"
+              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.name ? "border-red-500" : "border-gray-200"}`}
+            />
+            {errors.name && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.name}</p>}
+          </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT INSTITUTION <span className="text-red-500">*</span>
@@ -304,7 +241,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                 <SelectValue placeholder="Select Institution" />
               </SelectTrigger>
               <SelectContent>
-                {institutions.map((inst: any) => (
+                {(institutions || []).map((inst: any) => (
                   <SelectItem key={inst.id} value={String(inst.id)}>
                     {inst.name}
                   </SelectItem>
@@ -313,6 +250,10 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             </Select>
             {errors.institution_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.institution_id}</p>}
           </div>
+        </div>
+
+        {/* SELECT COURSE & STATUS */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT COURSE <span className="text-red-500">*</span>
@@ -327,6 +268,21 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                 <SelectItem value="data-science">Data Science</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              STATUS <span className="text-red-500">*</span>
+            </label>
+            <Select value={form.status} onValueChange={(val) => setForm({...form, status: val})}>
+              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.status ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.status}</p>}
           </div>
         </div>
 
@@ -395,8 +351,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                   setDropdownOpen(true);
                 }}
                 onFocus={() => setDropdownOpen(true)}
-                placeholder="Search by name or ID..."
-                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.enroll_students ? "border-red-500" : "border-gray-200"}`}
+                disabled={!form.institution_id}
+                placeholder={form.institution_id ? "Search by name or ID..." : "Select institution first..."}
+                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${!form.institution_id ? "cursor-not-allowed opacity-60" : ""} ${errors.enroll_students ? "border-red-500" : "border-gray-200"}`}
               />
               <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
             </div>
@@ -405,7 +362,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             {/* Students Dropdown */}
             {dropdownOpen && (
               <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
-                {filteredStudents.length === 0 ? (
+                {!form.institution_id ? (
+                  <div className="p-3 text-sm text-gray-500 text-center font-medium">Please select an institution first</div>
+                ) : filteredStudents.length === 0 ? (
                   <div className="p-3 text-sm text-gray-500 text-center">No students found</div>
                 ) : (
                   filteredStudents.map((student: any) => {
@@ -441,7 +400,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* Selected Student Badges (Horizontal scroll or flexwrap) */}
+        {/* Selected Student Badges */}
         {selectedStudents.length > 0 && (
           <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1.5 border border-slate-100 rounded-xl bg-slate-50/30">
             {selectedStudents.map(student => (
@@ -487,104 +446,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-slate-700 transition-colors ${errors.end_date ? "border-red-500" : "border-gray-200"}`}
             />
             {errors.end_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.end_date}</p>}
-          </div>
-        </div>
-
-        {/* STATUS SELECT */}
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            STATUS <span className="text-red-500">*</span>
-          </label>
-          <Select value={form.status} onValueChange={(val) => setForm({...form, status: val})}>
-            <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.status ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.status && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.status}</p>}
-        </div>
-
-        {/* BULK UPLOAD */}
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-            BULK UPLOAD
-          </label>
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`border border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-colors ${
-              isDragging
-                ? "border-blue-500 bg-blue-50/20"
-                : csvFile
-                ? "border-blue-300 bg-blue-50/5"
-                : "border-blue-200 bg-blue-50/10 hover:bg-blue-50/20"
-            }`}
-          >
-            {csvFile ? (
-              <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-3 w-full max-w-sm shadow-sm relative">
-                <div className="w-9 h-9 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <FileText size={18} />
-                </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-semibold text-slate-700 truncate">{csvFile.name}</p>
-                  <p className="text-xs text-slate-400">{(csvFile.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveFile}
-                  className="w-8 h-8 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl flex items-center justify-center transition-colors border border-transparent hover:border-red-100 flex-shrink-0"
-                  title="Remove file"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3">
-                  <FileText size={20} />
-                </div>
-                <p className="text-sm font-semibold text-slate-700 mb-1">
-                  Drag and drop CSV file here
-                </p>
-                <p className="text-xs text-slate-400 mb-4">
-                  Maximum file size: 10MB
-                </p>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".csv"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-white bg-white shadow-sm transition-colors"
-                >
-                  Select File
-                </button>
-              </>
-            )}
-          </div>
-          
-          {/* Info bar at the bottom */}
-          <div className="flex items-center justify-between mt-3 px-4 py-2.5 bg-blue-50/40 rounded-xl text-blue-700 text-xs border border-blue-50">
-            <div className="flex items-center gap-2">
-              <Info size={14} className="text-blue-600" />
-              <span>Make sure your file follows the standard template format.</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleDownloadTemplate}
-              className="flex items-center gap-1 font-bold text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              <Download size={12} />
-              Download Template
-            </button>
           </div>
         </div>
 

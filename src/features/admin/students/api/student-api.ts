@@ -78,7 +78,7 @@ function mapStudent(s: Record<string, unknown>): Student {
 /**
  * Fetch all students
  */
-export async function fetchStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string) {
+export async function fetchStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   let url = BASE_URL;
   const query = new URLSearchParams();
   if (page !== undefined && limit !== undefined) {
@@ -93,6 +93,9 @@ export async function fetchStudents(page: number = 1, limit: number = 50, search
   }
   if (courseId && courseId.trim() !== "") {
     query.append("course_id", courseId);
+  }
+  if (institutionId && institutionId.trim() !== "") {
+    query.append("institution_id", institutionId);
   }
 
   if (query.toString()) {
@@ -210,10 +213,10 @@ export async function updateStudent(id: string | number, data: Record<string, un
  * TanStack Query Hooks
  */
 
-export function useStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string) {
+export function useStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   return useQuery({
-    queryKey: ["students", { page, limit, search, statusFilter, courseId }],
-    queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId),
+    queryKey: ["students", { page, limit, search, statusFilter, courseId, institutionId }],
+    queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId, institutionId),
     staleTime: 5 * 60 * 1000, // Keep data fresh for 5 minutes to reduce API calls
     placeholderData: keepPreviousData, // Keep previous data visible while fetching the next page for smooth pagination
   });

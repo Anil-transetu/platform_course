@@ -14,10 +14,10 @@ import toast from "react-hot-toast";
 
 const QUERY_KEY = "students";
 
-export function useStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string) {
+export function useStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   return useQuery({
-    queryKey: [QUERY_KEY, { page, limit, search, statusFilter, courseId }],
-    queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId),
+    queryKey: [QUERY_KEY, { page, limit, search, statusFilter, courseId, institutionId }],
+    queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId, institutionId),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
   });
