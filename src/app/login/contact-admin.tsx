@@ -162,7 +162,7 @@ export default function ContactAdministratorPage({ onBackToLogin }: ContactAdmin
                 </div>
                 <SelectContent>
                   <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="institution">Institution Representative</SelectItem>
+                  <SelectItem value="institution_representative">Institution Representative</SelectItem>
                 </SelectContent>
               </Select>
             </div>
