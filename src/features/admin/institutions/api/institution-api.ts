@@ -218,3 +218,19 @@ export async function deleteInstitution(id: string | number): Promise<void> {
     await handleResponse(response);
   }
 }
+
+/**
+ * Fetch institutions from outlook endpoint (using /api/v1/institutions/lookup)
+ */
+export async function fetchInstitutionsOutlook(): Promise<Institution[]> {
+  const url = `${API_HOST}/api/v1/institutions/lookup`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const data = await handleResponse(response);
+  const items = Array.isArray(data) ? data : data.data || data.institutions || [];
+  return items.map((i: any) => mapInstitution(i));
+}
+
