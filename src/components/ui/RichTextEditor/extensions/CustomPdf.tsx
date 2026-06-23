@@ -1,18 +1,29 @@
 import { mergeAttributes, Node } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, FileText } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
 
-const ImageComponent = (props: any) => {
+const PdfComponent = (props: any) => {
   return (
-    <NodeViewWrapper className="relative group inline-block max-w-full select-none">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={props.node.attrs.src}
-        alt={props.node.attrs.alt}
-        className="rounded-xl border border-gray-100 dark:border-border/50 shadow-sm max-w-full h-auto mt-4 mb-4"
-      />
+    <NodeViewWrapper className="relative group inline-block max-w-full w-full mt-4 mb-4 select-none">
+      <div className="flex items-center gap-4 p-4 border border-red-100 dark:border-red-950/30 rounded-2xl bg-red-50/30 dark:bg-red-950/10 hover:shadow-md transition-all">
+        <div className="w-12 h-12 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
+          <FileText size={24} strokeWidth={2} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-foreground truncate">{props.node.attrs.title || "Attached PDF Resource"}</p>
+          <a 
+            href={props.node.attrs.src} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline inline-block mt-0.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Download / View PDF
+          </a>
+        </div>
+      </div>
       
       <button
         type="button"
@@ -21,8 +32,8 @@ const ImageComponent = (props: any) => {
           e.stopPropagation();
           props.deleteNode();
         }}
-        className="absolute top-6 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
-        title="Remove image"
+        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
+        title="Remove PDF"
       >
         <X size={14} strokeWidth={3} />
       </button>
@@ -75,8 +86,8 @@ const isNearCustomNode = (state: any, name: string, isBackspace: boolean) => {
   return false;
 };
 
-export const CustomImage = Node.create({
-  name: 'customImage',
+export const CustomPdf = Node.create({
+  name: 'customPdf',
   group: 'block',
   atom: true,
 
@@ -85,8 +96,8 @@ export const CustomImage = Node.create({
       src: {
         default: null,
       },
-      alt: {
-        default: null,
+      title: {
+        default: 'Attached PDF Resource',
       },
     };
   },
@@ -94,17 +105,25 @@ export const CustomImage = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'img[src]',
+        tag: 'div[data-pdf-resource]',
+        getAttrs: (dom) => {
+          if (typeof dom === 'string') return {};
+          const element = dom as HTMLElement;
+          return {
+            src: element.getAttribute('src'),
+            title: element.getAttribute('title') || 'Attached PDF Resource',
+          };
+        },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['img', mergeAttributes(HTMLAttributes)];
+    return ['div', mergeAttributes({ 'data-pdf-resource': '' }, HTMLAttributes)];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ImageComponent);
+    return ReactNodeViewRenderer(PdfComponent);
   },
 
   addKeyboardShortcuts() {
