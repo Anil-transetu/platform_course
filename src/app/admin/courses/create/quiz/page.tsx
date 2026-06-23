@@ -19,11 +19,27 @@ const MOCK_QUIZZES = [
 
 export default function QuizLibraryPage() {
   const router = useRouter();
-  const { course, activeModuleId, activeLessonId, activeQuizId, updateQuiz } = useCourseStore();
+  const { 
+    course, 
+    activeModuleId, 
+    activeLessonId, 
+    activeQuizId, 
+    updateQuiz, 
+    updateCourseQuiz 
+  } = useCourseStore();
   
-  const activeModule = course.modules.find(m => m.id === activeModuleId);
-  const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
-  const activeQuiz = activeLesson?.quizzes?.find(q => q.id === activeQuizId);
+  let activeQuiz;
+  if (!activeModuleId) {
+    activeQuiz = course.quizzes?.find(q => q.id === activeQuizId);
+  } else if (!activeLessonId) {
+    const activeModule = course.modules.find(m => m.id === activeModuleId);
+    activeQuiz = activeModule?.quizzes?.find(q => q.id === activeQuizId);
+  } else {
+    const activeModule = course.modules.find(m => m.id === activeModuleId);
+    const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
+    activeQuiz = activeLesson?.quizzes?.find(q => q.id === activeQuizId);
+  }
+
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
@@ -41,8 +57,12 @@ export default function QuizLibraryPage() {
   const currentItems = filteredQuizzes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleAddToCourse = (title: string) => {
-    if (activeModuleId && activeLessonId && activeQuizId) {
-      updateQuiz(activeModuleId, activeLessonId, activeQuizId, { title });
+    if (activeQuizId) {
+      if (!activeModuleId) {
+        updateCourseQuiz(activeQuizId, { title });
+      } else {
+        updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { title });
+      }
       setSuccessMsg(`"${title}" added to course successfully!`);
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
@@ -90,7 +110,15 @@ export default function QuizLibraryPage() {
                     <Edit3 size={16} /> Edit in Builder
                   </button>
                   <button 
-                    onClick={() => updateQuiz(activeModuleId!, activeLessonId!, activeQuizId!, { title: "" })}
+                    onClick={() => {
+                      if (activeQuizId) {
+                        if (!activeModuleId) {
+                          updateCourseQuiz(activeQuizId, { title: "" });
+                        } else {
+                          updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { title: "" });
+                        }
+                      }
+                    }}
                     className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 dark:text-muted-foreground font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 dark:border-border/70 shadow-sm"
                   >
                     <RefreshCcw size={16} /> Replace Quiz

@@ -125,3 +125,95 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Tiptap Rich Text Editor list styling overrides */
+.prose ul, .prose-sm ul, .prose-lg ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose ol, .prose-sm ol, .prose-lg ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose li, .prose-sm li, .prose-lg li {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Nested lists */
+.prose ul ul, .prose ol ul, .prose-sm ul ul, .prose-sm ol ul {
+  list-style-type: circle !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 1.5rem !important;
+}
+
+.prose ul ul ul, .prose ol ul ul, .prose-sm ul ul ul, .prose-sm ol ul ul {
+  list-style-type: square !important;
+}
+
+.prose ul ol, .prose ol ol, .prose-sm ul ol, .prose-sm ol ol {
+  list-style-type: decimal !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 1.5rem !important;
+}
+
+/* Rich Text Editor Styling Overrides */
+.ProseMirror {
+  outline: none;
+  max-width: none !important;
+  width: 100% !important;
+  text-align: left;
+}
+
+/* Ensure no default left indentation for standard text */
+.ProseMirror > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Paragraph spacing overrides */
+.ProseMirror p {
+  line-height: 1.5 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0.5rem !important;
+  padding: 0 !important;
+}
+
+/* Heading spacing overrides */
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.3 !important;
+  padding: 0 !important;
+}
+
+/* List spacing overrides */
+.ProseMirror ul,
+.ProseMirror ol {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+}
+
+.ProseMirror li {
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.125rem !important;
+}
+
+.ProseMirror li p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
