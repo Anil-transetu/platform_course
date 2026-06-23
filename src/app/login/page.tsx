@@ -40,7 +40,7 @@ export default function LoginPage() {
       const data = await loginToApi(email, password);
       
       // Normalize role and add fallback based on email if backend role is missing
-      let rawRole = data?.role;
+      let rawRole = data?.role || data?.user?.role || (data as any)?.data?.user?.role || (data as any)?.data?.role;
       if (!rawRole) {
         const lowerEmail = email.toLowerCase();
         if (lowerEmail.includes("admin")) {
@@ -53,7 +53,10 @@ export default function LoginPage() {
           rawRole = "student";
         }
       }
-      const role = rawRole.toLowerCase();
+      let role = rawRole.toLowerCase();
+      if (role === "instructor") {
+        role = "tutor";
+      }
       
       document.cookie = `mock_auth_role=${role}; path=/;`;
       
