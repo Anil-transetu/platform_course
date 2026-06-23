@@ -82,7 +82,9 @@ const PREDEFINED_DOMAINS = [
   "THREE.JS"
 ];
 
-export default function TutorsPage() {
+import { Suspense } from "react";
+
+function TutorsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
@@ -314,5 +316,13 @@ export default function TutorsPage() {
         onConfirm={handleDeleteTutor}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function TutorsPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <TutorsPageContent />
+    </Suspense>
   );
 }

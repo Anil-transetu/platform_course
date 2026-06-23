@@ -57,7 +57,9 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   );
 }
 
-export default function StudentsPage() {
+import { Suspense } from "react";
+
+function StudentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Modal state
@@ -251,5 +253,13 @@ export default function StudentsPage() {
         onClose={() => setDeleteDialog({ open: false, student: null })}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function StudentsPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <StudentsPageContent />
+    </Suspense>
   );
 }

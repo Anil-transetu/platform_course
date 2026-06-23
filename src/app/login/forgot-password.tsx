@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { Mail, ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface ForgotPasswordPageProps {
   onBackToLogin?: () => void;
@@ -21,6 +22,7 @@ export default function ForgotPasswordPage({ onBackToLogin }: ForgotPasswordPage
     // Simulate network request
     await new Promise((resolve) => setTimeout(resolve, 800));
     
+    toast.success("Password reset email sent successfully. Please check your inbox.");
     setIsSubmitted(true);
     setIsLoading(false);
   };

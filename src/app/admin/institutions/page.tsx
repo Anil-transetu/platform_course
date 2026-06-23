@@ -96,7 +96,9 @@ const renderExpandedRow = (row: Institution) => {
   );
 };
 
-export default function InstitutionsPage() {
+import { Suspense } from "react";
+
+function InstitutionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Modal state
@@ -285,5 +287,13 @@ export default function InstitutionsPage() {
         onClose={() => setDeleteDialog({ open: false, institution: null })}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function InstitutionsPage() {
+  return (
+    <Suspense fallback={<InstitutionPageSkeleton />}>
+      <InstitutionsPageContent />
+    </Suspense>
   );
 }
