@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Domain } from "@/types/domain";
-import { useAssignments } from "@/features/admin/assignments/api/use-assignments";
+import { useAssignmentLookup } from "@/features/admin/courses/api/course-api";
 
 interface CreateDomainModalProps {
   isOpen: boolean;
@@ -60,9 +60,9 @@ export default function CreateDomainModal({
 
   const tagDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch available assignments from the backend API
-  const { data: assignmentsRes } = useAssignments(1, 100);
-  const availableAssignments = assignmentsRes?.data || [];
+  // Fetch available assignments from the backend API using lookup
+  const { data: lookupRes } = useAssignmentLookup();
+  const availableAssignments = lookupRes || [];
 
   // Listen to clicks outside tag dropdown to close it
   useEffect(() => {
@@ -306,7 +306,7 @@ export default function CreateDomainModal({
                 {availableAssignments.length === 0 ? (
                   <SelectItem value="none" disabled>No assignments available</SelectItem>
                 ) : (
-                  availableAssignments.map((assign) => (
+                  availableAssignments.map((assign: any) => (
                     <SelectItem key={assign.id} value={String(assign.id)}>
                       {assign.title || assign.assignment_title || `Assignment #${assign.id}`}
                     </SelectItem>

@@ -79,7 +79,7 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
     }
     const objectUrl = URL.createObjectURL(file);
     if (onAttach) {
-      onAttach("link", { url: objectUrl, title });
+      onAttach("pdf", { url: objectUrl, title });
     }
     onClose();
   };
