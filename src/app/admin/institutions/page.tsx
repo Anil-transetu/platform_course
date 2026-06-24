@@ -9,6 +9,7 @@ import InstitutionPageSkeleton from "@/components/admin/institutions/Institution
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
 import {
   DropdownMenu,
@@ -95,7 +96,11 @@ const renderExpandedRow = (row: Institution) => {
   );
 };
 
-export default function InstitutionsPage() {
+import { Suspense } from "react";
+
+function InstitutionsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -114,6 +119,13 @@ export default function InstitutionsPage() {
     open: false,
     institution: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", institution: null });
+      router.replace("/admin/institutions");
+    }
+  }, [searchParams, router]);
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
@@ -275,5 +287,13 @@ export default function InstitutionsPage() {
         onClose={() => setDeleteDialog({ open: false, institution: null })}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function InstitutionsPage() {
+  return (
+    <Suspense fallback={<InstitutionPageSkeleton />}>
+      <InstitutionsPageContent />
+    </Suspense>
   );
 }

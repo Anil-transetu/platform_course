@@ -47,6 +47,7 @@ export default function LessonDetailsPage() {
   const handleAttach = (type: string, payload: any) => {
     if (type === 'image') editorRef.current?.insertImage(payload.url);
     if (type === 'video') editorRef.current?.insertVideo(payload.url);
+    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title);
     if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title);
   };
 

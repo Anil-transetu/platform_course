@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Users,
   CheckCircle,
@@ -81,7 +82,11 @@ const PREDEFINED_DOMAINS = [
   "THREE.JS"
 ];
 
-export default function TutorsPage() {
+import { Suspense } from "react";
+
+function TutorsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -98,6 +103,13 @@ export default function TutorsPage() {
     mode: "add",
     tutor: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", tutor: null });
+      router.replace("/admin/tutors");
+    }
+  }, [searchParams, router]);
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -304,5 +316,13 @@ export default function TutorsPage() {
         onConfirm={handleDeleteTutor}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function TutorsPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <TutorsPageContent />
+    </Suspense>
   );
 }

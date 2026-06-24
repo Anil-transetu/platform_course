@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
 
 export type Topic = {
   id: string;
@@ -35,10 +37,15 @@ export type Module = {
 };
 
 export type Course = {
+  id?: number | string;
   title: string;
-  domain: string;
-  tags: string;
+  domain?: string;
+  tags?: string;
+  thumbnail_url?: string;
+  description?: string;
   modules: Module[];
+  quizzes?: Quiz[];
+  assignments?: Assignment[];
 };
 
 interface CourseState {
@@ -49,7 +56,9 @@ interface CourseState {
   activeQuizId: string | null;
   activeAssignmentId: string | null;
 
-  setCourseDetails: (title: string, domain: string, tags: string) => void;
+  setCourseDetails: (title: string, description: string, thumbnail_url: string, domain?: string, tags?: string) => void;
+  setCourse: (course: Course) => void;
+  resetCourse: () => void;
   
   addModule: () => string;
   updateModule: (id: string, updates: Partial<Module>) => void;
@@ -75,13 +84,24 @@ interface CourseState {
   updateAssignment: (moduleId: string, lessonId: string | undefined | null, assignmentId: string, updates: Partial<Assignment>) => void;
   deleteAssignment: (moduleId: string, lessonId: string | undefined | null, assignmentId: string) => void;
   setActiveAssignment: (id: string | null) => void;
+
+  addCourseQuiz: () => string;
+  updateCourseQuiz: (quizId: string, updates: Partial<Quiz>) => void;
+  deleteCourseQuiz: (quizId: string) => void;
+  addCourseAssignment: () => string;
+  updateCourseAssignment: (assignmentId: string, updates: Partial<Assignment>) => void;
+  deleteCourseAssignment: (assignmentId: string) => void;
 }
 
-export const useCourseStore = create<CourseState>((set) => ({
-  course: {
+export const useCourseStore = create<CourseState>()(
+  persist(
+    (set) => ({
+      course: {
     title: '',
     domain: '',
     tags: '',
+    thumbnail_url: '',
+    description: '',
     modules: [],
   },
   activeModuleId: null,
@@ -90,9 +110,34 @@ export const useCourseStore = create<CourseState>((set) => ({
   activeQuizId: null,
   activeAssignmentId: null,
 
-  setCourseDetails: (title, domain, tags) => set((state) => ({
-    course: { ...state.course, title, domain, tags }
+  setCourseDetails: (title, description, thumbnail_url, domain = '', tags = '') => set((state) => ({
+    course: { ...state.course, title, description, thumbnail_url, domain, tags }
   })),
+
+  setCourse: (course) => set({
+    course,
+    activeModuleId: course.modules[0]?.id || null,
+    activeLessonId: course.modules[0]?.lessons[0]?.id || null,
+    activeTopicId: null,
+    activeQuizId: null,
+    activeAssignmentId: null,
+  }),
+
+  resetCourse: () => set({
+    course: {
+      title: '',
+      domain: '',
+      tags: '',
+      thumbnail_url: '',
+      description: '',
+      modules: [],
+    },
+    activeModuleId: null,
+    activeLessonId: null,
+    activeTopicId: null,
+    activeQuizId: null,
+    activeAssignmentId: null,
+  }),
 
   addModule: () => {
     const id = crypto.randomUUID();
@@ -315,6 +360,12 @@ export const useCourseStore = create<CourseState>((set) => ({
       ...state.course,
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
+          if (!lessonId) {
+            return {
+              ...m,
+              quizzes: (m.quizzes || []).map(q => q.id === quizId ? { ...q, ...updates } : q),
+            };
+          }
           return {
             ...m,
             lessons: m.lessons.map(l => {
@@ -338,6 +389,12 @@ export const useCourseStore = create<CourseState>((set) => ({
       ...state.course,
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
+          if (!lessonId) {
+            return {
+              ...m,
+              quizzes: (m.quizzes || []).filter(q => q.id !== quizId),
+            };
+          }
           return {
             ...m,
             lessons: m.lessons.map(l => {
@@ -357,7 +414,7 @@ export const useCourseStore = create<CourseState>((set) => ({
     activeQuizId: state.activeQuizId === quizId ? null : state.activeQuizId,
   })),
 
-  setActiveQuiz: (id) => set({ activeQuizId: id, activeTopicId: null, activeAssignmentId: null }),
+  setActiveQuiz: (id) => set({ activeQuizId: id, activeTopicId: null, activeAssignmentId: null, activeModuleId: null, activeLessonId: null }),
 
   addAssignment: (moduleId, lessonId) => {
     const id = crypto.randomUUID();
@@ -402,6 +459,12 @@ export const useCourseStore = create<CourseState>((set) => ({
       ...state.course,
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
+          if (!lessonId) {
+            return {
+              ...m,
+              assignments: (m.assignments || []).map(a => a.id === assignmentId ? { ...a, ...updates } : a),
+            };
+          }
           return {
             ...m,
             lessons: m.lessons.map(l => {
@@ -425,6 +488,12 @@ export const useCourseStore = create<CourseState>((set) => ({
       ...state.course,
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
+          if (!lessonId) {
+            return {
+              ...m,
+              assignments: (m.assignments || []).filter(a => a.id !== assignmentId),
+            };
+          }
           return {
             ...m,
             lessons: m.lessons.map(l => {
@@ -444,6 +513,72 @@ export const useCourseStore = create<CourseState>((set) => ({
     activeAssignmentId: state.activeAssignmentId === assignmentId ? null : state.activeAssignmentId,
   })),
 
-  setActiveAssignment: (id) => set({ activeAssignmentId: id, activeTopicId: null, activeQuizId: null }),
+  setActiveAssignment: (id) => set({ activeAssignmentId: id, activeTopicId: null, activeQuizId: null, activeModuleId: null, activeLessonId: null }),
 
-}));
+  addCourseQuiz: () => {
+    const id = crypto.randomUUID();
+    set((state) => ({
+      course: {
+        ...state.course,
+        quizzes: [...(state.course.quizzes || []), { id, title: '' }]
+      },
+      activeQuizId: id,
+      activeModuleId: null,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeAssignmentId: null,
+    }));
+    return id;
+  },
+
+  updateCourseQuiz: (quizId, updates) => set((state) => ({
+    course: {
+      ...state.course,
+      quizzes: (state.course.quizzes || []).map(q => q.id === quizId ? { ...q, ...updates } : q)
+    }
+  })),
+
+  deleteCourseQuiz: (quizId) => set((state) => ({
+    course: {
+      ...state.course,
+      quizzes: (state.course.quizzes || []).filter(q => q.id !== quizId)
+    },
+    activeQuizId: state.activeQuizId === quizId ? null : state.activeQuizId
+  })),
+
+  addCourseAssignment: () => {
+    const id = crypto.randomUUID();
+    set((state) => ({
+      course: {
+        ...state.course,
+        assignments: [...(state.course.assignments || []), { id, title: '' }]
+      },
+      activeAssignmentId: id,
+      activeModuleId: null,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeQuizId: null,
+    }));
+    return id;
+  },
+
+  updateCourseAssignment: (assignmentId, updates) => set((state) => ({
+    course: {
+      ...state.course,
+      assignments: (state.course.assignments || []).map(a => a.id === assignmentId ? { ...a, ...updates } : a)
+    }
+  })),
+
+  deleteCourseAssignment: (assignmentId) => set((state) => ({
+    course: {
+      ...state.course,
+      assignments: (state.course.assignments || []).filter(a => a.id !== assignmentId)
+    },
+    activeAssignmentId: state.activeAssignmentId === assignmentId ? null : state.activeAssignmentId
+  })),
+
+  }),
+  {
+    name: 'transetu-course-creation-store',
+  }
+));

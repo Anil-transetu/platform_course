@@ -13,13 +13,14 @@ const protectedRoutes = [
 // Add public routes that should be accessible without authentication
 const publicRoutes = ['/login', '/forgot-password', '/unauthorized', '/api/auth/login'];
 
-export function proxy(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-    // Bypass for static files, _next, and public routes if needed, 
-    // though matcher handles most of this. Let's explicitly allow public routes.
+    const token = request.cookies.get('token')?.value;
+    const role = request.cookies.get('mock_auth_role')?.value;
+
+    // If it's a public route, let the React <PublicRoute> component handle the logic
     if (publicRoutes.some(route => pathname.startsWith(route)) || pathname === '/') {
-      // Allow users to reach /login even if authenticated so they can test different accounts easily
       return NextResponse.next();
     }
 
@@ -27,9 +28,6 @@ export function proxy(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (isProtectedRoute) {
-    const token = request.cookies.get('token')?.value;
-    const role = request.cookies.get('mock_auth_role')?.value;
-
     // Not authenticated
     if (!token || !role) {
       const loginUrl = new URL(DEFAULT_REDIRECT, request.url);

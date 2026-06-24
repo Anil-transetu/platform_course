@@ -7,7 +7,7 @@ import BulkUploadModal from "./BulkUploadModal";
 import BatchDeleteDialog from "./BatchDeleteDialog";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import { useBatches, useBatchesDashboardStats } from "@/hooks/use-batches";
@@ -98,8 +98,11 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
   );
 }
 
-export default function BatchesPage() {
+import { Suspense } from "react";
+
+function BatchesPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formModal, setFormModal] = useState<{
     open: boolean;
     mode: "add" | "edit";
@@ -300,5 +303,13 @@ export default function BatchesPage() {
       />
       
     </ListingScreenTemplate>
+  );
+}
+
+export default function BatchesPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <BatchesPageContent />
+    </Suspense>
   );
 }

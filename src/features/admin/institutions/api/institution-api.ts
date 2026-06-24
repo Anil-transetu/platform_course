@@ -234,3 +234,24 @@ export async function fetchInstitutionsOutlook(): Promise<Institution[]> {
   return items.map((i: any) => mapInstitution(i));
 }
 
+/**
+ * Lookup institutions for dropdowns
+ */
+export async function fetchInstitutionsLookup(search?: string): Promise<any[]> {
+  let url = `${BASE_URL}/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const data = await handleResponse(response);
+  return data.data || [];
+}
+
+
