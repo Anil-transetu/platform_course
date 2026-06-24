@@ -16,6 +16,7 @@ export interface AttendanceRow {
   batch: string;
   status: string;
   notes?: string;
+  [key: string]: any;
 }
 
 export function buildAttendanceColumns(): Column<AttendanceRow>[] {
