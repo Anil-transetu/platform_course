@@ -5,7 +5,7 @@ export default function TutorQuizzesPage() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Quizzes</h1>
           <p className="text-card-foreground text-sm">
-            Manage your quizzes and assessments.
+            Manage your quizze and assessments.
           </p>
         </div>
       </div>
