@@ -24,6 +24,19 @@ function formatDate(dateStr?: string) {
 
 export default function StudentCourses() {
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  
+  useEffect(() => {
+    const stored = localStorage.getItem("course_view_mode");
+    if (stored === "card" || stored === "table") {
+      setViewMode(stored);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: "card" | "table") => {
+    setViewMode(mode);
+    localStorage.setItem("course_view_mode", mode);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -62,13 +75,13 @@ export default function StudentCourses() {
   const extraActions = (
     <div className="flex bg-white dark:bg-card border border-gray-200 dark:border-border/50 rounded-xl p-1 shadow-sm flex-shrink-0 h-[46px]">
       <button 
-        onClick={() => setViewMode("card")}
+        onClick={() => handleViewModeChange("card")}
         className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === "card" ? "bg-slate-900 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
       >
         Card
       </button>
       <button 
-        onClick={() => setViewMode("table")}
+        onClick={() => handleViewModeChange("table")}
         className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === "table" ? "bg-slate-900 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
       >
         Table
@@ -90,7 +103,7 @@ export default function StudentCourses() {
       buttonRequired={false}
       extraActions={extraActions}
     >
-      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden">
         {viewMode === "card" && (
            <div className="relative flex-shrink-0">
              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -121,7 +134,7 @@ export default function StudentCourses() {
               ))}
             </div>
           ) : (
-            <div className="flex-1 overflow-hidden min-h-0 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm p-1">
+            <div className="overflow-hidden bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm p-1">
                <DataTable<any>
                 data={[]}
                 columns={buildCourseColumns()}
@@ -132,6 +145,7 @@ export default function StudentCourses() {
                 totalPages={1}
                 onPageChange={() => {}}
                 onRowsPerPageChange={() => {}}
+                bodyHeight="h-auto"
               />
             </div>
           )
@@ -150,8 +164,8 @@ export default function StudentCourses() {
             ) : (
               <div className="flex flex-col h-full overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-4">
-                  {visibleData.map(course => (
-                    <div key={course.id} className="bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
+                  {visibleData.map((course, index) => (
+                    <div key={course.id || course.course_id || `course-${index}`} className="bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
                       <div className="h-40 bg-slate-50 relative overflow-hidden flex-shrink-0">
                         {course.thumbnail_url ? (
                           <Image src={course.thumbnail_url} alt={course.name} fill className="object-cover transition-transform group-hover:scale-105" />
@@ -229,7 +243,7 @@ export default function StudentCourses() {
               </div>
             )
           ) : (
-            <div className="flex-1 overflow-hidden min-h-0 bg-white dark:bg-card rounded-2xl">
+            <div className="overflow-hidden bg-white dark:bg-card rounded-2xl">
               <DataTable<any>
                 data={visibleData}
                 columns={buildCourseColumns()}
@@ -244,6 +258,7 @@ export default function StudentCourses() {
                 showPagination={true}
                 emptyStateMessage="No courses found."
                 loading={isFetching}
+                bodyHeight="h-auto"
               />
             </div>
           )
