@@ -8,7 +8,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
   closeOnBackdropClick?: boolean;
 }
 
@@ -17,6 +17,8 @@ const sizeClasses = {
   md: "max-w-md",
   lg: "max-w-lg",
   xl: "max-w-2xl",
+  "2xl": "max-w-3xl",
+  "3xl": "max-w-4xl",
 };
 
 /**
@@ -45,11 +47,11 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-card shadow-lg`}
+        className={`relative w-full ${sizeClasses[size]} max-h-[95vh] overflow-y-auto rounded-lg bg-card shadow-lg`}
       >
         {/* Header */}
         {title && (
-          <div className="flex items-center justify-between border-b border-border p-6">
+          <div className="flex items-center justify-between border-b border-border p-5">
             <h2 className="text-lg font-semibold text-foreground">{title}</h2>
             <button
               onClick={onClose}
@@ -69,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
         )}
 
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );

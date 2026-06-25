@@ -58,11 +58,22 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
     {
       key: "course",
       label: "ALLOCATED COURSE",
+<<<<<<< HEAD
       render: (value, row) => (
         <div className="font-semibold text-slate-600 text-sm">
           {row.course || "N/A"}
         </div>
       ),
+=======
+      render: (value, row) => {
+        const courseName = typeof row.course === "object" && row.course !== null ? (row.course as any).name : row.course;
+        return (
+          <div className="font-semibold text-slate-600 text-sm">
+            {courseName || "N/A"}
+          </div>
+        );
+      },
+>>>>>>> d02bf19c3bd1a348437e5c29da4bc8e1e13f0700
     },
     {
       key: "allocationTime",

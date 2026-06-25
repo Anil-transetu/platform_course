@@ -4,6 +4,8 @@ import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
 import toast from "react-hot-toast";
 
+import { useDeleteBatch } from "@/hooks/use-batches";
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -12,7 +14,7 @@ interface Props {
 
 export default function BatchDeleteDialog({ open, onClose, batch }: Props) {
   const [reason, setReason] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMutation = useDeleteBatch();
 
   if (!batch) return null;
 
@@ -22,15 +24,15 @@ export default function BatchDeleteDialog({ open, onClose, batch }: Props) {
       return;
     }
     
-    setIsDeleting(true);
-    // Simulate API call
-    setTimeout(() => {
-      toast.success("Batch deleted successfully");
-      setIsDeleting(false);
-      setReason("");
-      onClose();
-    }, 800);
+    deleteMutation.mutate(batch.id, {
+      onSuccess: () => {
+        setReason("");
+        onClose();
+      }
+    });
   };
+
+  const isDeleting = deleteMutation.isPending;
 
   return (
     <Modal isOpen={open} onClose={onClose} title="Delete Batch" size="sm">

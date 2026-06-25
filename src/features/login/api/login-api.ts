@@ -5,6 +5,7 @@ interface LoginResponse {
   user?: {
     email: string;
     name: string;
+    role?: string;
   };
   message: string;
 }
@@ -36,4 +37,29 @@ export async function loginToApi(
 
   const data = (await response.json()) as LoginResponse;
   return data;
+}
+
+/**
+ * Verify session token with the backend
+ * @param token User token
+ */
+export async function verifySession(token: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+    const response = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
 }

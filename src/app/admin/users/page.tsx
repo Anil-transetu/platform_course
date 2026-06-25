@@ -6,7 +6,7 @@ import { buildUserColumns } from "./columns";
 import UserFormModal from "./UserFormModal";
 import UserDeleteDialog from "./UserDeleteDialog";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import {
@@ -203,11 +203,10 @@ export default function UsersPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-        <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
-
           {/* STATS CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 flex-shrink-0">
+          <StatsGrid>
             <StatsCard
               title="TOTAL ADMINS"
               value={stats?.admins ?? "..."}
@@ -232,7 +231,7 @@ export default function UsersPage() {
               iconColorClass="text-green-600"
               tooltip="Total institutions linked to registered users"
             />
-          </div>
+          </StatsGrid>
 
           {/* TABS */}
           <div className="flex items-center gap-6 border-b border-gray-200">

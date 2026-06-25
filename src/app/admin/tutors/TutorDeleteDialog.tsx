@@ -15,7 +15,8 @@ export default function TutorDeleteDialog({ open, onClose, tutor, onConfirm }: P
 
   useEffect(() => {
     if (open && tutor) {
-      setIsAssociatedWithBatch(tutor.batches && tutor.batches.length > 0);
+      const batches = tutor.assignedBatches || tutor.batches || [];
+      setIsAssociatedWithBatch(batches.length > 0);
     }
   }, [open, tutor]);
 
@@ -30,32 +31,18 @@ export default function TutorDeleteDialog({ open, onClose, tutor, onConfirm }: P
   };
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Confirm Delete" size="sm">
-      <div className="space-y-4">
-        {/* Warning — only shown when batch is associated */}
+    <Modal isOpen={open} onClose={onClose} title="Delete Tutor" size="sm">
+      <div className="space-y-4 mt-2">
         {isAssociatedWithBatch ? (
-          <div className="text-sm font-semibold text-red-600 leading-relaxed bg-red-50/50 p-3 rounded-lg border border-red-100">
-            The tutor cannot be deleted while they are still associated with an active batch.
-            Please remove them from all batches first.
+          <div className="text-sm font-semibold text-red-600 leading-relaxed bg-red-50 dark:bg-red-950/20 p-3.5 rounded-xl border border-red-100 dark:border-red-900/30">
+            This tutor cannot be deleted because they are currently assigned to one or more active batches. 
+            Please remove this tutor from all batches before attempting to delete.
           </div>
         ) : (
           <p className="text-sm text-gray-700 dark:text-foreground">
-            Are you sure you want to delete tutor <strong>{tutor.name}</strong>?
+            Are you sure you want to delete tutor <strong className="font-semibold text-gray-900 dark:text-foreground">"{tutor.name}"</strong>? This action cannot be undone.
           </p>
         )}
-
-        {/* Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer select-none py-1.5 px-1 hover:bg-slate-50 rounded transition-colors">
-          <input
-            type="checkbox"
-            checked={isAssociatedWithBatch}
-            onChange={(e) => setIsAssociatedWithBatch(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 dark:border-border accent-blue-600 focus:ring-2 focus:ring-blue-500/20"
-          />
-          <span className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">
-            Is the tutor associated with any batch?
-          </span>
-        </label>
 
         {/* Footer */}
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-border/50">

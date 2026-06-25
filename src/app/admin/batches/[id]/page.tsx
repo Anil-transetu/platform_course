@@ -1,14 +1,19 @@
 "use client";
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { EnrolledStudent, DUMMY_ENROLLED_STUDENTS } from "./dummyData";
 import { buildEnrolledStudentColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import { ArrowLeft, Users, UserCheck, UserMinus, Download } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
-import { Toaster } from "react-hot-toast";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
+import { Toaster, toast } from "react-hot-toast";
+import {
+  useBatch,
+  useBatchStudents,
+  useBatchStudentsStats,
+} from "@/hooks/use-batches";
+import { getBatchStudentsExportPdfUrl } from "@/features/admin/batches/api/batch-api";
 
 export default function EnrolledStudentsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -20,16 +25,8 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   const [status, setStatus] = useState<"All" | "ACTIVE" | "COMPLETED">("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, []);
-
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -37,23 +34,31 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Reset page when search or status changes
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch, status]);
 
-  // Local filtering based on dummy data
-  const filteredData = DUMMY_ENROLLED_STUDENTS.filter((student) => {
-    const matchesSearch =
-      student.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      student.email.toLowerCase().includes(debouncedSearch.toLowerCase());
-    const matchesStatus = status === "All" || student.status === status;
-    return matchesSearch && matchesStatus;
-  });
+  // API hooks
+  const { data: batchDetail } = useBatch(batchId);
+  const { data: studentsResponse, isLoading: isStudentsLoading, isFetching: isStudentsFetching } = useBatchStudents(
+    batchId,
+    page,
+    rowsPerPage,
+    status
+  );
+  const { data: batchStats } = useBatchStudentsStats(batchId);
 
-  const totalCount = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
-  const start = (page - 1) * rowsPerPage;
-  const visibleData = filteredData.slice(start, start + rowsPerPage);
+  const studentsList = studentsResponse?.data || [];
+  const totalCount = studentsResponse?.meta?.total || studentsList.length;
+  const totalPages = studentsResponse?.meta?.totalPages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  // fallback to local client pagination if backend does not slice
+  let visibleData = studentsList;
+  if (studentsList.length > rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    visibleData = studentsList.slice(start, start + rowsPerPage);
+  }
 
   const searchConfig = {
     enabled: true,
@@ -81,12 +86,42 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
-  const handleExport = () => {
-    // Dummy export action
-    console.log("Exporting list...");
+  const handleExport = async () => {
+    try {
+      let token = "";
+      if (typeof document !== "undefined") {
+        const match = document.cookie.match(/(^| )token=([^;]+)/);
+        if (match) token = match[2];
+      }
+      
+      const response = await fetch(getBatchStudentsExportPdfUrl(batchId), {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to export PDF");
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Batch-${batchId}-Students.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("PDF exported successfully");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to export PDF");
+    }
   };
 
   const extraHeaderActions = (
@@ -108,32 +143,31 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
     </div>
   );
 
-  const activeStudents = DUMMY_ENROLLED_STUDENTS.filter(s => s.status === "ACTIVE").length;
-  const inactiveStudents = DUMMY_ENROLLED_STUDENTS.filter(s => s.status !== "ACTIVE").length;
+  const batchName = batchDetail?.name || "Loading Batch...";
 
   return (
     <ListingScreenTemplate
       headerText="Enrolled Students"
       subHeaderText={
         <span className="text-slate-500">
-          Managing students for <span className="text-blue-500 font-semibold">Java Development Batch #{batchId}</span>
+          Managing students for <span className="text-blue-500 font-semibold">{batchName}</span>
         </span>
       }
       buttonLabel=""
       buttonRequired={false}
       extraActions={extraHeaderActions}
     >
-      {isLoading ? (
+      {isStudentsLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
         {/* Status Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Students"
-            value={10}
+            value={batchStats?.total_students ?? 0}
             icon={<Users />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -141,7 +175,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
           />
           <StatsCard
             title="Completed Course"
-            value={0}
+            value={batchStats?.completed_course_count ?? 0}
             icon={<UserCheck />}
             iconBgClass="bg-emerald-50"
             iconColorClass="text-emerald-600"
@@ -149,17 +183,18 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
           />
           <StatsCard
             title="Not Completed Course"
-            value={10}
+            value={batchStats?.not_completed_course_count ?? 0}
             icon={<UserMinus />}
             iconBgClass="bg-red-50"
             iconColorClass="text-red-600"
             tooltip="Number of students currently in progress or yet to complete the course"
           />
-        </div>
+        </StatsGrid>
 
-        <DataTable<EnrolledStudent>
+        <DataTable<any>
           columns={buildEnrolledStudentColumns()}
           data={visibleData}
+          loading={isStudentsLoading || isStudentsFetching}
           search={searchConfig}
           filters={filterConfig}
           currentPage={page}

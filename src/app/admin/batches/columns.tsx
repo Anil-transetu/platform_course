@@ -6,6 +6,19 @@ import { Batch } from "@/types/batch";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
 
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColor = (id: string | number) => {
+  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  return avatarColors[index];
+};
+
 export function buildBatchColumns(): Column<Batch>[] {
   return [
     {
@@ -20,20 +33,12 @@ export function buildBatchColumns(): Column<Batch>[] {
       label: "Batch Info",
       width: "w-1/4",
       render: (value, row) => {
-        // Different colors for different batches
-        const colors = [
-          "bg-purple-100 text-purple-600",
-          "bg-indigo-100 text-indigo-600",
-          "bg-fuchsia-100 text-fuchsia-600",
-          "bg-violet-100 text-violet-600",
-        ];
-        // simple hash to pick a color
-        const colorIndex = String(row.id).length % colors.length;
-        const colorClass = colors[colorIndex];
-
         return (
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold",
+              getAvatarColor(row.id)
+            )}>
               <span className="text-xs font-bold">
                 {row.name.charAt(0).toUpperCase()}
               </span>

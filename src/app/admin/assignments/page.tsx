@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { buildAssignmentColumns } from "./columns";
 import AssignmentDeleteDialog from "./AssignmentDeleteDialog";
 import AssignmentPageSkeleton from "@/components/admin/assignments/AssignmentPageSkeleton";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Toaster } from "@/components/ui/sonner";
@@ -153,7 +153,7 @@ export default function AssignmentsPage() {
         <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+          <StatsGrid>
             <StatsCard
               title="Total Assignments"
               value={stats?.total_assignments ?? totalCount}
@@ -186,7 +186,7 @@ export default function AssignmentsPage() {
               iconColorClass="text-purple-600"
               tooltip="Average grade score across all submissions"
             />
-          </div>
+          </StatsGrid>
 
           <DataTable<Assignment>
             columns={buildAssignmentColumns()}
@@ -212,7 +212,6 @@ export default function AssignmentsPage() {
           />
         </div>
       )}
-
 
       <AssignmentDeleteDialog
         open={deleteDialog.open}
