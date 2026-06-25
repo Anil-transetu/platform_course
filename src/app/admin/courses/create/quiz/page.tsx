@@ -1,21 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Search, HelpCircle, Clock, RefreshCcw, Edit3, CheckCircle2 } from "lucide-react";
+import { Search, HelpCircle, Clock, RefreshCcw, Edit3, CheckCircle2, CheckSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
 import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
-
-const MOCK_QUIZZES = [
-  { id: "q1", title: "Introduction to UX", desc: "A fundamental assessment covering basic UX principles and methodologies.", questions: 20, time: "15 mins", diff: "Beginner", diffColor: "bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground", icon: "brain" },
-  { id: "q2", title: "Color Theory Basics", desc: "Deep dive into the psychology of colors, contrast ratios, and palettes.", questions: 15, time: "10 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "palette" },
-  { id: "q3", title: "Typography Mastery", desc: "Complex concepts including variable fonts, kerning, and hierarchy.", questions: 35, time: "45 mins", diff: "Advanced", diffColor: "bg-red-100 text-red-700", icon: "type" },
-  { id: "q4", title: "Information Architecture", desc: "Testing knowledge on site mapping, card sorting, and user flows.", questions: 25, time: "20 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "git-merge" },
-  { id: "q5", title: "Responsive Design 101", desc: "Understanding breakpoints, fluid grids, and adaptive media queries.", questions: 18, time: "12 mins", diff: "Beginner", diffColor: "bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground", icon: "smartphone" },
-  { id: "q6", title: "Accessibility Auditing", desc: "Advanced WCAG 2.1 compliance testing, ARIA roles, and screen readers.", questions: 40, time: "50 mins", diff: "Advanced", diffColor: "bg-red-100 text-red-700", icon: "bar-chart" },
-  { id: "q7", title: "Prototyping Workflows", desc: "Interactive states, variables, and advanced component logic in Figma.", questions: 30, time: "30 mins", diff: "Intermediate", diffColor: "bg-blue-100 text-blue-700", icon: "layers" },
-];
+import { useQuizzes, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -25,174 +18,219 @@ export default function QuizLibraryPage() {
     activeLessonId, 
     activeQuizId, 
     updateQuiz, 
-    updateCourseQuiz 
+    updateCourseQuiz,
+    setActiveQuiz
   } = useCourseStore();
   
-  let activeQuiz;
+  let activeQuiz: any;
   if (!activeModuleId) {
-    activeQuiz = course.quizzes?.find(q => q.id === activeQuizId);
+    activeQuiz = course.quizzes?.find(q => String(q.id) === String(activeQuizId));
   } else if (!activeLessonId) {
-    const activeModule = course.modules.find(m => m.id === activeModuleId);
-    activeQuiz = activeModule?.quizzes?.find(q => q.id === activeQuizId);
+    const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
+    activeQuiz = activeModule?.quizzes?.find(q => String(q.id) === String(activeQuizId));
   } else {
-    const activeModule = course.modules.find(m => m.id === activeModuleId);
-    const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
-    activeQuiz = activeLesson?.quizzes?.find(q => q.id === activeQuizId);
+    const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
+    const activeLesson = activeModule?.lessons.find(l => String(l.id) === String(activeLessonId));
+    activeQuiz = activeLesson?.quizzes?.find(q => String(q.id) === String(activeQuizId));
   }
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
 
-  const quizTitle = activeQuiz?.title || "";
-
-  const itemsPerPage = 6;
-
-  const filteredQuizzes = MOCK_QUIZZES.filter(q => 
-    q.title.toLowerCase().includes(search.toLowerCase()) || 
-    q.desc.toLowerCase().includes(search.toLowerCase())
+  // 1. Fetch real list of quizzes with pagination & search
+  const { data: quizzesData, isLoading: listLoading } = useQuizzes(
+    currentPage, 
+    6, 
+    search || undefined, 
+    statusFilter === "ALL" ? undefined : statusFilter
   );
+  const quizItems = quizzesData?.data || [];
+  const totalItems = quizzesData?.total || 0;
+  const totalPages = Math.ceil(totalItems / 6);
 
-  const totalPages = Math.ceil(filteredQuizzes.length / itemsPerPage);
-  const currentItems = filteredQuizzes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // 2. Fetch specific quiz details if it is a real database ID
+  const isRealId = activeQuiz?.id && !String(activeQuiz.id).includes("-");
+  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? String(activeQuiz.id) : "");
 
-  const handleAddToCourse = (title: string) => {
+  const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || "";
+  const shouldShowPreview = !!quizTitle;
+
+  const handleAddToCourse = (quiz: any) => {
     if (activeQuizId) {
+      const newId = String(quiz.id);
       if (!activeModuleId) {
-        updateCourseQuiz(activeQuizId, { title });
+        updateCourseQuiz(activeQuizId, { id: newId, title: quiz.title });
       } else {
-        updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { title });
+        updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
       }
-      setSuccessMsg(`"${title}" added to course successfully!`);
+      setActiveQuiz(newId);
+      setSuccessMsg(`"${quiz.title}" added to course successfully!`);
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
       alert("Please ensure you have an active quiz selected in the sidebar to replace.");
     }
   };
 
-  const getIcon = (type: string) => {
-    // simplified icon rendering for the mock data
+  const truncateText = (text?: string, limit: number = 120) => {
+    if (!text) return "";
+    if (text.length > limit) {
+      return text.substring(0, limit) + "...";
+    }
+    return text;
+  };
+
+  const getStatusBadge = (status?: string) => {
+    const s = (status || "DRAFT").toUpperCase();
+    if (s === "ACTIVE") {
+      return { 
+        text: "Active", 
+        color: "bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-full text-[10px] font-extrabold" 
+      };
+    }
+    return { 
+      text: "Draft", 
+      color: "bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-extrabold" 
+    };
+  };
+
+  const getIcon = () => {
     return (
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 text-blue-500`}>
-        <HelpCircle size={20} strokeWidth={2.5} />
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100/50 shadow-xs">
+        <CheckSquare size={18} strokeWidth={2.2} />
       </div>
     );
   };
 
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-slate-100">
       <div className="flex p-8 gap-8 items-start min-h-full">
         {/* LEFT SIDEBAR */}
         <CourseSidebar />
 
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-6 min-w-0 max-w-5xl">
-          {quizTitle ? (
+          {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
-              <div className="flex items-start justify-between bg-card p-8 rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="bg-blue-100 text-blue-700 text-[10px] font-bold tracking-widest px-3 py-1.5 rounded-full uppercase">
-                      Quiz Selected
-                    </span>
-                    <span className="text-gray-400 text-sm font-medium flex items-center gap-1">
-                      <Clock size={14} /> Est. 15 mins
-                    </span>
+              {/* QUIZ HEADER SUMMARY CARD */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] gap-6">
+                <div className="flex items-start gap-5 flex-1 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100/50 shrink-0 shadow-[0_4px_10px_rgba(37,99,235,0.04)] mt-1">
+                    <CheckSquare size={26} strokeWidth={2} />
                   </div>
-                  <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">{quizTitle}</h1>
-                  <p className="text-gray-500 dark:text-muted-foreground text-sm max-w-2xl">
-                    This quiz has been attached to your lesson. Students will be required to complete it before progressing.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <button className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition-all text-sm border border-blue-100 shadow-sm cursor-not-allowed opacity-70">
-                    <Edit3 size={16} /> Edit in Builder
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (activeQuizId) {
-                        if (!activeModuleId) {
-                          updateCourseQuiz(activeQuizId, { title: "" });
-                        } else {
-                          updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { title: "" });
-                        }
-                      }
-                    }}
-                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 dark:text-muted-foreground font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 dark:border-border/70 shadow-sm"
-                  >
-                    <RefreshCcw size={16} /> Replace Quiz
-                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <span className="bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-extrabold tracking-wider px-3 py-1 rounded-full uppercase">
+                        Quiz Selected
+                      </span>
+                      <span className="text-slate-600 text-xs font-semibold flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+                        <Clock size={12} /> Est. {quizDetail?.durationMinutes || 15} mins
+                      </span>
+                    </div>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-2 truncate">
+                      {quizTitle || "Unnamed Quiz"}
+                    </h1>
+                    <p className="text-slate-600 text-sm max-w-2xl leading-relaxed">
+                      {quizDetail?.description || quizDetail?.desc || "This quiz has been attached to your lesson. Students will be required to complete it before progressing."}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-card rounded-2xl border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
-                <div className="px-8 py-5 border-b border-gray-50 bg-muted/30">
-                  <h3 className="font-bold text-gray-700 dark:text-foreground flex items-center gap-2">
-                    <HelpCircle size={18} className="text-blue-500" />
-                    Preview: Sample Questions
+              {/* QUESTIONS LIST CARD */}
+              <div className="bg-white rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] overflow-hidden">
+                <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2.5 text-sm uppercase tracking-wider">
+                    <CheckSquare size={16} className="text-blue-500" />
+                    Preview: Quiz Questions
                   </h3>
                 </div>
                 <div className="p-8 flex flex-col gap-6">
-                  {/* Mock Question 1 */}
-                  <div className="p-6 border border-gray-100 dark:border-border/50 rounded-xl">
-                    <h4 className="font-bold text-foreground mb-4">1. Which of the following is a primary color?</h4>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500 bg-blue-50/50">
-                        <CheckCircle2 size={18} className="text-blue-500" />
-                        <span className="text-sm font-medium text-blue-900">Red</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">Green</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">Orange</span>
-                      </div>
+                  {detailLoading ? (
+                    <div className="py-20 flex items-center justify-center text-slate-450 font-semibold">
+                      Loading quiz questions...
                     </div>
-                  </div>
-
-                  {/* Mock Question 2 */}
-                  <div className="p-6 border border-gray-100 dark:border-border/50 rounded-xl">
-                    <h4 className="font-bold text-foreground mb-4">2. What is the recommended minimum contrast ratio for text?</h4>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500 bg-blue-50/50">
-                        <CheckCircle2 size={18} className="text-blue-500" />
-                        <span className="text-sm font-medium text-blue-900">4.5:1</span>
+                  ) : quizDetail?.questions && quizDetail.questions.length > 0 ? (
+                    quizDetail.questions.map((q: any, idx: number) => (
+                      <div key={q.id || idx} className="p-6 border border-slate-100 bg-slate-50/40 rounded-2xl flex flex-col gap-4 shadow-xs">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-bold tracking-widest text-blue-650 uppercase bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md">
+                            Question {String(idx + 1).padStart(2, '0')}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-sm leading-snug">
+                          {q.prompt}
+                        </h4>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                          {q.options?.map((opt: any, optIdx: number) => (
+                            <div 
+                              key={optIdx} 
+                              className="flex items-center gap-3 p-3.5 rounded-xl border transition-all border-slate-200 bg-white text-slate-700"
+                            >
+                              <div className="w-4 h-4 rounded-full border border-slate-300 bg-slate-50 shrink-0" />
+                              <span className="text-xs">
+                                {opt.text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">3.0:1</span>
-                      </div>
-                      <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-border/50 bg-card">
-                        <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
-                        <span className="text-sm font-medium text-gray-600 dark:text-muted-foreground">2.5:1</span>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="py-12 text-center text-slate-400 font-semibold text-sm">
+                      No questions found in this quiz.
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           ) : (
             /* --- LIBRARY SCREEN --- */
             <>
-              <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight">Quiz Library</h1>
-                <p className="text-gray-500 dark:text-muted-foreground text-sm">Select an existing quiz to add to your course structure.</p>
+              <div className="flex flex-col gap-1.5">
+                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Quiz Library</h1>
+                <p className="text-slate-500 text-sm font-medium">Select an existing quiz to add to your course structure.</p>
               </div>
 
-              {/* SEARCH BAR */}
-              <div className="flex items-center gap-4 mt-2">
-                <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-card rounded-xl border border-gray-200 dark:border-border/70 shadow-sm">
-                  <Search size={18} className="text-gray-400" />
-                  <input 
+              {/* SEARCH & FILTERS BAR */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+                {/* Search */}
+                <div className="relative flex-1 w-full sm:max-w-md">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-450" />
+                  <Input 
                     type="text" 
                     placeholder="Search quizzes..." 
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="bg-transparent border-none outline-none w-full text-sm font-medium placeholder-gray-400"
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
+                </div>
+                
+                {/* Select Filter */}
+                <div className="w-full sm:w-48">
+                  <Select 
+                    value={statusFilter} 
+                    onValueChange={(val) => {
+                      setStatusFilter(val);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full bg-slate-50/50 border border-slate-250 text-xs font-bold text-slate-700 rounded-lg">
+                      <SelectValue placeholder="Status Filter" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-200">
+                      <SelectItem value="ALL" className="text-xs font-semibold">All Quizzes</SelectItem>
+                      <SelectItem value="ACTIVE" className="text-xs font-semibold">Active Only</SelectItem>
+                      <SelectItem value="DRAFT" className="text-xs font-semibold">Draft Only</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -203,56 +241,74 @@ export default function QuizLibraryPage() {
               )}
 
               {/* GRID */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {currentItems.map((quiz) => (
-                  <div key={quiz.id} className="bg-card border border-gray-200 dark:border-border/70 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col h-full">
-                    <div className="flex justify-between items-start mb-6">
-                      {getIcon(quiz.icon)}
-                      <span className={`text-[11px] font-bold tracking-widest px-3 py-1.5 rounded-full ${quiz.diffColor}`}>
-                        {quiz.diff}
-                      </span>
-                    </div>
-                    
-                    <h3 className="font-bold text-foreground text-lg mb-3 leading-tight">{quiz.title}</h3>
-                    <p className="text-gray-500 dark:text-muted-foreground text-sm mb-6 leading-relaxed flex-1">{quiz.desc}</p>
-                    
-                    <div className="flex items-center gap-6 mb-6">
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-muted-foreground">
-                        <HelpCircle size={14} />
-                        <span className="text-xs font-semibold">{quiz.questions} Questions</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-muted-foreground">
-                        <Clock size={14} />
-                        <span className="text-xs font-semibold">{quiz.time}</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-0 mt-auto">
-                      <button 
-                        onClick={() => handleAddToCourse(quiz.title)}
-                        className="w-full flex items-center justify-center gap-2 border border-blue-200 hover:border-blue-600 hover:bg-blue-50 text-blue-600 py-2.5 rounded-xl font-bold transition-all text-sm shadow-sm"
-                      >
-                        Add to Course
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {filteredQuizzes.length === 0 && (
-                <div className="py-20 flex items-center justify-center text-gray-400 font-medium">
-                  No quizzes found matching your search.
+              {listLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center text-slate-450 font-semibold gap-3">
+                  <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                  <span>Loading quiz library...</span>
                 </div>
-              )}
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {quizItems.map((quiz: any) => {
+                      const badge = getStatusBadge(quiz.status);
+                      return (
+                        <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.045)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
+                          <div className="flex justify-between items-center mb-4">
+                            {getIcon()}
+                            <span className={badge.color}>
+                              {badge.text}
+                            </span>
+                          </div>
+                          
+                          <h3 className="font-bold text-slate-800 text-base mb-2 group-hover:text-blue-600 transition-colors leading-snug line-clamp-1">{quiz.title}</h3>
+                          <p className="text-slate-550 text-xs mb-4 leading-relaxed flex-1 line-clamp-3">
+                            {truncateText(quiz.description || quiz.desc) || "No description provided."}
+                          </p>
+                          
+                          <div className="flex items-center gap-4 mb-5 pt-3 border-t border-slate-100">
+                            <div className="flex items-center gap-1.5 text-slate-500">
+                              <HelpCircle size={13} />
+                              <span className="text-[11px] font-semibold">{(quiz.questions || []).length || quiz.questionsCount || 0} Questions</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-slate-500">
+                              <Clock size={13} />
+                              <span className="text-[11px] font-semibold">{quiz.durationMinutes || 15} mins</span>
+                            </div>
+                          </div>
 
-              {/* PAGINATION */}
-              <Pagination 
-                currentPage={currentPage} 
-                totalPages={totalPages} 
-                onPageChange={setCurrentPage} 
-                totalItems={filteredQuizzes.length}
-                itemsPerPage={itemsPerPage}
-              />
+                          <div className="mt-auto">
+                            <button 
+                              onClick={() => handleAddToCourse(quiz)}
+                              className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs shadow-xs"
+                            >
+                              Add Quiz
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {quizItems.length === 0 && (
+                    <div className="py-20 flex items-center justify-center text-slate-400 font-semibold">
+                      No quizzes found matching your criteria.
+                    </div>
+                  )}
+
+                  {/* PAGINATION */}
+                  {totalPages > 1 && (
+                    <div className="mt-4">
+                      <Pagination 
+                        currentPage={currentPage} 
+                        totalPages={totalPages} 
+                        onPageChange={setCurrentPage} 
+                        totalItems={totalItems}
+                        itemsPerPage={6}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </div>

@@ -406,9 +406,9 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <div className="p-6 border border-gray-100 dark:border-border/50 rounded-2xl">
                 <h4 className="font-bold text-foreground mb-4 text-sm">1. Identify the correct output of the following statement.</h4>
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3 p-3.5 rounded-xl border border-blue-500 bg-blue-50/50">
-                    <CheckCircle size={18} className="text-blue-500" />
-                    <span className="text-xs font-semibold text-blue-900">Output option A</span>
+                  <div className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-100 dark:border-border/50 bg-card">
+                    <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
+                    <span className="text-xs font-semibold text-gray-600 dark:text-muted-foreground">Output option A</span>
                   </div>
                   <div className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-100 dark:border-border/50 bg-card">
                     <div className="w-[18px] h-[18px] rounded-full border-2 border-gray-200 dark:border-border/70" />
@@ -424,29 +424,125 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
 
     if (activeItem.type === "assignment") {
       const assignment = activeItem.data;
-      return (
-        <div className="space-y-6">
-          <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm">
-            <span className="text-[10px] font-bold text-pink-600 bg-pink-50 px-3 py-1 rounded-full uppercase tracking-wider">
-              Assignment details
-            </span>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-foreground mt-4 mb-2">{assignment.title || assignment.name}</h1>
-            <div 
-              className="text-sm text-slate-500 dark:text-muted-foreground leading-relaxed mt-4 border-t pt-4"
-              dangerouslySetInnerHTML={{ __html: assignment.description || "In this assignment, apply the concepts learned in this module to build a practical project. Follow the detailed requirements." }}
-            />
-          </div>
+      
+      const getDeliverables = (type?: string) => {
+        const t = (type || "").toUpperCase();
+        if (t.includes("DEVELOP") || t.includes("DEV") || t.includes("CODE")) {
+          return [
+            "Link to your public repository (GitHub, GitLab, etc.)",
+            "A 2-minute Loom video walking through the code and functionality",
+            "A brief README.md explaining your design decisions"
+          ];
+        }
+        if (t.includes("DESIGN") || t.includes("UI") || t.includes("UX")) {
+          return [
+            "Figma file link with edit/view permissions",
+            "High-fidelity desktop/mobile mockups",
+            "Interactive prototype showing user flows"
+          ];
+        }
+        return [
+          "1x PDF Report summarizing your findings (Max 3 pages)",
+          "Source files or reference links to data used",
+          "Summary slide deck explaining your methodology"
+        ];
+      };
 
-          <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-3">Assignment Information</h3>
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Submission Type</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-foreground capitalize">{assignment.submission_type || "File upload (.zip / .pdf)"}</span>
+      const deliverables = getDeliverables(assignment.submission_type);
+
+      return (
+        <div className="space-y-6 flex flex-col">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white dark:bg-card border border-gray-150 dark:border-border/50 rounded-3xl p-8 shadow-sm flex flex-col gap-4">
+                <span className="text-[10px] font-bold text-indigo-650 bg-indigo-50 dark:bg-indigo-950/30 px-3 py-1 rounded-full uppercase tracking-wider w-fit">
+                  Assignment Overview
+                </span>
+                <h1 className="text-2xl font-black text-slate-800 dark:text-foreground tracking-tight">
+                  {assignment.title || assignment.name}
+                </h1>
+                
+                <div className="border-t border-slate-100 pt-4">
+                  <h4 className="text-xs font-bold text-slate-450 uppercase tracking-widest mb-3">Project Instructions</h4>
+                  <div 
+                    className="text-sm text-slate-600 dark:text-muted-foreground leading-relaxed prose prose-slate max-w-none"
+                    dangerouslySetInnerHTML={{ __html: assignment.description || "In this assignment, apply the concepts learned in this module to build a practical project. Follow the detailed requirements." }}
+                  />
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Maximum Score</span>
-                <span className="text-sm font-bold text-slate-800 dark:text-foreground">{assignment.max_score || "100.00"} marks</span>
+
+              <div className="bg-white dark:bg-card border border-gray-150 dark:border-border/50 rounded-3xl p-8 shadow-sm">
+                <h3 className="font-bold text-slate-800 dark:text-foreground text-sm uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <ClipboardList size={18} className="text-indigo-500" />
+                  Required Deliverables
+                </h3>
+                <ul className="flex flex-col gap-4">
+                  {deliverables.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-4 text-sm text-slate-600 dark:text-muted-foreground font-semibold">
+                      <div className="w-6 h-6 rounded-full bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center text-xs font-bold shrink-0 shadow-xs">
+                        {idx + 1}
+                      </div>
+                      <span className="pt-0.5">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-white dark:bg-card border border-gray-150 dark:border-border/50 rounded-3xl p-8 shadow-sm">
+                <h3 className="font-bold text-slate-800 dark:text-foreground text-sm uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <Award size={18} className="text-indigo-500" />
+                  Grading Criteria Rubric
+                </h3>
+                {assignment.evaluation_matrix && assignment.evaluation_matrix.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {assignment.evaluation_matrix.map((criteria: any, cIdx: number) => (
+                      <div key={cIdx} className="p-4 rounded-xl border border-gray-150 dark:border-border/50 bg-slate-50/50 dark:bg-muted/30">
+                        <span className="font-bold text-sm text-foreground block mb-1">{criteria.name}</span>
+                        <span className="text-xs text-gray-500 dark:text-muted-foreground">Marks: {criteria.marks}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-gray-150 dark:border-border/50 bg-slate-50/50 dark:bg-muted/30">
+                      <span className="font-bold text-sm text-foreground block mb-1">Completeness (40%)</span>
+                      <span className="text-xs text-slate-500 dark:text-muted-foreground">All deliverables are submitted and meet minimum specifications.</span>
+                    </div>
+                    <div className="p-4 rounded-xl border border-gray-150 dark:border-border/50 bg-slate-50/50 dark:bg-muted/30">
+                      <span className="font-bold text-sm text-foreground block mb-1">Quality & Craft (60%)</span>
+                      <span className="text-xs text-slate-555 dark:text-muted-foreground">The work demonstrates high engineering/design standards and attention to detail.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-white dark:bg-card border border-gray-150 dark:border-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+                <h3 className="text-xs font-bold text-slate-450 uppercase tracking-widest pb-3 border-b border-slate-100">
+                  Specifications
+                </h3>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-450 uppercase tracking-wider">Type</span>
+                    <span className="font-bold text-slate-800 dark:text-foreground bg-slate-100 dark:bg-muted px-2.5 py-1 rounded-md capitalize">
+                      {assignment.submission_type || "File submission"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-450 uppercase tracking-wider">Max Points</span>
+                    <span className="font-bold text-slate-800 dark:text-foreground text-sm">
+                      {assignment.max_score || "100.00"} pts
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-455 uppercase tracking-wider">Status</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100">
+                      Active
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

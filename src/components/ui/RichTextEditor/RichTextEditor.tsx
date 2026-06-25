@@ -32,7 +32,8 @@ import {
   Outdent as OutdentIcon,
   Code,
   Palette,
-  Paintbrush
+  Paintbrush,
+  Check
 } from "lucide-react";
 
 interface RichTextEditorProps {
@@ -159,43 +160,47 @@ const DropdownSelect: React.FC<DropdownSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between gap-1 px-2 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-card border border-slate-200 dark:border-border/50 rounded-md hover:bg-slate-50 dark:hover:bg-muted shadow-sm transition-all focus:outline-none min-w-[90px]"
+        className="w-full flex items-center justify-between gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/10"
       >
-        <span className="truncate max-w-[80px]">{activeOption.label}</span>
-        <ChevronDown size={12} className="text-slate-400 shrink-0" />
+        <span className="truncate flex-1 text-left">{activeOption.label}</span>
+        <ChevronDown size={12} className="text-slate-400 shrink-0 ml-0.5" />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-1 z-50 min-w-[150px] max-h-60 overflow-y-auto bg-white dark:bg-card border border-slate-200 dark:border-border/50 rounded-lg shadow-lg py-1 focus:outline-none">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 text-xs transition-colors ${
-                value === option.value 
-                  ? 'bg-blue-50/50 dark:bg-blue-950/20 font-semibold text-blue-600 dark:text-blue-400' 
-                  : 'text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-muted/50'
-              }`}
-              style={{
-                fontFamily: options === FONTS ? option.value : undefined,
-              }}
-            >
-              <span className={
-                value === option.value ? '' :
-                option.value === 'h1' ? 'text-base font-extrabold text-slate-900 dark:text-slate-100' :
-                option.value === 'h2' ? 'text-sm font-bold text-slate-900 dark:text-slate-100' :
-                option.value === 'h3' ? 'text-xs font-bold text-slate-900 dark:text-slate-100' :
-                option.value === 'h4' ? 'text-xs font-semibold text-slate-900 dark:text-slate-100' :
-                'text-xs font-normal'
-              }>
-                {option.label}
-              </span>
-            </button>
-          ))}
+        <div className="absolute left-0 mt-1.5 z-50 w-56 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 focus:outline-none">
+          {options.map((option) => {
+            const isSelected = value === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between transition-colors ${
+                  isSelected 
+                    ? 'bg-blue-50/60 font-bold text-blue-600' 
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`}
+                style={{
+                  fontFamily: options === FONTS ? option.value : undefined,
+                }}
+              >
+                <span className={
+                  isSelected ? '' :
+                  option.value === 'h1' ? 'text-base font-extrabold text-slate-800' :
+                  option.value === 'h2' ? 'text-sm font-bold text-slate-800' :
+                  option.value === 'h3' ? 'text-xs font-bold text-slate-800' :
+                  option.value === 'h4' ? 'text-xs font-semibold text-slate-880' :
+                  'text-xs font-normal'
+                }>
+                  {option.label}
+                </span>
+                {isSelected && <Check size={12} className="text-blue-600 shrink-0" />}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -237,18 +242,18 @@ const ColorDropdown: React.FC<ColorDropdownProps> = ({
         type="button"
         title={tooltip}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 p-2 rounded-md hover:bg-card hover:shadow-sm transition-all text-gray-400 hover:text-blue-600 focus:outline-none"
+        className="flex items-center gap-1 p-2 rounded-md hover:bg-white hover:shadow-xs transition-all text-slate-400 hover:text-blue-600 focus:outline-none"
       >
         {icon}
         <div 
-          className="w-3.5 h-3.5 rounded-full border border-slate-200 dark:border-slate-700" 
+          className="w-3.5 h-3.5 rounded-full border border-slate-200" 
           style={{ backgroundColor: value === 'inherit' || value === 'transparent' ? 'transparent' : value }}
         />
         <ChevronDown size={10} className="text-slate-400" />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-1 z-50 p-2 bg-white dark:bg-card border border-slate-200 dark:border-border/50 rounded-lg shadow-lg grid grid-cols-5 gap-1 min-w-[140px]">
+        <div className="absolute left-0 mt-1 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-lg grid grid-cols-5 gap-1 min-w-[140px]">
           {colors.map((c) => (
             <button
               key={c.value}
@@ -260,8 +265,8 @@ const ColorDropdown: React.FC<ColorDropdownProps> = ({
               title={c.name}
               className={`w-6 h-6 rounded-md border transition-transform hover:scale-110 focus:outline-none flex items-center justify-center ${
                 value === c.value 
-                  ? 'border-blue-600 dark:border-blue-400 scale-105 shadow-sm' 
-                  : 'border-slate-200 dark:border-slate-700'
+                  ? 'border-blue-600 scale-105 shadow-sm' 
+                  : 'border-slate-200'
               }`}
               style={{ 
                 backgroundColor: c.value === 'inherit' || c.value === 'transparent' ? 'transparent' : c.value,
@@ -302,7 +307,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       },
       editorProps: {
         attributes: {
-          class: 'prose focus:outline-none max-w-none min-h-[350px] p-6 text-sm text-foreground',
+          class: 'prose focus:outline-none max-w-none min-h-[350px] p-6 text-sm text-slate-800',
         },
       },
     });
@@ -363,8 +368,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         title={tooltip}
         onClick={(e) => { e.preventDefault(); onClick(); }}
         disabled={disabled}
-        className={`p-2 rounded-md hover:bg-card hover:shadow-sm transition-all focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed ${
-          isActive ? 'bg-card shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+        className={`p-2 rounded-md hover:bg-white hover:shadow-xs transition-all focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed ${
+          isActive ? 'bg-white shadow-xs text-blue-600' : 'text-slate-400 hover:text-blue-600'
         }`}
       >
         {children}
@@ -398,14 +403,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const activeHighlight = editor.getAttributes('highlight').color || 'transparent';
 
     return (
-      <div className={`border rounded-xl overflow-hidden shadow-sm bg-card flex flex-col transition-all ${
+      <div className={`border rounded-xl shadow-[0_2px_15px_rgba(0,0,0,0.01)] bg-white flex flex-col transition-all ${
         editor.isFocused 
-          ? 'border-blue-500 ring-2 ring-blue-500/10 dark:ring-blue-500/20' 
-          : 'border-gray-100 dark:border-border/50'
+          ? 'border-blue-500 ring-4 ring-blue-500/10' 
+          : 'border-slate-205'
       } ${className || ''}`}>
         
         {/* TOOLBAR */}
-        <div className="flex flex-wrap items-center gap-1.5 p-2 bg-muted border-b border-gray-100 dark:border-border/50 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 p-2 bg-slate-50 border-b border-slate-200 shrink-0 rounded-t-xl">
             {/* History */}
             <ToolbarButton 
               onClick={() => editor.chain().focus().undo().run()} 
@@ -422,7 +427,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               <Redo size={16} />
             </ToolbarButton>
 
-            <div className="w-[1px] h-6 bg-gray-200 dark:bg-border mx-1" />
+            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
             {/* Heading */}
             <DropdownSelect
@@ -430,6 +435,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               value={getHeadingValue()}
               options={HEADINGS}
               onChange={handleHeadingChange}
+              className="w-[100px]"
             />
 
             {/* Font Family */}
@@ -438,6 +444,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               value={activeFont}
               options={FONTS}
               onChange={(font) => editor.chain().focus().setFontFamily(font).run()}
+              className="w-[130px]"
             />
 
             {/* Font Size */}
@@ -446,9 +453,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               value={activeFontSize}
               options={FONT_SIZES}
               onChange={(size) => editor.chain().focus().setFontSize(size).run()}
+              className="w-[80px]"
             />
 
-            <div className="w-[1px] h-6 bg-gray-200 dark:bg-border mx-1" />
+            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
             {/* Inline Marks */}
             <ToolbarButton 
@@ -516,7 +524,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               tooltip="Highlight Color"
             />
 
-            <div className="w-[1px] h-6 bg-gray-200 dark:bg-border mx-1" />
+            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
             {/* Alignments */}
             <ToolbarButton 
@@ -548,7 +556,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               <AlignJustify size={16} />
             </ToolbarButton>
 
-            <div className="w-[1px] h-6 bg-gray-200 dark:bg-border mx-1" />
+            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
             {/* Lists */}
             <ToolbarButton 
@@ -580,7 +588,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               <IndentIcon size={16} />
             </ToolbarButton>
 
-            <div className="w-[1px] h-6 bg-gray-200 dark:bg-border mx-1" />
+            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
             {/* Actions */}
             <ToolbarButton 
@@ -593,7 +601,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         
         {/* TEXTAREA CONTENT */}
         <div 
-          className="bg-card text-foreground flex-1 overflow-y-auto cursor-text" 
+          className="bg-white text-slate-800 flex-1 overflow-y-auto cursor-text rounded-b-xl" 
           onClick={() => editor.commands.focus()}
         >
           <EditorContent editor={editor} />
