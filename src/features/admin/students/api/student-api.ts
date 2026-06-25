@@ -166,6 +166,8 @@ export async function createStudent(data: Record<string, unknown>) {
     mobile_number: data.mobile_number,
     password: data.password,
     notes: data.notes,
+    status: data.status,
+    institution_id: data.institution_id,
   };
 
   const response = await fetch(BASE_URL, {
@@ -192,6 +194,7 @@ export async function updateStudent(id: string | number, data: Record<string, un
     notes: data.notes || undefined,
     status: data.status ? (data.status as string).toLowerCase() : undefined,
     course_id: data.courseId || data.course_id || data.course, // Support both
+    institution_id: data.institution_id || data.institutionId || undefined,
   };
 
   // Remove undefined fields to prevent backend rejection

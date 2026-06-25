@@ -5,6 +5,7 @@ import { Institution, InstitutionContact } from "@/features/admin/institutions/a
 import { Modal } from "@/components/ui/modal";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   open: boolean;
@@ -22,11 +23,13 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
     email: string;
     location: string;
     contacts: InstitutionContact[];
+    status: string;
   }>({
     name: "",
     email: "",
     location: "",
     contacts: [{ name: "", role: "", email: "", phone: "" }],
+    status: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,6 +44,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
           contacts: institution.contacts && institution.contacts.length > 0 
             ? institution.contacts 
             : [{ name: "", role: "", email: "", phone: "" }],
+          status: institution.status === "inactive" ? "false" : "true",
         });
       } else {
         setForm({
@@ -48,6 +52,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
           email: "",
           location: "",
           contacts: [{ name: "", role: "", email: "", phone: "" }],
+          status: "",
         });
       }
       setErrors({});
@@ -81,6 +86,8 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
       e.location = "Location can only contain letters, numbers, and basic punctuation";
     }
     
+    if (form.status === "") e.status = "Status is required";
+
     // Optional basic validation for contacts could be added here
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -116,6 +123,9 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
     const payload: any = { ...form };
     payload.address = form.location;
     delete payload.location;
+
+    if (payload.status === "true") payload.status = "active";
+    else if (payload.status === "false") payload.status = "inactive";
 
     if (mode === "add") {
       createMutation.mutate(payload, {
@@ -155,19 +165,39 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
       <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
         {/* Basic Info */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              INSTITUTION NAME <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Oxford Technical Institute"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
-                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                INSTITUTION NAME <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Oxford Technical Institute"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                  errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                }`}
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div className="sm:w-1/3">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                STATUS <span className="text-red-500">*</span>
+              </label>
+              <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
+                <SelectTrigger className={`w-full bg-white dark:bg-card ${errors.status ? "border-red-500" : "border-gray-200 dark:border-border/70"}`}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="text-red-500 text-xs mt-1">{errors.status}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
