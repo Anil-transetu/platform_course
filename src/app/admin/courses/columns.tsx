@@ -1,6 +1,7 @@
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
 import { Domain } from "@/types/domain";
+export type { Domain };
 
 const getInitials = (name?: string) => {
   if (!name) return "C";

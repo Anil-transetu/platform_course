@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash2, ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
@@ -113,21 +113,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-const initialCourses: Course[] = [
-  { id: 1, name: "Advanced Full-Stack Development", category: "Web Development", modules: 12, updated: "Oct 24, 2023", status: "Published" },
-  { id: 2, name: "Python for Machine Learning", category: "Data Science", modules: 8, updated: "Oct 20, 2023", status: "Draft" },
-  { id: 3, name: "Ethical Hacking Fundamentals", category: "Cybersecurity", modules: 15, updated: "Oct 18, 2023", status: "Published" },
-  { id: 4, name: "UI/UX Strategy & Design", category: "Design", modules: 6, updated: "Oct 15, 2023", status: "Published" },
-];
 
-const initialDomains: Domain[] = [
-  { id: 1, name: "Web Development", category: "Technology", courses: 12, updated: "Oct 24, 2023", status: "Active" },
-  { id: 2, name: "Data Science", category: "Science", courses: 8, updated: "Oct 20, 2023", status: "Active" },
-  { id: 3, name: "Cybersecurity", category: "Security", courses: 15, updated: "Oct 18, 2023", status: "Active" },
-  { id: 4, name: "Design", category: "Creative", courses: 6, updated: "Oct 15, 2023", status: "Active" },
-];
-
-function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => void }) {
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit?: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -149,6 +136,18 @@ function ActionMenu({ onView, onDelete }: { onView: () => void; onDelete: () => 
           <Eye size={14} className="text-gray-400" />
           View
         </DropdownMenuItem>
+        {onEdit && (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
+          >
+            <Pencil size={14} className="text-gray-400" />
+            Edit
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -263,16 +262,20 @@ export default function CoursesPage() {
     setSearch("");
   }, [activeTab]);
 
-  const handleCreateDomain = (newDomain: Record<string, unknown>) => {
-    const nextId = domainsData.length ? Math.max(...domainsData.map(d => d.id)) + 1 : 1;
-    setDomainsData([...domainsData, { 
-      id: nextId,
-      name: newDomain.name as string,
-      category: newDomain.category as string,
-      courses: (newDomain.courses as number) || 0,
-      updated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: (newDomain.status as string) || "Active"
-    }]);
+  const handleSaveDomain = async (payload: any) => {
+    try {
+      if (domainModal.mode === "add") {
+        await createDomainMutation.mutateAsync(payload);
+        toast.success("Domain created successfully");
+      } else {
+        if (!domainModal.domain?.id) throw new Error("Domain ID is missing");
+        await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data: payload });
+        toast.success("Domain updated successfully");
+      }
+      setDomainModal({ open: false, mode: "add", domain: null });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save domain");
+    }
   };
 
   const handleDelete = async () => {
