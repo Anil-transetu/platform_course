@@ -93,9 +93,15 @@ export function mapInstitution(data: any): Institution {
     }
   }
   
+  let status = data.status;
+  if (!status && data.is_active !== undefined) {
+    status = data.is_active ? "Active" : "Inactive";
+  }
+
   return {
     ...data,
     contacts,
+    status,
   };
 }
 

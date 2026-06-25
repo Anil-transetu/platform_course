@@ -88,6 +88,26 @@ export default function DataTable<T extends Record<string, unknown>>({
   renderExpandedRow,
 }: DataTableProps<T>) {
   const [expandedRowKeys, setExpandedRowKeys] = React.useState<Set<string | number>>(new Set());
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [isMac, setIsMac] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        if (search?.enabled) {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [search?.enabled]);
 
   const toggleExpand = (rowId: string | number) => {
     const newSet = new Set(expandedRowKeys);
@@ -103,15 +123,19 @@ export default function DataTable<T extends Record<string, unknown>>({
           {/* SEARCH INPUT — grows to fill all remaining space */}
           {search?.enabled && (
             <div className="flex-1 min-w-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 <Input
+                  ref={searchInputRef}
                   type="text"
                   placeholder={search.placeholder || "Search..."}
                   value={search.value}
                   onChange={(e) => search.onChange(e.target.value)}
-                  className="pl-10 w-full bg-card border-border"
+                  className="pl-10 pr-16 w-full bg-card border-border transition-all focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 px-1 py-0.5 bg-gray-100 dark:bg-muted/50 border border-gray-200 dark:border-border/50 rounded-sm text-[10px] font-bold text-gray-500 pointer-events-none select-none">
+                  <span className="text-gray-400">{isMac ? '⌘' : 'Ctrl'}</span> K
+                </div>
               </div>
             </div>
           )}

@@ -4,6 +4,9 @@ import { useCreateStudent, useUpdateStudent } from "@/hooks/use-students";
 import { Student } from "@/types/student";
 import { Modal } from "@/components/ui/modal";
 import { Eye, EyeOff } from "lucide-react";
+import InstitutionSelect from "../users/InstitutionSelect";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
@@ -23,6 +26,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     mobile_number: "",
     password: "",
     notes: "",
+    status: "",
+    institution_id: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
@@ -38,6 +43,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           mobile_number: student.mobile_number || "",
           password: "", // Leave blank on edit
           notes: student.notes || "",
+          status: student.status?.toLowerCase() === "inactive" ? "inactive" : "active",
+          institution_id: (student.institution_id as string) || (student.institutionId as string) || "",
         });
       } else {
         setForm({
@@ -47,6 +54,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           mobile_number: "",
           password: "",
           notes: "",
+          status: "",
+          institution_id: "",
         });
       }
       setErrors({});
@@ -60,6 +69,8 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     if (!form.last_name.trim()) e.last_name = "Last name is required";
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.mobile_number.trim()) e.mobile_number = "Mobile number is required";
+    if (!form.status) e.status = "Status is required" as any;
+    if (!form.institution_id?.toString().trim()) e.institution_id = "Institution is required";
     if (mode === "add" && !form.password.trim()) {
       e.password = "Password is required";
     }
@@ -71,24 +82,35 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     if (!validate()) return;
     
     // In edit mode, we do not want to send password if it's empty
-    const payload = { ...form };
+    const payload: any = { ...form };
+    if (payload.institution_id) {
+      payload.institution_id = Number(payload.institution_id);
+    }
     if (mode === "edit" && !payload.password) {
-      delete (payload as any).password;
+      delete payload.password;
     }
 
     if (mode === "add") {
       createStudent.mutate(payload, {
         onSuccess: () => {
+          toast.success("Student added successfully!");
           onClose();
         },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to add student");
+        }
       });
     } else if (student) {
       updateStudent.mutate(
         { id: student.id, data: payload },
         {
           onSuccess: () => {
+            toast.success("Student updated successfully!");
             onClose();
           },
+          onError: (err: any) => {
+            toast.error(err.message || "Failed to update student");
+          }
         }
       );
     }
@@ -108,7 +130,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              FIRST NAME
+              FIRST NAME <span className="text-red-500">*</span>
             </label>
             <input
               value={form.first_name}
@@ -124,7 +146,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              LAST NAME
+              LAST NAME <span className="text-red-500">*</span>
             </label>
             <input
               value={form.last_name}
@@ -140,31 +162,53 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
         </div>
 
-        {/* Row 2: Email */}
-        <div>
-          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-            EMAIL ADDRESS
-          </label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="john.doe@example.com"
-            autoComplete="new-email"
-            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
-              errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
-            }`}
-          />
-          {errors.email && (
-            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-          )}
+        {/* Row 2: Email and Status */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+              EMAIL ADDRESS <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="john.doe@example.com"
+              autoComplete="new-email"
+              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            )}
+          </div>
+          
+          <div className="sm:w-1/3">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+              STATUS <span className="text-red-500">*</span>
+            </label>
+            <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
+              <SelectTrigger className={`w-full bg-gray-50 dark:bg-muted/50/50 ${
+                (errors as any).status ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {(errors as any).status && (
+              <p className="text-red-500 text-xs mt-1">{(errors as any).status}</p>
+            )}
+          </div>
         </div>
 
         {/* Row 3: Mobile + Password */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              MOBILE NUMBER
+              MOBILE NUMBER <span className="text-red-500">*</span>
             </label>
             <input
               value={form.mobile_number}
@@ -181,7 +225,7 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              PASSWORD
+              PASSWORD {mode === "add" && <span className="text-red-500">*</span>}
             </label>
             <div className="relative">
               <input
@@ -208,7 +252,23 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
         </div>
 
-        {/* Row 4: Notes */}
+        {/* Row 4: Institution */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+            INSTITUTION <span className="text-red-500">*</span>
+          </label>
+          <InstitutionSelect
+            value={form.institution_id}
+            onChange={(val) => setForm({ ...form, institution_id: val })}
+            initialName={(student as any)?.institution_name || (student as any)?.institution?.name || (student as any)?.institution}
+            error={!!errors.institution_id}
+          />
+          {errors.institution_id && (
+            <p className="text-red-500 text-xs mt-1">{errors.institution_id}</p>
+          )}
+        </div>
+
+        {/* Row 5: Notes */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground tracking-wider uppercase">

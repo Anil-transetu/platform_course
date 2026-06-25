@@ -19,11 +19,26 @@ const MOCK_ASSIGNMENTS = [
 
 export default function AssignmentLibraryPage() {
   const router = useRouter();
-  const { course, activeModuleId, activeLessonId, activeAssignmentId, updateAssignment } = useCourseStore();
-
-  const activeModule = course.modules.find(m => m.id === activeModuleId);
-  const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
-  const activeAssignment = activeLesson?.assignments?.find(a => a.id === activeAssignmentId);
+  const { 
+    course, 
+    activeModuleId, 
+    activeLessonId, 
+    activeAssignmentId, 
+    updateAssignment, 
+    updateCourseAssignment 
+  } = useCourseStore();
+  
+  let activeAssignment;
+  if (!activeModuleId) {
+    activeAssignment = course.assignments?.find(a => a.id === activeAssignmentId);
+  } else if (!activeLessonId) {
+    const activeModule = course.modules.find(m => m.id === activeModuleId);
+    activeAssignment = activeModule?.assignments?.find(a => a.id === activeAssignmentId);
+  } else {
+    const activeModule = course.modules.find(m => m.id === activeModuleId);
+    const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
+    activeAssignment = activeLesson?.assignments?.find(a => a.id === activeAssignmentId);
+  }
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,8 +57,12 @@ export default function AssignmentLibraryPage() {
   const currentItems = filteredAssignments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleAddToCourse = (title: string) => {
-    if (activeModuleId && activeLessonId && activeAssignmentId) {
-      updateAssignment(activeModuleId, activeLessonId, activeAssignmentId, { title });
+    if (activeAssignmentId) {
+      if (!activeModuleId) {
+        updateCourseAssignment(activeAssignmentId, { title });
+      } else {
+        updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { title });
+      }
       setSuccessMsg(`"${title}" added to course successfully!`);
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
@@ -79,7 +98,15 @@ export default function AssignmentLibraryPage() {
                     <Edit3 size={16} /> Edit Details
                   </button>
                   <button 
-                    onClick={() => updateAssignment(activeModuleId!, activeLessonId!, activeAssignmentId!, { title: "" })}
+                    onClick={() => {
+                      if (activeAssignmentId) {
+                        if (!activeModuleId) {
+                          updateCourseAssignment(activeAssignmentId, { title: "" });
+                        } else {
+                          updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { title: "" });
+                        }
+                      }
+                    }}
                     className="flex items-center justify-center gap-2 px-6 py-2.5 bg-card text-gray-500 dark:text-muted-foreground font-bold rounded-xl hover:bg-muted transition-all text-sm border border-gray-200 dark:border-border/70 shadow-sm"
                   >
                     <RefreshCcw size={16} /> Replace Assignment

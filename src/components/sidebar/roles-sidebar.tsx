@@ -11,12 +11,33 @@ import {
 } from "@/components/ui/sidebar";
 import { ChevronLeft } from "lucide-react";
 import { navigationConfig } from "@/config/navigation";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface RolesSidebarProps {
   role: string;
 }
 
 export default function RolesSidebar({ role }: RolesSidebarProps) {
+  const pathname = usePathname();
+  const [isCourseViewOrEdit, setIsCourseViewOrEdit] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const isViewOrEdit = 
+        pathname.startsWith("/admin/courses/create") || 
+        pathname.startsWith("/admin/courses/view") || 
+        searchParams.get("view") !== null || 
+        searchParams.get("edit") !== null;
+      setIsCourseViewOrEdit(isViewOrEdit);
+    }
+  }, [pathname]);
+
+  if (isCourseViewOrEdit) {
+    return null;
+  }
+
   const config = navigationConfig[role] || navigationConfig.ADMIN;
   const { brand, mainNav } = config;
   const LogoIcon = brand.logoIcon;

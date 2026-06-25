@@ -1,29 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  BookOpen, 
-  CheckCircle, 
-  FileText, 
-  Plus, 
-  Eye, 
-  MoreVertical, 
-  Pencil, 
-  Trash2, 
-  ArrowLeft, 
-  Terminal, 
-  Settings, 
-  ExternalLink 
-} from "lucide-react";
+import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash2, ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
-import { buildCourseColumns, buildDomainColumns, Course } from "./columns";
-import { Domain } from "@/types/domain";
+import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster, toast } from "react-hot-toast";
 import {
@@ -34,6 +20,12 @@ import {
   useDeleteDomain
 } from "@/features/admin/domains/api/domain-api";
 import { useAssignments } from "@/features/admin/assignments/api/use-assignments";
+import {
+  useCourses,
+  useCourseStats,
+  useDeleteCourse
+} from "@/features/admin/courses/api/course-api";
+import CourseDetailViewer from "./CourseDetailViewer";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -114,7 +106,6 @@ function CoursePageSkeleton() {
     </div>
   );
 }
-
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -122,14 +113,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 
-const initialCourses: Course[] = [
-  { id: 1, name: "Advanced Full-Stack Development", category: "Web Development", modules: 12, updated: "Oct 24, 2023", status: "Published" },
-  { id: 2, name: "Python for Machine Learning", category: "Data Science", modules: 8, updated: "Oct 20, 2023", status: "Draft" },
-  { id: 3, name: "Ethical Hacking Fundamentals", category: "Cybersecurity", modules: 15, updated: "Oct 18, 2023", status: "Published" },
-  { id: 4, name: "UI/UX Strategy & Design", category: "Design", modules: 6, updated: "Oct 15, 2023", status: "Published" },
-];
 
-function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit?: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -151,18 +136,18 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
           <Eye size={14} className="text-gray-400" />
           View
         </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
-        >
-          <Pencil size={14} className="text-gray-400" />
-          Edit
-        </DropdownMenuItem>
-
+        {onEdit && (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-gray-700 dark:text-foreground hover:bg-gray-50 dark:bg-muted/50 rounded-lg transition-colors focus:bg-gray-50 dark:bg-muted/50 outline-none font-medium flex items-center gap-2"
+          >
+            <Pencil size={14} className="text-gray-400" />
+            Edit
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -180,11 +165,21 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
 
 export default function CoursesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewId = searchParams.get("view");
   const [activeTab, setActiveTab] = useState<"courses" | "domains">("courses");
-  const [coursesData, setCoursesData] = useState<Course[]>(initialCourses);
-  
   // Track domain selected for details viewing
   const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
+  // Track course selected for details viewing
+  const [viewingCourse, setViewingCourse] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (viewId && activeTab === "courses") {
+      setViewingCourse({ id: viewId });
+    } else {
+      setViewingCourse(null);
+    }
+  }, [viewId, activeTab]);
 
   // States for Associated Courses list in Domain Detail View
   const [courseSearch, setCourseSearch] = useState("");
@@ -218,8 +213,20 @@ export default function CoursesPage() {
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
-  const [isFetchingCourses, setIsFetchingCourses] = useState(false);
+  // Courses React Query hook
+  const {
+    data: coursesResponse,
+    isLoading: isLoadingCourses,
+    isFetching: isFetchingCourses
+  } = useCourses(
+    activeTab === "courses" ? page : 1,
+    rowsPerPage,
+    search,
+    statusFilter
+  );
+
+  const { data: courseStatsRaw } = useCourseStats();
+  const deleteCourseMutation = useDeleteCourse();
 
   // Queries & Mutations for domains
   const {
@@ -241,27 +248,12 @@ export default function CoursesPage() {
   const updateDomainMutation = useUpdateDomain();
   const deleteDomainMutation = useDeleteDomain();
 
-  // Normalize Domain List
+  // Normalize Lists
   const domainsList: Domain[] = domainsResponse?.data || (Array.isArray(domainsResponse) ? domainsResponse : []);
   const totalDomainsCount = domainsResponse?.pagination?.total || domainsResponse?.total || domainsList.length;
 
-  // Simulate courses initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoadingCourses(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Simulate courses fetching on filter changes
-  useEffect(() => {
-    if (isLoadingCourses) return;
-    setIsFetchingCourses(true);
-    const timer = setTimeout(() => {
-      setIsFetchingCourses(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search, statusFilter, isLoadingCourses]);
+  const coursesList = coursesResponse?.data || [];
+  const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
 
   // Reset page & filters when switching tabs
   useEffect(() => {
@@ -270,26 +262,15 @@ export default function CoursesPage() {
     setSearch("");
   }, [activeTab]);
 
-  const handleSaveDomain = async (data: Record<string, any>) => {
+  const handleSaveDomain = async (payload: any) => {
     try {
       if (domainModal.mode === "add") {
-        await createDomainMutation.mutateAsync(data);
+        await createDomainMutation.mutateAsync(payload);
         toast.success("Domain created successfully");
-      } else if (domainModal.domain) {
-        await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data });
+      } else {
+        if (!domainModal.domain?.id) throw new Error("Domain ID is missing");
+        await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data: payload });
         toast.success("Domain updated successfully");
-        
-        // Update local viewing state if currently viewing this domain
-        if (viewingDomain && viewingDomain.id === domainModal.domain.id) {
-          setViewingDomain({
-            ...viewingDomain,
-            name: data.name || viewingDomain.name,
-            description: data.description || viewingDomain.description,
-            tags: data.tags || viewingDomain.tags,
-            assignment_ids: data.assignment_ids || viewingDomain.assignment_ids,
-            status: data.status || viewingDomain.status
-          });
-        }
       }
       setDomainModal({ open: false, mode: "add", domain: null });
     } catch (err: any) {
@@ -298,9 +279,13 @@ export default function CoursesPage() {
   };
 
   const handleDelete = async () => {
-    if (deleteDialog.type === "course") {
-      setCoursesData(coursesData.filter(c => c.id !== deleteDialog.item?.id));
-      toast.success("Course deleted successfully (local simulation)");
+    if (deleteDialog.type === "course" && deleteDialog.item) {
+      try {
+        await deleteCourseMutation.mutateAsync(deleteDialog.item.id);
+        toast.success("Course deleted successfully");
+      } catch (err: any) {
+        toast.error(err.message || "Failed to delete course");
+      }
     } else if (deleteDialog.item) {
       try {
         await deleteDomainMutation.mutateAsync(deleteDialog.item.id);
@@ -314,19 +299,13 @@ export default function CoursesPage() {
     }
   };
 
-  const filteredCourses = coursesData.filter((c) => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All" || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const currentData = activeTab === "courses" ? filteredCourses : domainsList;
-  const totalCount = activeTab === "courses" ? filteredCourses.length : totalDomainsCount;
+  const currentData = activeTab === "courses" ? coursesList : domainsList;
+  const totalCount = activeTab === "courses" ? totalCoursesCount : totalDomainsCount;
   const totalPages = activeTab === "courses" 
-    ? Math.max(1, Math.ceil(filteredCourses.length / rowsPerPage))
+    ? (coursesResponse?.pagination?.totalPages || Math.max(1, Math.ceil(totalCoursesCount / rowsPerPage)))
     : Math.max(1, Math.ceil(totalDomainsCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = activeTab === "courses" ? currentData.slice(start, start + rowsPerPage) : currentData;
+  const visibleData = currentData;
 
   const searchConfig = {
     enabled: true,
@@ -365,7 +344,7 @@ export default function CoursesPage() {
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(start + (activeTab === "courses" ? rowsPerPage : visibleData.length), totalCount)} of ${totalCount}`
+    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
@@ -385,6 +364,20 @@ export default function CoursesPage() {
   );
 
   const isScreenLoading = activeTab === "courses" ? isLoadingCourses : isDomainsLoading;
+
+  // Render Course Detail View
+  if (viewingCourse) {
+    return (
+      <CourseDetailViewer 
+        courseId={viewingCourse.id} 
+        onBack={() => {
+          setViewingCourse(null);
+          router.push("/admin/courses");
+        }} 
+        onEdit={() => router.push(`/admin/courses/create?id=${viewingCourse.id}`)}
+      />
+    );
+  }
 
   // Render Domain Detail View
   if (viewingDomain) {
@@ -566,7 +559,7 @@ export default function CoursesPage() {
                 filters={associatedCoursesFilterConfig}
                 actions={(course) => (
                   <button 
-                    onClick={() => router.push(`/admin/courses/create?id=${course.id}`)}
+                    onClick={() => router.push(`/admin/courses?view=${course.id}`)}
                     className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
                   >
                     <Eye size={14} />
@@ -615,7 +608,6 @@ export default function CoursesPage() {
       buttonOnclick={() => {}}
       extraActions={extraHeaderActions}
     >
-      <Toaster position="top-right" />
       {isScreenLoading ? (
         <CoursePageSkeleton />
       ) : (
@@ -623,9 +615,9 @@ export default function CoursesPage() {
         {/* CARDS */}
         {activeTab === "courses" ? (
           <StatsGrid>
-            <StatsCard title="Total Courses" value={coursesData.length} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
-            <StatsCard title="Active Courses" value={coursesData.filter(c => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
-            <StatsCard title="Draft Courses" value={coursesData.filter(c => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
+            <StatsCard title="Total Courses" value={courseStatsRaw?.total_courses ?? courseStatsRaw?.total ?? totalCoursesCount} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
+            <StatsCard title="Active Courses" value={courseStatsRaw?.active_courses ?? courseStatsRaw?.active ?? coursesList.filter((c: any) => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
+            <StatsCard title="Draft Courses" value={courseStatsRaw?.draft_courses ?? courseStatsRaw?.draft ?? coursesList.filter((c: any) => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
           </StatsGrid>
         ) : (
           <StatsGrid>
@@ -664,7 +656,7 @@ export default function CoursesPage() {
           <DataTable<any>
             data={visibleData}
             columns={activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()}
-            loading={activeTab === "courses" ? (isLoadingCourses || isFetchingCourses) : (isDomainsLoading || isDomainsFetching)}
+            loading={isScreenLoading}
             rowKey={(item) => String(item.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -673,7 +665,7 @@ export default function CoursesPage() {
                 <ActionMenu 
                   onView={() => {
                     if (activeTab === "courses") {
-                      router.push("/admin/courses/create");
+                      router.push(`/admin/courses?view=${item.id}`);
                     } else {
                       setViewingDomain(item);
                     }
@@ -708,7 +700,7 @@ export default function CoursesPage() {
       <CreateDomainModal 
         isOpen={domainModal.open} 
         onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-        onSubmit={handleSaveDomain} 
+        onSubmit={() => {}} 
         mode={domainModal.mode}
         domain={domainModal.domain}
       />
