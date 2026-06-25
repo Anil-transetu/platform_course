@@ -218,3 +218,23 @@ export async function deleteInstitution(id: string | number): Promise<void> {
     await handleResponse(response);
   }
 }
+
+/**
+ * Lookup institutions for dropdowns
+ */
+export async function fetchInstitutionsLookup(search?: string): Promise<any[]> {
+  let url = `${BASE_URL}/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const data = await handleResponse(response);
+  return data.data || [];
+}

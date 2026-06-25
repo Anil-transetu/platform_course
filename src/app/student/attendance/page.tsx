@@ -1,241 +1,158 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   BarChart3, 
   CheckCircle2, 
   Flame, 
-  ChevronLeft, 
-  ChevronRight, 
-  Download,
-  Moon,
-  Bell
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
+import DataTable from "@/components/reusable/DataTable";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useStudentAttendanceStats, useStudentAttendanceTable } from "@/features/student/attendance/api/attendance-api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { buildAttendanceColumns, AttendanceRow } from "./columns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const summaryStats = [
-  {
-    label: "Average Attendance %",
-    value: "92.4%",
-    icon: BarChart3,
-    color: "blue"
-  },
-  {
-    label: "Total Days Present",
-    value: "158 Days",
-    icon: CheckCircle2,
-    color: "emerald"
-  },
-  {
-    label: "Recent Streak",
-    value: "8 Days",
-    icon: Flame,
-    color: "orange"
-  }
-];
-
-const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const days = ["Mon", "Wed", "Fri"];
-
-// Helper to generate random heatmap data
-const generateHeatmap = () => {
-  return Array.from({ length: 52 }, () => 
-    Array.from({ length: 7 }, () => Math.floor(Math.random() * 4))
+function StatsCardSkeleton() {
+  return (
+    <div className="bg-card rounded-xl border border-gray-100 dark:border-border/50 shadow-sm p-3 md:p-4 w-full h-[104px] flex flex-col justify-between">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-4 w-24" />
+      </div>
+      <div className="flex items-end justify-between">
+        <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-10 w-10 rounded-full" />
+      </div>
+    </div>
   );
-};
-
-const heatmapData = generateHeatmap();
-
-const attendanceLogs = [
-  { date: "Oct 27, 2023", day: "Friday", course: "Advanced React Patterns", status: "Present" },
-  { date: "Oct 26, 2023", day: "Thursday", course: "UI/UX Fundamentals", status: "Late" },
-  { date: "Oct 25, 2023", day: "Wednesday", course: "Business Strategy", status: "Absent" },
-  { date: "Oct 24, 2023", day: "Tuesday", course: "Data Science 101", status: "Present" },
-  { date: "Oct 23, 2023", day: "Monday", course: "Data Structures & Algorithms", status: "Present" },
-];
+}
 
 export default function AttendancePage() {
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [statusFilter, setStatusFilter] = useState<string>("Select status");
 
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  const { data: statsData, isLoading: isLoadingStats, isError: isErrorStats } = useStudentAttendanceStats();
+  const { data: tableDataResponse, isLoading: isLoadingTable, isError: isErrorTable } = useStudentAttendanceTable(page, limit, statusFilter !== "Select status" ? statusFilter : undefined);
+
+  const tableData: AttendanceRow[] = tableDataResponse?.data || [];
+  const pagination = tableDataResponse?.pagination || {
+    totalRecords: 0,
+    totalPages: 1,
+    currentPage: 1,
+    limit: 5
+  };
+
+  const columns = useMemo(() => buildAttendanceColumns(), []);
+
+  const extraActions = (
+    <div className="w-[200px] flex flex-row ">
+
+      <p className="text-sm font-medium text-gray-700 mb-2">Filter by Status:</p>
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger className="bg-white dark:bg-card border-gray-200 dark:border-border/50 rounded-lg font-medium h-[42px]">
+          <SelectValue placeholder="Select status" />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl">
+          <SelectItem value="Select status" className="font-medium cursor-pointer text-gray-500">All </SelectItem>
+          <SelectItem value="present" className="font-medium cursor-pointer">Present</SelectItem>
+          <SelectItem value="absent" className="font-medium cursor-pointer">Absent</SelectItem>
+          <SelectItem value="late" className="font-medium cursor-pointer">Late</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground tracking-tight">Attendance Tracking</h1>
-          <p className="text-gray-500 dark:text-muted-foreground mt-1 font-medium">Monitor your daily presence and consistency.</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 dark:border-border/50 bg-white dark:bg-card">
-            <Bell size={20} />
-          </button>
-          <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100 dark:border-border/50 bg-white dark:bg-card">
-            <Moon size={20} />
-          </button>
-        </div>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground tracking-tight">Attendance Tracking</h1>
+        <p className="text-gray-500 dark:text-muted-foreground font-medium">Monitor your daily presence and consistency.</p>
       </div>
 
-      {/* Summary Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {summaryStats.map((stat, i) => (
-          <div key={i} className="bg-white dark:bg-card p-6 rounded-[28px] border border-gray-100 dark:border-border/50 shadow-sm flex items-center gap-6 group hover:shadow-md transition-all">
-            <div className={cn(
-              "w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
-              stat.color === "blue" ? "bg-blue-600 shadow-blue-500/20" :
-              stat.color === "emerald" ? "bg-emerald-500 shadow-emerald-500/20" :
-              "bg-orange-500 shadow-orange-500/20"
-            )}>
-              <stat.icon size={28} />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-900 dark:text-foreground tabular-nums">{stat.value}</p>
-            </div>
+      <div className="mb-10">
+        {isLoadingStats ? (
+          <StatsGrid>
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+            <StatsCardSkeleton />
+          </StatsGrid>
+        ) : isErrorStats ? (
+          <div className="p-6 bg-red-50 text-red-600 rounded-xl border border-red-100 font-semibold">
+            Failed to load statistics
           </div>
-        ))}
+        ) : (
+          <StatsGrid>
+            <StatsCard
+              title="Total Days Present"
+              value={`${statsData?.total_days_present || 0} Days`}
+              icon={<CheckCircle2 size={20} />}
+              iconBgClass="bg-emerald-50"
+              iconColorClass="text-emerald-600"
+              tooltip="Total number of days you were present"
+            />
+            <StatsCard
+              title="Average Attendance %"
+              value={`${statsData?.average_attendance_percentage || 0}%`}
+              icon={<BarChart3 size={20} />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              tooltip="Your overall attendance percentage"
+            />
+            <StatsCard
+              title="Recent Streak"
+              value={`${statsData?.streak || 0} Days`}
+              icon={<Flame size={20} />}
+              iconBgClass="bg-orange-50"
+              iconColorClass="text-orange-600"
+              tooltip="Consecutive days you have attended"
+            />
+          </StatsGrid>
+        )}
       </div>
 
-      {/* Heatmap Section */}
-      <div className="bg-white dark:bg-card p-8 rounded-[40px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight">Attendance History</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Less</span>
-              <div className="flex gap-1">
-                <div className="w-3 h-3 rounded-sm bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50"></div>
-                <div className="w-3 h-3 rounded-sm bg-emerald-100/50"></div>
-                <div className="w-3 h-3 rounded-sm bg-emerald-300"></div>
-                <div className="w-3 h-3 rounded-sm bg-emerald-500"></div>
-                <div className="w-3 h-3 rounded-sm bg-emerald-700"></div>
-              </div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">More</span>
-            </div>
+      <ListingScreenTemplate
+        headerText="Detailed Logs"
+        buttonRequired={false}
+        extraActions={extraActions}
+      >
+        {isErrorTable ? (
+          <div className="p-8 text-center text-destructive">
+            Failed to load attendance records. Please try again.
           </div>
-        </div>
-
-        <div className="relative overflow-x-auto scrollbar-none">
-          <div className="flex gap-1 mb-2 pl-8">
-            {months.map(m => (
-              <div key={m} className="flex-1 text-[10px] font-bold text-gray-300 uppercase tracking-widest text-center min-w-[32px]">
-                {m}
-              </div>
-            ))}
+        ) : (
+          <div className="p-0 sm:p-4 flex flex-col">
+            <DataTable
+              data={tableData}
+              columns={columns}
+              loading={isLoadingTable}
+              rowsPerPage={limit}
+              currentPage={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+              onRowsPerPageChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+              emptyStateMessage="No attendance records found."
+              paginationInfo={`Showing ${tableData.length} of ${pagination.totalRecords || 0} records`}
+              bodyHeight="h-auto"
+            />
           </div>
-          <div className="flex gap-4">
-            <div className="flex flex-col justify-between py-1 text-[8px] font-extrabold text-gray-400 uppercase tracking-tighter">
-              {days.map(d => <span key={d}>{d}</span>)}
-            </div>
-            <div className="flex flex-1 gap-1">
-              {heatmapData.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-1 min-w-[12px]">
-                  {week.map((day, di) => (
-                    <div 
-                      key={di} 
-                      className={cn(
-                        "w-3.5 h-3.5 rounded-sm transition-all hover:scale-125 hover:z-10 cursor-pointer shadow-sm",
-                        day === 0 ? "bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50" :
-                        day === 1 ? "bg-emerald-100 border border-emerald-200/20" :
-                        day === 2 ? "bg-emerald-300 shadow-[0_0_4px_rgba(110,231,183,0.3)]" :
-                        "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-                      )}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detailed Logs Page */}
-      <div className="bg-white dark:bg-card rounded-[40px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden flex flex-col">
-        <div className="p-8 border-b border-gray-50 flex items-center justify-between flex-wrap gap-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-foreground tracking-tight">Detailed Logs</h2>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-xl font-bold text-xs text-gray-700 dark:text-foreground hover:bg-gray-100 dark:bg-muted transition-all">
-              Status
-              <ChevronLeft size={14} className="-rotate-90" />
-            </button>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-gray-50 dark:bg-muted/50 border border-gray-100 dark:border-border/50 rounded-xl font-bold text-xs text-gray-700 dark:text-foreground hover:bg-gray-100 dark:bg-muted transition-all shadow-sm">
-              <Download size={14} />
-              Export
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-muted/50/20">
-                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date</th>
-                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</th>
-                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Course</th>
-                <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {attendanceLogs.map((log, i) => (
-                <tr key={i} className="hover:bg-gray-50 dark:bg-muted/50/50 transition-all group">
-                  <td className="px-8 py-7">
-                    <p className="text-sm font-bold text-gray-900 dark:text-foreground group-hover:text-blue-600 transition-colors">
-                      {log.date}
-                    </p>
-                  </td>
-                  <td className="px-8 py-7">
-                    <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground whitespace-nowrap">{log.day}</p>
-                  </td>
-                  <td className="px-8 py-7">
-                    <p className="text-sm font-medium text-gray-500 dark:text-muted-foreground">{log.course}</p>
-                  </td>
-                  <td className="px-8 py-7">
-                    <span className={cn(
-                      "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center border transition-all",
-                      log.status === "Present" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                      log.status === "Late" ? "bg-orange-50 text-orange-600 border-orange-100" :
-                      "bg-rose-50 text-rose-600 border-rose-100"
-                    )}>
-                      {log.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer info bar */}
-        <div className="px-8 py-8 flex items-center justify-between bg-gray-50 dark:bg-muted/50/30">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-            Showing 1 - 5 of 24
-          </p>
-          <div className="flex items-center gap-10">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Rows per page:</span>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-lg">
-                <span className="text-xs font-bold text-gray-900 dark:text-foreground">5</span>
-                <ChevronLeft size={14} className="-rotate-90 text-gray-300" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 text-gray-300 hover:text-gray-400">
-                <ChevronLeft size={20} />
-              </button>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">1</button>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">2</button>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">3</button>
-              <span className="text-gray-300">...</span>
-              <button className="w-9 h-9 text-[10px] font-bold rounded-xl text-gray-400 hover:bg-white dark:bg-card hover:text-gray-600 dark:text-muted-foreground">5</button>
-              <button className="p-2 text-gray-400 hover:text-blue-600">
-                <ChevronRight size={20} />
-              </button>
-            </div>
-            <div className="font-bold text-gray-700 dark:text-foreground bg-gray-100 dark:bg-muted px-4 py-2 rounded-xl text-xs hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
-              Next
-            </div>
-          </div>
-        </div>
-      </div>
+        )}
+      </ListingScreenTemplate>
     </div>
   );
 }

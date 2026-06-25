@@ -43,13 +43,17 @@ async function handleResponse(response: Response) {
 function mapUser(u: Record<string, unknown>): User {
   let status = u.status as string;
   if (!status) {
-    const idStr = String(u.id || "");
-    status = idStr.startsWith("REQ-") ? "pending" : "active";
+    if (u.is_active !== undefined) {
+      status = u.is_active ? "active" : "inactive";
+    } else {
+      const idStr = String(u.id || "");
+      status = idStr.startsWith("REQ-") ? "pending" : "active";
+    }
   }
 
   let role = (u.role as string) || "N/A";
   const lowerRole = role.toLowerCase();
-  if (lowerRole.includes("institution rep") || lowerRole === "institution_rep") {
+  if (lowerRole.includes("institution rep") || lowerRole === "institution_rep" || lowerRole === "institution_representative") {
     role = "Institution Representative";
   } else if (lowerRole === "admin") {
     role = "Admin";
@@ -59,12 +63,26 @@ function mapUser(u: Record<string, unknown>): User {
 
   const cleanId = u.id !== undefined && u.id !== null ? u.id : "N/A";
 
+  let instName = "N/A";
+  let instId = "";
+  if (u.institution && typeof u.institution === "object") {
+    instName = (u.institution as any).name || "N/A";
+    instId = (u.institution as any).id || "";
+  } else if (typeof u.institution === "string") {
+    instName = u.institution;
+  }
+  
+  if (u.institution_id) {
+    instId = u.institution_id as string;
+  }
+
   return {
     id: cleanId as string | number,
     name: (u.full_name as string) || (u.name as string) || "N/A",
     email: (u.email as string) || "N/A",
     role: role,
-    institution: (u.institution as string) || "N/A",
+    institution: instName,
+    institution_id: instId,
     joinedDate: u.created_at ? new Date(u.created_at as string).toLocaleDateString() : "N/A",
     avatar: `https://i.pravatar.cc/150?u=${cleanId}`,
     status: status,
@@ -96,7 +114,7 @@ export async function fetchUsers(
   if (roleFilter && roleFilter !== "All Roles" && roleFilter !== "All") {
     let apiRole = roleFilter.toLowerCase();
     if (apiRole.includes("institution representative") || apiRole === "institution rep") {
-      apiRole = "institution_rep";
+      apiRole = "institution_representative";
     }
     query.append("role", apiRole);
   }
@@ -145,21 +163,22 @@ export async function fetchUserById(id: string | number) {
  */
 export async function createUser(data: Record<string, unknown>) {
   let apiRole = (data.role as string).toLowerCase();
-  if (apiRole.includes("institution representative")) {
-    apiRole = "institution_rep";
+  if (apiRole.includes("institution representative") || apiRole === "institution_rep") {
+    apiRole = "institution_representative";
   }
 
   const payload: Record<string, unknown> = {
     full_name: data.name,
     email: data.email,
     role: apiRole,
+    is_active: data.is_active,
   };
 
   if (data.password) {
     payload.password = data.password;
   }
 
-  if (apiRole === "institution_rep" && data.institution_id) {
+  if (apiRole === "institution_representative" && data.institution_id) {
     payload.institution_id = data.institution_id;
   }
 
@@ -179,17 +198,18 @@ export async function createUser(data: Record<string, unknown>) {
  */
 export async function updateUser(id: string | number, data: Record<string, unknown>) {
   let apiRole = (data.role as string).toLowerCase();
-  if (apiRole.includes("institution representative")) {
-    apiRole = "institution_rep";
+  if (apiRole.includes("institution representative") || apiRole === "institution_rep") {
+    apiRole = "institution_representative";
   }
 
   const payload: Record<string, unknown> = {
     full_name: data.name,
     email: data.email,
     role: apiRole,
+    is_active: data.is_active,
   };
 
-  if (apiRole === "institution_rep" && data.institution_id) {
+  if (apiRole === "institution_representative" && data.institution_id) {
     payload.institution_id = data.institution_id;
   }
 

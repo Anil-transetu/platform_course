@@ -1,5 +1,4 @@
 import RolesSidebar from "@/components/sidebar/roles-sidebar";
-import StudentHeader from "@/components/student/student-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function StudentLayout({
@@ -11,7 +10,6 @@ export default function StudentLayout({
     <SidebarProvider className="h-screen overflow-hidden">
       <RolesSidebar role="STUDENT" />
       <SidebarInset className="flex flex-col overflow-hidden bg-[#F8FAFC]">
-        <StudentHeader />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
@@ -19,5 +17,3 @@ export default function StudentLayout({
     </SidebarProvider>
   );
 }
-
-

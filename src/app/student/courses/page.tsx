@@ -1,401 +1,269 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { 
-  Search, 
-  Filter, 
-  LayoutGrid, 
-  List, 
-  MoreVertical,
-  PlayCircle,
-  Clock,
-  Users,
-  SearchX,
-  ChevronLeft,
-  ChevronRight,
-  Code,
-  Palette,
-  Lightbulb,
-  Database,
-  Terminal
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, Calendar, Users, FileImage } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import DataTable from "@/components/reusable/DataTable";
+import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useEnrolledCourses } from "@/features/student/courses/api/courses-api";
+import { Input } from "@/components/ui/input";
+import { buildCourseColumns, EnrolledCourse } from "./columns";
 
-const courses = [
-  {
-    id: "CS-204",
-    name: "Advanced React Patterns & Performance",
-    category: "Programming",
-    tech: ["React", "Next.js"],
-    instructor: "Dr. Robert King",
-    instructorImg: "https://api.dicebear.com/7.x/avataaars/svg?seed=Robert",
-    progress: 75,
-    lastAccessed: "Oct 24, 2024",
-    batches: "4/5 Batches",
-    color: "blue",
-    icon: Code
-  },
-  {
-    id: "DS-101",
-    name: "UI/UX Fundamentals: From Wireframe to Prototype",
-    category: "Design",
-    tech: ["Figma", "UI Kit"],
-    instructor: "Sarah Miller",
-    instructorImg: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-    progress: 30,
-    lastAccessed: "Oct 20, 2024",
-    batches: "0/3 Batches",
-    color: "indigo",
-    icon: Palette
-  },
-  {
-    id: "AI-302",
-    name: "Soft Skills for Tech Leads & Managers",
-    category: "Soft Skills",
-    tech: ["Leadership"],
-    instructor: "Prof. Alan Chen",
-    instructorImg: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alan",
-    progress: 100,
-    lastAccessed: "Oct 15, 2024",
-    batches: "2/2 Batches",
-    color: "emerald",
-    icon: Lightbulb,
-    completed: true
-  },
-  {
-    id: "DB-205",
-    name: "Database Systems: PostgreSQL & MongoDB",
-    category: "Programming",
-    tech: ["PostgreSQL", "MongoDB"],
-    instructor: "Linda White",
-    instructorImg: "https://api.dicebear.com/7.x/avataaars/svg?seed=Linda",
-    progress: 60,
-    lastAccessed: "Oct 27, 2024",
-    batches: "3/4 Batches",
-    color: "orange",
-    icon: Database
-  },
-  {
-    id: "PY-104",
-    name: "Python Scripting: Automation Essentials",
-    category: "Programming",
-    tech: ["Python", "Automation"],
-    instructor: "Thomas Jenkins",
-    instructorImg: "https://api.dicebear.com/7.x/avataaars/svg?seed=Thomas",
-    progress: 50,
-    lastAccessed: "Oct 28, 2024",
-    batches: "1/2 Batches",
-    color: "rose",
-    icon: Terminal
+function formatDate(dateStr?: string) {
+  if (!dateStr) return "N/A";
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch (e) {
+    return dateStr;
   }
-];
-
-export default function CoursesPage() {
-  const [view, setView] = useState<"card" | "table">("card");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredCourses = courses.filter(course => 
-    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  return (
-    <div className="p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-foreground tracking-tight">Enrolled Courses</h1>
-          <p className="text-gray-500 dark:text-muted-foreground mt-1 font-medium">Manage your active learning journey and track your progress.</p>
-        </div>
-        <div className="flex items-center gap-1 p-1 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-xl shadow-sm">
-          <button 
-            onClick={() => setView("card")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all",
-              view === "card" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:text-foreground"
-            )}
-          >
-            <LayoutGrid size={14} />
-            Card
-          </button>
-          <button 
-            onClick={() => setView("table")}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all",
-              view === "table" ? "bg-gray-900 text-white shadow-lg" : "text-gray-500 dark:text-muted-foreground hover:text-gray-900 dark:text-foreground"
-            )}
-          >
-            <List size={14} />
-            Table
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-          <input 
-            type="text" 
-            placeholder="Search for courses, instructors, or tags..." 
-            className="w-full pl-12 pr-4 py-3.5 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-sm"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm hover:bg-gray-50 dark:bg-muted/50 transition-all font-bold text-sm text-gray-700 dark:text-foreground">
-          <Filter size={18} />
-          Filter
-        </button>
-      </div>
-
-      {/* Content View */}
-      {filteredCourses.length > 0 ? (
-        view === "card" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course) => (
-              <Link key={course.id} href={`/student/courses/${course.id}`} className="block group">
-                <div className="bg-white dark:bg-card rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm hover:shadow-xl transition-all overflow-hidden h-full flex flex-col">
-                  {/* Course Header Image/Pattern */}
-                  <div className={cn(
-                  "h-48 relative overflow-hidden flex items-center justify-center",
-                  course.color === "blue" ? "bg-blue-50" :
-                  course.color === "indigo" ? "bg-indigo-50" :
-                  course.color === "emerald" ? "bg-emerald-50" :
-                  course.color === "orange" ? "bg-orange-50" : "bg-rose-50"
-                )}>
-                  {/* Decorative Abstract Shapes */}
-                  <div className={cn(
-                    "absolute w-40 h-40 rounded-full blur-3xl opacity-20 animate-pulse",
-                    course.color === "blue" ? "bg-blue-500" :
-                    course.color === "indigo" ? "bg-indigo-500" :
-                    course.color === "emerald" ? "bg-emerald-500" :
-                    course.color === "orange" ? "bg-orange-500" : "bg-rose-500"
-                  )}></div>
-                  <course.icon size={80} className={cn(
-                    "relative z-10 transition-transform group-hover:scale-110 duration-500",
-                    course.color === "blue" ? "text-blue-500" :
-                    course.color === "indigo" ? "text-indigo-500" :
-                    course.color === "emerald" ? "text-emerald-500" :
-                    course.color === "orange" ? "text-orange-500" : "text-rose-500"
-                  )} />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={cn(
-                      "px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-lg",
-                      course.color === "blue" ? "bg-blue-600 text-white" :
-                      course.color === "indigo" ? "bg-indigo-600 text-white" :
-                      course.color === "emerald" ? "bg-emerald-600 text-white" :
-                      course.color === "orange" ? "bg-orange-600 text-white" : "bg-rose-600 text-white"
-                    )}>
-                      {course.category}
-                    </span>
-                    {course.completed && (
-                      <span className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg flex items-center gap-1">
-                        <CheckCircle2 size={10} /> Completed
-                      </span>
-                    )}
-                  </div>
-                  
-                  <button className="absolute bottom-4 right-4 w-10 h-10 bg-white dark:bg-card/90 backdrop-blur rounded-full flex items-center justify-center text-gray-900 dark:text-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                    <PlayCircle size={20} />
-                  </button>
-                </div>
-
-                {/* Course Content */}
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="flex gap-2 mb-4">
-                    {course.tech.map((t, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-gray-50 dark:bg-muted/50 text-gray-500 dark:text-muted-foreground text-[10px] font-bold uppercase tracking-tighter rounded-md border border-gray-100 dark:border-border/50">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-foreground mb-6 leading-tight group-hover:text-blue-600 transition-colors">
-                    {course.name}
-                  </h3>
-                  
-                  <div className="mt-auto space-y-4">
-                    <div>
-                      <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-widest">
-                        <span>Progress</span>
-                        <span>{course.progress}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-gray-50 dark:bg-muted/50 rounded-full overflow-hidden border border-gray-100 dark:border-border/50">
-                        <div 
-                          className={cn(
-                            "h-full rounded-full transition-all duration-1000",
-                            course.color === "blue" ? "bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]" :
-                            course.color === "indigo" ? "bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.4)]" :
-                            course.color === "emerald" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" :
-                            course.color === "orange" ? "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"
-                          )}
-                          style={{ width: `${course.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                      <div className="flex items-center gap-2">
-                        <Clock size={14} className="text-gray-300" />
-                        <span>{course.lastAccessed}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users size={14} className="text-gray-300" />
-                        <span>{course.batches}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-card rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-gray-50">
-                    <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Course ID</th>
-                    <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Course Name</th>
-                    <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Instructor</th>
-                    <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</th>
-                    <th className="px-8 py-5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Last Accessed</th>
-                    <th className="px-8 py-5"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filteredCourses.map((course) => (
-                    <tr 
-                      key={course.id} 
-                      className="hover:bg-gray-50 dark:bg-muted/50/50 transition-colors group cursor-pointer"
-                      onClick={() => window.location.href = `/student/courses/${course.id}`}
-                    >
-                      <td className="px-8 py-5">
-                        <span className="px-3 py-1 bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground text-[10px] font-bold rounded-lg border border-gray-200 dark:border-border/70">
-                          {course.id}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center",
-                            course.color === "blue" ? "bg-blue-50 text-blue-600" :
-                            course.color === "indigo" ? "bg-indigo-50 text-indigo-600" :
-                            course.color === "emerald" ? "bg-emerald-50 text-emerald-600" :
-                            course.color === "orange" ? "bg-orange-50 text-orange-600" : "bg-rose-50 text-rose-600"
-                          )}>
-                            <course.icon size={20} />
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-gray-900 dark:text-foreground group-hover:text-blue-600 transition-colors">{course.name}</p>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{course.category}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-3">
-                        <Image 
-                          src={course.instructorImg} 
-                          alt={course.instructor} 
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full bg-gray-100 dark:bg-muted border border-gray-200 dark:border-border/70" 
-                        />
-                          <p className="text-sm font-medium text-gray-600 dark:text-muted-foreground">{course.instructor}</p>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5 w-48">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className={cn(
-                                "h-full rounded-full transition-all duration-1000",
-                                course.color === "blue" ? "bg-blue-600" :
-                                course.color === "indigo" ? "bg-indigo-600" :
-                                course.color === "emerald" ? "bg-emerald-500" :
-                                course.color === "orange" ? "bg-orange-500" : "bg-rose-500"
-                              )}
-                              style={{ width: `${course.progress}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">{course.progress}%</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-5 text-sm font-medium text-gray-500 dark:text-muted-foreground">{course.lastAccessed}</td>
-                      <td className="px-8 py-5 text-right">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground hover:bg-gray-100 dark:bg-muted rounded-lg transition-all">
-                          <MoreVertical size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination / Info Bar matching design */}
-            <div className="px-8 py-6 bg-gray-50 dark:bg-muted/50/50 flex items-center justify-between border-t border-gray-100 dark:border-border/50">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                Showing 1 - {filteredCourses.length} of 24
-              </p>
-              <div className="flex items-center gap-8">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Rows per page:</span>
-                  <select className="bg-transparent text-xs font-bold text-gray-900 dark:text-foreground focus:outline-none cursor-pointer">
-                    <option>5</option>
-                    <option>10</option>
-                    <option>20</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-900 dark:text-foreground border border-gray-200 dark:border-border/70 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed">
-                    <ChevronLeft size={16} />
-                  </button>
-                  {[1, 2, 3].map(p => (
-                    <button key={p} className={cn(
-                      "w-8 h-8 text-[10px] font-bold rounded-lg transition-all",
-                      p === 1 ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-gray-400 hover:bg-white dark:bg-card border border-transparent hover:border-gray-200 dark:border-border/70"
-                    )}>
-                      {p}
-                    </button>
-                  ))}
-                  <button className="p-2 text-gray-400 hover:text-gray-900 dark:text-foreground border border-gray-200 dark:border-border/70 rounded-lg">
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      ) : (
-        <div className="bg-white dark:bg-card p-20 rounded-[32px] border border-gray-100 dark:border-border/50 shadow-sm flex flex-col items-center justify-center text-center">
-          <div className="p-6 bg-gray-50 dark:bg-muted/50 rounded-[28px] text-gray-300 mb-6">
-            <SearchX size={48} />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-foreground mb-2">No courses found</h3>
-          <p className="text-gray-500 dark:text-muted-foreground max-w-sm">We couldn&apos;t find any courses matching your search criteria. Try using different keywords.</p>
-        </div>
-      )}
-    </div>
-  );
 }
 
-function CheckCircle2({ size = 24, ...props }: React.SVGProps<SVGSVGElement> & { size?: number }) {
+export default function StudentCourses() {
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  
+  useEffect(() => {
+    const stored = localStorage.getItem("course_view_mode");
+    if (stored === "card" || stored === "table") {
+      setViewMode(stored);
+    }
+  }, []);
+
+  const handleViewModeChange = (mode: "card" | "table") => {
+    setViewMode(mode);
+    localStorage.setItem("course_view_mode", mode);
+  };
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Debounce search term to avoid hitting the API on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const { data: apiResponse, isLoading, isFetching, isError } = useEnrolledCourses(page, rowsPerPage, debouncedSearch || undefined);
+  
+  const coursesRaw: EnrolledCourse[] = Array.isArray(apiResponse) ? apiResponse : apiResponse?.data || [];
+  const totalCount = apiResponse?.pagination?.total || apiResponse?.total || (Array.isArray(apiResponse) ? apiResponse.length : coursesRaw.length);
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  // If backend returns all records without pagination, locally slice
+  let visibleData = coursesRaw;
+  if (coursesRaw.length > rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    visibleData = coursesRaw.slice(start, start + rowsPerPage);
+  }
+
+  const paginationInfo = totalCount > 0 
+    ? `${(page - 1) * rowsPerPage + 1} - ${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}` 
+    : "0 - 0 of 0";
+
+  const extraActions = (
+    <div className="flex bg-white dark:bg-card border border-gray-200 dark:border-border/50 rounded-xl p-1 shadow-sm flex-shrink-0 h-[46px]">
+      <button 
+        onClick={() => handleViewModeChange("card")}
+        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === "card" ? "bg-slate-900 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
+      >
+        Card
+      </button>
+      <button 
+        onClick={() => handleViewModeChange("table")}
+        className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === "table" ? "bg-slate-900 text-white shadow-md" : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"}`}
+      >
+        Table
+      </button>
+    </div>
+  );
+
+  const searchConfig = {
+    enabled: true,
+    placeholder: "Search for courses, instructors, or tags...",
+    value: searchQuery,
+    onChange: (val: string) => setSearchQuery(val)
+  };
+
   return (
-    <svg 
-      {...props}
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} height={size} viewBox="0 0 24 24" 
-      fill="none" stroke="currentColor" strokeWidth="2" 
-      strokeLinecap="round" strokeLinejoin="round"
+    <ListingScreenTemplate
+      headerText="Enrolled Courses"
+      subHeaderText="Manage your active learning journey and track your progress."
+      buttonRequired={false}
+      extraActions={extraActions}
     >
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>
-    </svg>
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden">
+        {viewMode === "card" && (
+           <div className="relative flex-shrink-0">
+             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+             <Input 
+               type="text"
+               placeholder="Search for courses, instructors, or tags..."
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="w-full pl-11 py-5 bg-white dark:bg-card border border-gray-200 dark:border-border/50 rounded-xl text-sm font-medium shadow-sm"
+             />
+           </div>
+        )}
+
+        {isLoading ? (
+          viewMode === "card" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 h-[320px] flex flex-col">
+                  <Skeleton className="w-full h-32 rounded-xl mb-4" />
+                  <div className="flex gap-2 mb-4"><Skeleton className="h-6 w-16 rounded-full" /></div>
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-1/2 mb-auto" />
+                  <div className="mt-6 pt-4 border-t border-gray-50">
+                    <Skeleton className="h-2 w-full mb-2" />
+                    <div className="flex justify-between"><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-16" /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-hidden bg-white dark:bg-card border border-gray-100 dark:border-border/50 rounded-2xl shadow-sm p-1">
+               <DataTable<any>
+                data={[]}
+                columns={buildCourseColumns()}
+                loading={true}
+                search={searchConfig}
+                rowsPerPage={rowsPerPage}
+                currentPage={1}
+                totalPages={1}
+                onPageChange={() => {}}
+                onRowsPerPageChange={() => {}}
+                bodyHeight="h-auto"
+              />
+            </div>
+          )
+        ) : isError ? (
+          <div className="p-8 text-center bg-red-50 text-red-600 rounded-2xl border border-red-100 font-semibold shadow-sm flex-shrink-0">
+            Failed to load enrolled courses. Please try again later.
+          </div>
+        ) : (
+          viewMode === "card" ? (
+            visibleData.length === 0 ? (
+              <div className="p-16 text-center bg-white dark:bg-card rounded-3xl border border-gray-100 dark:border-border/50 shadow-sm flex flex-col items-center flex-shrink-0">
+                <FileImage size={48} className="text-gray-300 mb-4" />
+                <h3 className="text-xl font-bold text-gray-900 dark:text-foreground mb-2">No courses found</h3>
+                <p className="text-gray-500 dark:text-muted-foreground">Try adjusting your search criteria or enroll in a new course.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col h-full overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-4">
+                  {visibleData.map((course, index) => (
+                    <div key={course.id || course.course_id || `course-${index}`} className="bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
+                      <div className="h-40 bg-slate-50 relative overflow-hidden flex-shrink-0">
+                        {course.thumbnail_url ? (
+                          <Image src={course.thumbnail_url} alt={course.name} fill className="object-cover transition-transform group-hover:scale-105" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-300 bg-gradient-to-br from-slate-100 to-slate-200">
+                            <FileImage size={40} />
+                          </div>
+                        )}
+                        <div className="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[90%]">
+                          {course.tags?.slice(0, 2).map((tag, i) => {
+                            const isCompleted = tag.toLowerCase() === "completed";
+                            return (
+                              <Badge 
+                                key={i} 
+                                className={`${
+                                  isCompleted ? "bg-emerald-500 hover:bg-emerald-600 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
+                                } font-bold text-[10px] px-2 py-0.5 rounded-md shadow-sm border-none`}
+                              >
+                                {tag}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="p-5 flex flex-col flex-grow">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-foreground line-clamp-2 mb-auto" title={course.name}>
+                          {course.name}
+                        </h3>
+                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-border/50">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
+                            <span className="text-xs font-bold text-blue-600">{course.progress || 0}%</span>
+                          </div>
+                          <Progress value={course.progress || 0} className="h-2" />
+                          <div className="flex justify-between items-center mt-4 text-xs font-medium text-gray-400">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar size={14} />
+                              <span>{formatDate(course.updated_at)}</span>
+                            </div>
+                            {course.batches && (
+                               <div className="flex items-center gap-1.5">
+                                 <Users size={14} />
+                                 <span>{course.batches.completed}/{course.batches.total} BATCHES</span>
+                               </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Pagination for Card View */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-border flex-shrink-0">
+                    <span className="text-sm text-gray-500">{paginationInfo}</span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="px-3 py-1 text-sm font-medium border border-gray-200 rounded-md disabled:opacity-50"
+                      >
+                        Previous
+                      </button>
+                      <button 
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                        className="px-3 py-1 text-sm font-medium border border-gray-200 rounded-md disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          ) : (
+            <div className="overflow-hidden bg-white dark:bg-card rounded-2xl">
+              <DataTable<any>
+                data={visibleData}
+                columns={buildCourseColumns()}
+                rowKey={(row) => String(row.id)}
+                search={searchConfig}
+                rowsPerPage={rowsPerPage}
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                onRowsPerPageChange={setRowsPerPage} 
+                paginationInfo={paginationInfo}
+                showPagination={true}
+                emptyStateMessage="No courses found."
+                loading={isFetching}
+                bodyHeight="h-auto"
+              />
+            </div>
+          )
+        )}
+      </div>
+    </ListingScreenTemplate>
   );
 }

@@ -4,13 +4,17 @@ import React, { useState } from "react";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { loginToApi } from "@/features/login/api/login-api";
 import ForgotPasswordPage from "./forgot-password";
+import ContactAdministratorPage from "./contact-admin";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { RoleDashboards, DEFAULT_REDIRECT } from "@/constants/roles";
 
 export default function LoginPage() {
+  const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
 
   const [email, setEmail] = useState("");
@@ -18,9 +22,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showContactAdmin, setShowContactAdmin] = useState(false);
 
   if (showForgotPassword) {
     return <ForgotPasswordPage onBackToLogin={() => setShowForgotPassword(false)} />;
+  }
+
+  if (showContactAdmin) {
+    return <ContactAdministratorPage onBackToLogin={() => setShowContactAdmin(false)} />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -31,7 +40,7 @@ export default function LoginPage() {
       const data = await loginToApi(email, password);
       
       // Normalize role and add fallback based on email if backend role is missing
-      let rawRole = data?.role;
+      let rawRole = data?.role || data?.user?.role || (data as any)?.data?.user?.role || (data as any)?.data?.role;
       if (!rawRole) {
         const lowerEmail = email.toLowerCase();
         if (lowerEmail.includes("admin")) {
@@ -44,7 +53,10 @@ export default function LoginPage() {
           rawRole = "student";
         }
       }
-      const role = rawRole.toLowerCase();
+      let role = rawRole.toLowerCase();
+      if (role === "instructor") {
+        role = "tutor";
+      }
       
       document.cookie = `mock_auth_role=${role}; path=/;`;
       
@@ -59,13 +71,13 @@ export default function LoginPage() {
       // Determine redirect path
       const redirectPath = RoleDashboards[role] || DEFAULT_REDIRECT;
 
-      // Use full page navigation so the server-side middleware
-      // picks up the newly set cookie on the next request.
-      window.location.href = redirectPath;
+      toast.success("Login successful");
+      // The `<PublicRoute>` wrapper will automatically detect `isAuthenticated` 
+      // becoming true and perform the redirect to the dashboard.
     } catch (error: unknown) {
       console.error("Login Error:", error);
       const message = error instanceof Error ? error.message : "Access Denied: Unrecognized role or invalid credentials.";
-      alert(message);
+      toast.error(message || "Invalid email or password");
       setIsLoading(false);
     }
   };
@@ -190,7 +202,7 @@ export default function LoginPage() {
         <div className="mt-10 text-center">
           <p className="text-[13px] text-slate-400 font-medium">
             Don&apos;t have an account?{" "}
-            <a href="#" className="font-bold text-blue-600 hover:text-blue-700 transition-colors">
+            <a href="#" onClick={(e) => { e.preventDefault(); setShowContactAdmin(true); }} className="font-bold text-blue-600 hover:text-blue-700 transition-colors">
               Contact your administrator
             </a>
           </p>
