@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Domain } from "@/types/domain";
-import { useAssignmentLookup } from "@/features/admin/courses/api/course-api";
+import { useCourses, useAssignmentsLookup, useAssignmentsList } from "@/features/admin/courses/api/course-api";
 
 interface CreateDomainModalProps {
   isOpen: boolean;
@@ -60,15 +60,36 @@ export default function CreateDomainModal({
 
   const tagDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch available assignments from the backend API using lookup
-  const { data: lookupRes } = useAssignmentLookup();
-  const availableAssignments = lookupRes || [];
+  const [assignmentSearchInput, setAssignmentSearchInput] = useState("");
+  const [showAssignmentDropdown, setShowAssignmentDropdown] = useState(false);
+  const assignmentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch available assignments from the backend API using lookup and list
+  const { data: lookupRes } = useAssignmentsLookup();
+  const { data: listRes } = useAssignmentsList(1, 1000);
+  
+  const lookupAssignments = lookupRes || [];
+  const listAssignments = listRes?.data || [];
+  
+  // Merge assignments, removing duplicates by ID
+  const mergedAssignmentsMap = new Map();
+  [...lookupAssignments, ...listAssignments].forEach(a => {
+    mergedAssignmentsMap.set(String(a.id), a);
+  });
+  const availableAssignments = Array.from(mergedAssignmentsMap.values());
+
+  // Fetch available courses (published and draft) from the backend API
+  const { data: coursesRes } = useCourses(1, 1000);
+  const availableCourses = coursesRes?.data || [];
 
   // Listen to clicks outside tag dropdown to close it
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
         setShowTagDropdown(false);
+      }
+      if (assignmentDropdownRef.current && !assignmentDropdownRef.current.contains(event.target as Node)) {
+        setShowAssignmentDropdown(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -133,7 +154,9 @@ export default function CreateDomainModal({
       name: domainName,
       description,
       tags: tags, // tags contain selected courses names
-      course_ids: AVAILABLE_COURSES.filter(c => tags.includes(c.name)).map(c => c.id),
+      course_ids: (availableCourses.length > 0 ? availableCourses : AVAILABLE_COURSES)
+        .filter((c: any) => tags.includes(c.name))
+        .map((c: any) => c.id),
       assignment_ids: selectedAssignmentId ? [Number(selectedAssignmentId)] : [],
       status: status
     });
@@ -233,31 +256,33 @@ export default function CreateDomainModal({
                 />
                 
                 {/* Search Dropdown */}
-                {showTagDropdown && (
-                  <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-1">
-                    {AVAILABLE_COURSES.filter(c => 
-                      c.name.toLowerCase().includes(tagSearchInput.toLowerCase()) && !tags.includes(c.name)
-                    ).length === 0 ? (
-                      <div className="p-3 text-sm text-gray-500 text-center">No available courses found</div>
-                    ) : (
-                      AVAILABLE_COURSES.filter(c => 
-                        c.name.toLowerCase().includes(tagSearchInput.toLowerCase()) && !tags.includes(c.name)
-                      ).map((course) => (
-                        <div
-                          key={course.id}
-                          onClick={() => {
-                            setTags([...tags, course.name]);
-                            setTagSearchInput("");
-                            setShowTagDropdown(false);
-                          }}
-                          className="px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 text-slate-800 transition-colors"
-                        >
-                          {course.name}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                {showTagDropdown && (() => {
+                  const coursesToUse = availableCourses.length > 0 ? availableCourses : AVAILABLE_COURSES;
+                  const filtered = coursesToUse.filter((c: any) => 
+                    c.name.toLowerCase().includes(tagSearchInput.toLowerCase()) && !tags.includes(c.name)
+                  );
+                  return (
+                    <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-1">
+                      {filtered.length === 0 ? (
+                        <div className="p-3 text-sm text-gray-500 text-center">No available courses found</div>
+                      ) : (
+                        filtered.map((course: any) => (
+                          <div
+                            key={course.id}
+                            onClick={() => {
+                              setTags([...tags, course.name]);
+                              setTagSearchInput("");
+                              setShowTagDropdown(false);
+                            }}
+                            className="px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 text-slate-800 transition-colors"
+                          >
+                            {course.name}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -286,34 +311,91 @@ export default function CreateDomainModal({
             </div>
           </div>
 
-          {/* FINAL ASSIGNMENT DROPDOWN */}
-          <div>
+          {/* FINAL ASSIGNMENT SEARCHABLE DROPDOWN */}
+          <div ref={assignmentDropdownRef} className="relative">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">
               Final Assignment <span className="text-red-500">*</span>
             </label>
-            <Select 
-              value={selectedAssignmentId}
-              onValueChange={(val) => {
-                setSelectedAssignmentId(val);
-                if (errors.assignment) setErrors(p => ({ ...p, assignment: "" }));
-              }}
-              disabled={mode === "view"}
-            >
-              <SelectTrigger className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-slate-700 text-sm mt-1 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none">
-                <SelectValue placeholder="Select a final assignment" />
-              </SelectTrigger>
-              <SelectContent className="max-h-48 overflow-y-auto bg-white z-50 border border-gray-200 shadow-md rounded-lg p-1">
-                {availableAssignments.length === 0 ? (
-                  <SelectItem value="none" disabled>No assignments available</SelectItem>
-                ) : (
-                  availableAssignments.map((assign: any) => (
-                    <SelectItem key={assign.id} value={String(assign.id)}>
-                      {assign.title || assign.assignment_title || `Assignment #${assign.id}`}
-                    </SelectItem>
-                  ))
+            {mode === "view" ? (
+              <input
+                type="text"
+                disabled
+                value={
+                  availableAssignments.find(a => String(a.id) === String(selectedAssignmentId))?.title ||
+                  availableAssignments.find(a => String(a.id) === String(selectedAssignmentId))?.assignment_title ||
+                  (selectedAssignmentId ? `Assignment #${selectedAssignmentId}` : "No assignment selected")
+                }
+                className="w-full border rounded-lg px-3 py-2.5 text-sm bg-slate-50 border-gray-200 text-slate-500 disabled:opacity-80"
+              />
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowAssignmentDropdown(!showAssignmentDropdown)}
+                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-slate-700 text-sm mt-1 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-left flex justify-between items-center"
+                >
+                  <span className={selectedAssignmentId ? "text-slate-800" : "text-slate-400"}>
+                    {availableAssignments.find(a => String(a.id) === String(selectedAssignmentId))?.title ||
+                      availableAssignments.find(a => String(a.id) === String(selectedAssignmentId))?.assignment_title ||
+                      "Select a final assignment..."}
+                  </span>
+                  <Search size={14} className="text-slate-400" />
+                </button>
+
+                {showAssignmentDropdown && (
+                  <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 flex flex-col gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Search assignment..."
+                        value={assignmentSearchInput}
+                        onChange={(e) => setAssignmentSearchInput(e.target.value)}
+                        className="w-full border border-gray-200 rounded-md pl-7 pr-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-slate-700 bg-white"
+                      />
+                    </div>
+                    <div className="overflow-y-auto max-h-40 flex flex-col gap-0.5">
+                      {(() => {
+                        const filtered = availableAssignments.filter((assign: any) => {
+                          const title = (assign.title || assign.assignment_title || "").toLowerCase();
+                          return title.includes(assignmentSearchInput.toLowerCase());
+                        });
+
+                        if (filtered.length === 0) {
+                          return (
+                            <div className="p-2 text-xs text-gray-500 text-center">No assignments found</div>
+                          );
+                        }
+
+                        return filtered.map((assign: any) => {
+                          const isSelected = String(assign.id) === String(selectedAssignmentId);
+                          return (
+                            <button
+                              key={assign.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedAssignmentId(String(assign.id));
+                                if (errors.assignment) setErrors(p => ({ ...p, assignment: "" }));
+                                setShowAssignmentDropdown(false);
+                                setAssignmentSearchInput("");
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs rounded-md transition-colors ${
+                                isSelected 
+                                  ? "bg-blue-600 text-white font-semibold" 
+                                  : "hover:bg-slate-50 text-slate-800"
+                              }`}
+                            >
+                              {assign.title || assign.assignment_title || `Assignment #${assign.id}`}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
                 )}
-              </SelectContent>
-            </Select>
+              </div>
+            )}
             {errors.assignment && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.assignment}</p>}
           </div>
 

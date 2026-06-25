@@ -77,7 +77,7 @@ export function mapCourse(d: Record<string, any>): Course {
           year: "numeric"
         })
       : "N/A",
-    status: d.status && d.status.toLowerCase() === "published" ? "Published" : "Draft",
+    status: d.status && (d.status.toLowerCase() === "published" || d.status.toLowerCase() === "active") ? "Published" : "Draft",
     description: d.description || ""
   };
 }
@@ -99,7 +99,8 @@ export function useCourses(
       query.append("limit", limit.toString());
       if (search) query.append("search", search);
       if (statusFilter && statusFilter !== "All") {
-        query.append("status", statusFilter.toLowerCase());
+        const backendStatus = statusFilter.toLowerCase() === "published" ? "active" : statusFilter.toLowerCase();
+        query.append("status", backendStatus);
       }
 
       const response = await fetch(`/api/v1/courses?${query.toString()}`, {
@@ -475,3 +476,20 @@ export function useAssignmentLookup() {
     },
   });
 }
+
+/**
+ * Hook to lookup assignments (plural)
+ */
+export function useAssignmentsLookup() {
+  return useQuery({
+    queryKey: ["assignmentsLookup"],
+    queryFn: async () => {
+      const response = await fetch("/api/v1/assignments/lookup", {
+        headers: getAuthHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result;
+    },
+  });
+}
+

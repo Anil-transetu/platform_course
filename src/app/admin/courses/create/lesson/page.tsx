@@ -2,7 +2,6 @@
 
 import React, { useState, useRef } from "react";
 import { 
-  ChevronRight, 
   FileUp,
   Video,
   Globe,
@@ -18,7 +17,12 @@ import { RichTextEditor, RichTextEditorRef } from "@/components/ui/RichTextEdito
 export default function LessonDetailsPage() {
   const router = useRouter();
   
-  const { course, activeModuleId, activeLessonId, updateLesson } = useCourseStore();
+  const { 
+    course, 
+    activeModuleId, 
+    activeLessonId, 
+    updateLesson
+  } = useCourseStore();
   
   const activeModule = course.modules.find(m => m.id === activeModuleId);
   const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
@@ -53,15 +57,15 @@ export default function LessonDetailsPage() {
 
   if (!activeLesson) {
     return (
-      <div className="bg-muted min-h-screen flex items-center justify-center flex-col gap-4">
-        <p className="text-gray-500 dark:text-muted-foreground">No active lesson selected.</p>
-        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline">Go back to Course</button>
+      <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-4">
+        <p className="text-slate-500 font-medium">No active lesson selected.</p>
+        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline font-semibold hover:text-blue-700 transition-colors">Go back to Course</button>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-slate-100">
       <div className="flex p-8 gap-8 items-start min-h-full">
         {/* LEFT SIDEBAR */}
         <CourseSidebar />
@@ -69,24 +73,24 @@ export default function LessonDetailsPage() {
         {/* MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col gap-8 min-w-0">
           {/* LESSON DETAILS CARD */}
-          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
-            <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-foreground">Lesson Details</h2>
+          <div className="bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
+            <div className="p-8 border-b border-slate-100/80">
+              <h2 className="text-lg font-bold text-slate-800">Lesson Details</h2>
             </div>
             <div className="p-8 flex flex-col gap-6">
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Lesson Title</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lesson Title</label>
                 <input 
                   type="text"
                   value={lessonTitle}
                   onChange={(e) => setLessonTitle(e.target.value)}
                   placeholder="e.g. Foundations of User Experience"
-                  className="w-full px-4 py-3 bg-muted border border-gray-100 dark:border-border/50 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-card-foreground shadow-inner"
+                  className="w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 placeholder-slate-450"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Lesson Content</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lesson Content</label>
                 <RichTextEditor
                   ref={editorRef}
                   value={lessonContent}
@@ -97,10 +101,12 @@ export default function LessonDetailsPage() {
             </div>
           </div>
 
+
+
           {/* LESSON RESOURCES CARD */}
-          <div className="bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
-            <div className="p-8 border-b border-gray-50">
-              <h2 className="text-lg font-bold text-foreground">Lesson Resources</h2>
+          <div className="bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
+            <div className="p-8 border-b border-slate-100/80">
+              <h2 className="text-lg font-bold text-slate-800">Lesson Resources</h2>
             </div>
             <div className="p-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -129,12 +135,12 @@ function ResourceButton({ icon, label, onClick }: { icon: React.ReactNode, label
   return (
     <button 
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-8 border border-gray-100 dark:border-border/50 rounded-2xl bg-muted/10 hover:bg-card hover:border-blue-100 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
+      className="flex flex-col items-center justify-center p-8 border border-slate-200/80 rounded-2xl bg-slate-50/50 hover:bg-white hover:border-blue-200/60 hover:shadow-[0_8px_30px_rgba(37,99,235,0.04)] transition-all group"
     >
-      <div className="text-gray-300 group-hover:text-blue-500 transition-colors mb-3">
+      <div className="text-slate-400 group-hover:text-blue-500 transition-colors mb-3">
         {icon}
       </div>
-      <span className="text-[10px] font-bold text-gray-400 group-hover:text-foreground uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] font-bold text-slate-400 group-hover:text-slate-850 uppercase tracking-widest">{label}</span>
     </button>
   );
 }

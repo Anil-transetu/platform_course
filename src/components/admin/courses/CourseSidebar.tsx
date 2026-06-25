@@ -1,7 +1,23 @@
 "use client";
 
-import React, { useState } from "react";
-import { FolderPlus, FileText, Target, Plus, ChevronDown, Check, ClipboardList } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { 
+  FolderPlus, 
+  FileText, 
+  Target, 
+  Plus, 
+  ChevronDown, 
+  ChevronRight, 
+  Check, 
+  ClipboardList, 
+  ChevronUp, 
+  Trash2,
+  Folder,
+  FolderOpen,
+  Book,
+  BookOpen,
+  GraduationCap
+} from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -26,8 +42,33 @@ export default function CourseSidebar() {
     addQuiz,
     addAssignment,
     addCourseQuiz,
-    addCourseAssignment
+    addCourseAssignment,
+    deleteModule,
+    deleteLesson,
+    deleteTopic,
+    deleteQuiz,
+    deleteAssignment,
+    deleteCourseQuiz,
+    deleteCourseAssignment,
+    moveLessonItem,
+    moveModuleItem
   } = useCourseStore();
+
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
+
+  // Auto-expand module and lesson on active change
+  useEffect(() => {
+    if (activeModuleId) {
+      setExpandedModules(prev => ({ ...prev, [activeModuleId]: true }));
+    }
+  }, [activeModuleId]);
+
+  useEffect(() => {
+    if (activeLessonId) {
+      setExpandedLessons(prev => ({ ...prev, [activeLessonId]: true }));
+    }
+  }, [activeLessonId]);
 
   const handleModuleClick = (id: string) => {
     setActiveModule(id);
@@ -146,195 +187,538 @@ export default function CourseSidebar() {
     }
   };
 
-  const getSidebarTitle = () => {
-    if (activeTopicId) return "TOPIC STRUCTURE";
-    if (activeQuizId) return "QUIZ STRUCTURE";
-    if (activeAssignmentId) return "ASSIGNMENT STRUCTURE";
-    if (activeLessonId) return "LESSON STRUCTURE";
-    return "MODULE STRUCTURE";
+  const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
+
+  const toggleModuleExpand = (moduleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }));
+  };
+
+  const toggleLessonExpand = (lessonId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedLessons(prev => ({ ...prev, [lessonId]: !prev[lessonId] }));
   };
 
   return (
-    <div className="w-80 flex flex-col gap-8 shrink-0 pb-10">
-      
-      {/* 1. STRUCTURE SECTION */}
-      <div>
-        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex justify-between items-center">
-          {getSidebarTitle()}
+    <div className="w-[320px] bg-[#f5f8fc] border-r border-slate-200/80 p-6 flex flex-col gap-8 shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700">
+      {/* 1. CURRICULUM HIERARCHY */}
+      <div className="flex-1 flex flex-col gap-5 overflow-hidden">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Course Curriculum
         </h3>
         
-        <div className="flex flex-col gap-1">
-          {/* Course-level Quizzes & Assignments */}
-          {((course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0)) && (
-            <div className="flex flex-col gap-1 mb-4 border-b border-gray-100 dark:border-border/50 pb-2 pl-2">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Course-level Content</span>
-              {course.quizzes?.map((quiz, qIdx) => (
-                <div 
-                  key={quiz.id}
-                  onClick={() => handleCourseQuizClick(quiz.id)}
-                  className={`rounded-xl p-2.5 flex items-center gap-3 cursor-pointer transition-all ${
-                    activeQuizId === quiz.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                  }`}
-                >
-                  <FileText className={activeQuizId === quiz.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                  <span className="text-xs font-bold truncate">
-                    {quiz.title || `Course Quiz ${qIdx + 1}`}
-                  </span>
-                </div>
-              ))}
-              {course.assignments?.map((assignment, aIdx) => (
-                <div 
-                  key={assignment.id}
-                  onClick={() => handleCourseAssignmentClick(assignment.id)}
-                  className={`rounded-xl p-2.5 flex items-center gap-3 cursor-pointer transition-all ${
-                    activeAssignmentId === assignment.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                  }`}
-                >
-                  <ClipboardList className={activeAssignmentId === assignment.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                  <span className="text-xs font-bold truncate">
-                    {assignment.title || `Course Assignment ${aIdx + 1}`}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto pr-1 -mr-2 flex flex-col gap-3 no-scrollbar">
 
           {course.modules.length === 0 ? (
-            <div className="text-xs text-gray-400 italic">No modules added yet.</div>
+            <div className="text-xs text-slate-400 italic">No modules added yet.</div>
           ) : (
             course.modules.map((module, mIdx) => {
               const isModuleActive = activeModuleId === module.id;
+              const isExpanded = !!expandedModules[module.id];
               
               return (
-                <div key={module.id} className="flex flex-col gap-1 mb-2">
+                <div key={`module-${module.id}`} className="flex flex-col gap-1 mb-1">
                   <div 
                     onClick={() => handleModuleClick(module.id)}
-                    className={`rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
-                      isModuleActive && !activeLessonId ? 'bg-card shadow-sm border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
+                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${
+                      isModuleActive && !activeLessonId 
+                        ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                        : 'bg-white border-slate-200/80 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
                     }`}
                   >
-                    <div className="flex items-center gap-3 overflow-hidden">
-                      <FolderPlus className={isModuleActive && !activeLessonId ? "text-blue-600" : "text-gray-400"} size={16} />
-                      <span className={`text-sm font-bold truncate uppercase tracking-widest text-[11px] ${isModuleActive && !activeLessonId ? "text-foreground" : "text-gray-500 dark:text-muted-foreground"}`}>
-                        {module.title || `MODULE ${mIdx + 1}`}
-                      </span>
+                    <div className="flex items-center gap-2 overflow-hidden flex-1">
+                      {/* Expand Arrow */}
+                      <button
+                        onClick={(e) => toggleModuleExpand(module.id, e)}
+                        className={`p-1 rounded-md transition-colors ${
+                          isModuleActive && !activeLessonId
+                            ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
+                            : 'hover:bg-slate-200 text-slate-400 hover:text-slate-700'
+                        }`}
+                      >
+                        {isExpanded ? (
+                          <ChevronDown size={14} />
+                        ) : (
+                          <ChevronRight size={14} />
+                        )}
+                      </button>
+
+                      <div className="flex items-center gap-2 overflow-hidden flex-1">
+                        {isExpanded ? (
+                          <FolderOpen className={isModuleActive && !activeLessonId ? "text-white" : "text-blue-600"} size={16} />
+                        ) : (
+                          <Folder className={isModuleActive && !activeLessonId ? "text-white" : "text-blue-600"} size={16} />
+                        )}
+                        <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isModuleActive && !activeLessonId ? "text-white" : "text-slate-800"}`}>
+                          {module.title || `MODULE ${mIdx + 1}`}
+                        </span>
+                      </div>
                     </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const wasActive = activeModuleId === module.id;
+                        const remaining = course.modules.filter(m => m.id !== module.id);
+                        deleteModule(module.id);
+                        if (wasActive) {
+                          if (remaining.length > 0) {
+                            router.push('/admin/courses/create/module');
+                          } else {
+                            router.push('/admin/courses/create');
+                          }
+                        }
+                      }}
+                      className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
+                        isModuleActive && !activeLessonId
+                          ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
+                          : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
+                      }`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
 
-                  {/* Module-level Quizzes & Assignments */}
-                  {isModuleActive && ((module.quizzes && module.quizzes.length > 0) || (module.assignments && module.assignments.length > 0)) && (
-                    <div className="pl-4 flex flex-col gap-1 mt-1 mb-2">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1 block pl-2">Module-level Content</span>
-                      {module.quizzes?.map((quiz, qIdx) => (
-                        <div 
-                          key={quiz.id}
-                          onClick={() => handleQuizClick(module.id, undefined, quiz.id)}
-                          className={`rounded-xl p-2.5 flex items-center gap-3 cursor-pointer transition-all ${
-                            activeQuizId === quiz.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                          }`}
-                        >
-                          <FileText className={activeQuizId === quiz.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                          <span className="text-xs font-bold truncate">
-                            {quiz.title || `Module Quiz ${qIdx + 1}`}
-                          </span>
-                        </div>
-                      ))}
-                      {module.assignments?.map((assignment, aIdx) => (
-                        <div 
-                          key={assignment.id}
-                          onClick={() => handleAssignmentClick(module.id, undefined, assignment.id)}
-                          className={`rounded-xl p-2.5 flex items-center gap-3 cursor-pointer transition-all ${
-                            activeAssignmentId === assignment.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                          }`}
-                        >
-                          <ClipboardList className={activeAssignmentId === assignment.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                          <span className="text-xs font-bold truncate">
-                            {assignment.title || `Module Assignment ${aIdx + 1}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Mixed Content inside Module (Expanded) */}
+                  {isExpanded && (() => {
+                    const order = module.order || [];
+                    const items = order.length > 0 ? order : [
+                      ...(module.lessons || []).map(l => ({ id: l.id, type: 'lesson' as const })),
+                      ...(module.quizzes || []).map(q => ({ id: q.id, type: 'quiz' as const })),
+                      ...(module.assignments || []).map(a => ({ id: a.id, type: 'assignment' as const }))
+                    ];
 
-                  {/* Lessons inside Module */}
-                  {isModuleActive && module.lessons.map((lesson, lIdx) => {
-                    const isLessonActive = activeLessonId === lesson.id;
                     return (
-                      <div key={lesson.id} className="flex flex-col pl-4 gap-1">
-                        <div 
-                          onClick={() => handleLessonClick(module.id, lesson.id)}
-                          className={`rounded-xl p-3 flex items-center justify-between cursor-pointer transition-all ${
-                            isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? 'bg-card shadow-sm border-l-4 border-blue-600 text-foreground' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <FileText className={isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? "text-blue-600" : "text-gray-400"} size={16} />
-                            <span className="text-sm font-bold truncate">
-                              {lesson.title || `Lesson ${lIdx + 1}`}
-                            </span>
-                          </div>
-                        </div>
+                      <div className="flex flex-col pl-4 ml-3 border-l border-slate-200 gap-1.5">
+                        {items.map((item, itemIdx) => {
+                          if (item.type === 'lesson') {
+                            const lesson = module.lessons.find(l => l.id === item.id);
+                            if (!lesson) return null;
+                            const lIdx = module.lessons.indexOf(lesson);
+                            const isLessonActive = activeLessonId === lesson.id;
+                            const isLessonExpanded = !!expandedLessons[lesson.id];
 
-                        {/* Children of Lesson */}
-                        {isLessonActive && (
-                          <div className="flex flex-col pl-4 mt-1 border-l-2 border-gray-100 dark:border-border/50 gap-1 ml-4">
-                            {lesson.topics?.map((topic, tIdx) => (
+                            return (
+                              <div key={`lesson-${lesson.id}`} className="flex flex-col gap-1.5">
+                                <div 
+                                  onClick={() => handleLessonClick(module.id, lesson.id)}
+                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                    isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId 
+                                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                                      : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-700 hover:text-slate-900'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                    {/* Lesson Expand Toggle */}
+                                    <button
+                                      onClick={(e) => toggleLessonExpand(lesson.id, e)}
+                                      className={`p-0.5 rounded-md transition-colors ${
+                                        isLessonActive
+                                          ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
+                                          : 'hover:bg-slate-250 text-slate-400 hover:text-slate-700'
+                                      }`}
+                                    >
+                                      {isLessonExpanded ? (
+                                        <ChevronDown size={12} />
+                                      ) : (
+                                        <ChevronRight size={12} />
+                                      )}
+                                    </button>
+
+                                    {isLessonExpanded ? (
+                                      <BookOpen className={isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? "text-white" : "text-blue-500"} size={15} />
+                                    ) : (
+                                      <Book className={isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId ? "text-white" : "text-blue-500"} size={15} />
+                                    )}
+                                    <span className="text-xs font-semibold truncate flex-1">
+                                      {lesson.title || `Lesson ${lIdx + 1}`}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-0.5 opacity-0 group-hover/lesson:opacity-100 transition-opacity">
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, lesson.id, 'up'); }}
+                                      disabled={itemIdx === 0}
+                                      className={`p-0.5 disabled:opacity-20 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                    >
+                                      <ChevronUp size={12} />
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, lesson.id, 'down'); }}
+                                      disabled={itemIdx === items.length - 1}
+                                      className={`p-0.5 disabled:opacity-20 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                    >
+                                      <ChevronDown size={12} />
+                                    </button>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteLesson(module.id, lesson.id);
+                                        if (activeLessonId === lesson.id) {
+                                          router.push('/admin/courses/create/module');
+                                        }
+                                      }}
+                                      className={`p-0.5 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Children of Lesson (Expanded) */}
+                                {isLessonExpanded && (() => {
+                                  const lessonOrder = lesson.order || [];
+                                  const lessonItems = lessonOrder.length > 0 ? lessonOrder : [
+                                    ...(lesson.topics || []).map(t => ({ id: t.id, type: 'topic' as const })),
+                                    ...(lesson.quizzes || []).map(q => ({ id: q.id, type: 'quiz' as const })),
+                                    ...(lesson.assignments || []).map(a => ({ id: a.id, type: 'assignment' as const }))
+                                  ];
+                                  
+                                  return (
+                                    <div className="flex flex-col pl-4 mt-0.5 border-l border-slate-200 gap-1 ml-4.5">
+                                      {lessonItems.map((lItem, lItemIdx) => {
+                                        if (lItem.type === 'topic') {
+                                          const topic = lesson.topics.find(t => t.id === lItem.id);
+                                          if (!topic) return null;
+                                          const tIdx = lesson.topics.indexOf(topic);
+                                          const isTopicActive = activeTopicId === topic.id;
+                                          return (
+                                            <div 
+                                              key={`topic-${topic.id}`}
+                                              onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
+                                              className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isTopicActive 
+                                                  ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
+                                                  : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <Target className={isTopicActive ? "text-white" : "text-slate-400"} size={14} />
+                                                <span className="text-xs font-medium truncate flex-1">
+                                                  {topic.title || `Topic ${tIdx + 1}`}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, topic.id, 'up'); }}
+                                                  disabled={lItemIdx === 0}
+                                                  className={`p-0.5 disabled:opacity-20 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronUp size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, topic.id, 'down'); }}
+                                                  disabled={lItemIdx === lessonItems.length - 1}
+                                                  className={`p-0.5 disabled:opacity-20 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronDown size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteTopic(module.id, lesson.id, topic.id);
+                                                    if (activeTopicId === topic.id) {
+                                                      router.push('/admin/courses/create/lesson');
+                                                    }
+                                                  }}
+                                                  className={`p-0.5 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                                >
+                                                  <Trash2 size={12} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        
+                                        if (lItem.type === 'quiz') {
+                                          const quiz = lesson.quizzes.find(q => q.id === lItem.id);
+                                          if (!quiz) return null;
+                                          const qIdx = lesson.quizzes.indexOf(quiz);
+                                          const isQuizActive = activeQuizId === quiz.id;
+                                          return (
+                                            <div 
+                                              key={`quiz-${quiz.id}`}
+                                              onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
+                                              className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isQuizActive 
+                                                  ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
+                                                  : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
+                                                <span className="text-xs font-medium truncate flex-1">
+                                                  {quiz.title || `Quiz ${qIdx + 1}`}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, quiz.id, 'up'); }}
+                                                  disabled={lItemIdx === 0}
+                                                  className={`p-0.5 disabled:opacity-20 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronUp size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, quiz.id, 'down'); }}
+                                                  disabled={lItemIdx === lessonItems.length - 1}
+                                                  className={`p-0.5 disabled:opacity-20 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronDown size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteQuiz(module.id, lesson.id, quiz.id);
+                                                    if (activeQuizId === quiz.id) {
+                                                      router.push('/admin/courses/create/lesson');
+                                                    }
+                                                  }}
+                                                  className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                                >
+                                                  <Trash2 size={12} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        
+                                        if (lItem.type === 'assignment') {
+                                          const assignment = lesson.assignments.find(a => a.id === lItem.id);
+                                          if (!assignment) return null;
+                                          const aIdx = lesson.assignments.indexOf(assignment);
+                                          const isAssignmentActive = activeAssignmentId === assignment.id;
+                                          return (
+                                            <div 
+                                              key={`assignment-${assignment.id}`}
+                                              onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
+                                              className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isAssignmentActive 
+                                                  ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
+                                                  : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
+                                                <span className="text-xs font-medium truncate flex-1">
+                                                  {assignment.title || `Assignment ${aIdx + 1}`}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, assignment.id, 'up'); }}
+                                                  disabled={lItemIdx === 0}
+                                                  className={`p-0.5 disabled:opacity-20 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronUp size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => { e.stopPropagation(); moveLessonItem(module.id, lesson.id, assignment.id, 'down'); }}
+                                                  disabled={lItemIdx === lessonItems.length - 1}
+                                                  className={`p-0.5 disabled:opacity-20 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                                >
+                                                  <ChevronDown size={12} />
+                                                </button>
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteAssignment(module.id, lesson.id, assignment.id);
+                                                    if (activeAssignmentId === assignment.id) {
+                                                      router.push('/admin/courses/create/lesson');
+                                                    }
+                                                  }}
+                                                  className={`p-0.5 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                                >
+                                                  <Trash2 size={12} />
+                                                </button>
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      })}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            );
+                          }
+
+                          if (item.type === 'quiz') {
+                            const quiz = (module.quizzes || []).find(q => q.id === item.id);
+                            if (!quiz) return null;
+                            const qIdx = (module.quizzes || []).indexOf(quiz);
+                            const isQuizActive = activeQuizId === quiz.id;
+                             return (
+                               <div 
+                                 key={`quiz-${quiz.id}`}
+                                 onClick={() => handleQuizClick(module.id, undefined, quiz.id)}
+                                 className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                   isQuizActive 
+                                     ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
+                                     : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
+                                 }`}
+                               >
+                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-5">
+                                   <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
+                                   <span className="text-xs font-semibold truncate flex-1">
+                                     {quiz.title || `Module Quiz ${qIdx + 1}`}
+                                   </span>
+                                 </div>
+                                 <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, quiz.id, 'up'); }}
+                                     disabled={itemIdx === 0}
+                                     className={`p-0.5 disabled:opacity-20 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                   >
+                                     <ChevronUp size={12} />
+                                   </button>
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, quiz.id, 'down'); }}
+                                     disabled={itemIdx === items.length - 1}
+                                     className={`p-0.5 disabled:opacity-20 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                   >
+                                     <ChevronDown size={12} />
+                                   </button>
+                                   <button 
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       deleteQuiz(module.id, undefined, quiz.id);
+                                       if (activeQuizId === quiz.id) {
+                                         router.push('/admin/courses/create/module');
+                                       }
+                                     }}
+                                     className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                   >
+                                     <Trash2 size={13} />
+                                   </button>
+                                 </div>
+                               </div>
+                            );
+                          }
+
+                          if (item.type === 'assignment') {
+                            const assignment = (module.assignments || []).find(a => a.id === item.id);
+                            if (!assignment) return null;
+                            const aIdx = (module.assignments || []).indexOf(assignment);
+                            const isAssignmentActive = activeAssignmentId === assignment.id;
+                            return (
                               <div 
-                                key={topic.id}
-                                onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
-                                className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeTopicId === topic.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
+                                key={`assignment-${assignment.id}`}
+                                onClick={() => handleAssignmentClick(module.id, undefined, assignment.id)}
+                                className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                  isAssignmentActive 
+                                    ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
+                                    : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                 }`}
                               >
-                                <Target className={activeTopicId === topic.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                                <span className="text-xs font-bold truncate">
-                                  {topic.title || `Topic ${tIdx + 1}`}
-                                </span>
+                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-5">
+                                  <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
+                                  <span className="text-xs font-semibold truncate flex-1">
+                                    {assignment.title || `Module Assignment ${aIdx + 1}`}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, assignment.id, 'up'); }}
+                                    disabled={itemIdx === 0}
+                                    className={`p-0.5 disabled:opacity-20 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                  >
+                                    <ChevronUp size={12} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); moveModuleItem(module.id, assignment.id, 'down'); }}
+                                    disabled={itemIdx === items.length - 1}
+                                    className={`p-0.5 disabled:opacity-20 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                                  >
+                                    <ChevronDown size={12} />
+                                  </button>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteAssignment(module.id, undefined, assignment.id);
+                                      if (activeAssignmentId === assignment.id) {
+                                        router.push('/admin/courses/create/module');
+                                      }
+                                    }}
+                                    className={`p-0.5 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
-                            ))}
-                            {lesson.quizzes?.map((quiz, qIdx) => (
-                              <div 
-                                key={quiz.id}
-                                onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
-                                className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeQuizId === quiz.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                                }`}
-                              >
-                                <FileText className={activeQuizId === quiz.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                                <span className="text-xs font-bold truncate">
-                                  {quiz.title || `Quiz ${qIdx + 1}`}
-                                </span>
-                              </div>
-                            ))}
-                            {lesson.assignments?.map((assignment, aIdx) => (
-                              <div 
-                                key={assignment.id}
-                                onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
-                                className={`rounded-xl p-2 flex items-center gap-3 cursor-pointer transition-all ${
-                                  activeAssignmentId === assignment.id ? 'bg-card shadow-sm text-foreground border-l-4 border-blue-600' : 'hover:bg-muted text-gray-500 dark:text-muted-foreground'
-                                }`}
-                              >
-                                <ClipboardList className={activeAssignmentId === assignment.id ? "text-blue-600" : "text-gray-400"} size={14} />
-                                <span className="text-xs font-bold truncate">
-                                  {assignment.title || `Assignment ${aIdx + 1}`}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                            );
+                          }
+                          return null;
+                        })}
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               );
             })
+          )}
+
+          {/* FINAL ASSESSMENT (as last item in the list) */}
+          {course.assignments && course.assignments.length > 0 ? (
+            (() => {
+              const assignment = course.assignments[0];
+              const isAssignmentActive = activeAssignmentId === assignment.id;
+              return (
+                <div 
+                  key={`course-assignment-${assignment.id}`}
+                  onClick={() => handleCourseAssignmentClick(assignment.id)}
+                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${
+                    isAssignmentActive 
+                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                      : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                    <ClipboardList className={isAssignmentActive ? "text-white" : "text-blue-600"} size={16} />
+                    <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isAssignmentActive ? "text-white" : "text-slate-800"}`}>
+                      {assignment.title || "Final Assessment"}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteCourseAssignment(assignment.id);
+                      if (activeAssignmentId === assignment.id) {
+                        router.push('/admin/courses/create');
+                      }
+                    }}
+                    className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
+                      isAssignmentActive
+                        ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
+                        : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
+                    }`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })()
+          ) : (
+            course.modules.length > 0 && (
+              <button 
+                onClick={() => {
+                  addCourseAssignment();
+                  router.push('/admin/courses/create/assignment');
+                }}
+                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
+              >
+                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Plus size={12} strokeWidth={3} />
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Add Final Assessment</span>
+              </button>
+            )
           )}
         </div>
       </div>
       
       {/* 2. ADD CONTENT SECTION */}
-      <div className="pt-4 border-t border-gray-100 dark:border-border/50">
-        <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">
+      <div className="pt-4 border-t border-slate-200">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
           Add Content
         </h3>
         <div className="flex flex-col gap-3">
@@ -342,32 +726,45 @@ export default function CourseSidebar() {
             <>
               <button 
                 onClick={handleAddTopic}
-                className="w-full flex items-center gap-3 border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center justify-between border border-slate-200 bg-white px-4 py-3.5 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md text-left"
               >
-                <Plus size={16} className="text-gray-400" />
-                <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Topic</span>
+                <div className="flex items-center gap-3">
+                  <Target size={16} className="text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Add Topic</span>
+                </div>
+                <ChevronDown size={14} className="text-slate-400" />
               </button>
               
               <button 
                 onClick={handleAddQuiz}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center justify-between border border-slate-200 bg-white px-4 py-3.5 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <FileText size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Lesson Quiz</span>
+                  <GraduationCap size={16} className="text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Add Lesson Quiz</span>
                 </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-slate-400" />
               </button>
 
               <button 
                 onClick={handleAddAssignment}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center justify-between border border-slate-200 bg-white px-4 py-3.5 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <ClipboardList size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Lesson Assignment</span>
+                  <ClipboardList size={16} className="text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Add Lesson Assignment</span>
                 </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-slate-400" />
+              </button>
+
+              <button 
+                onClick={handleAddLesson}
+                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/15 hover:bg-blue-50/30 px-4 py-3.5 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600"
+              >
+                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Plus size={12} strokeWidth={3} />
+                </div>
+                <span className="text-sm font-semibold text-blue-600">Add Lesson</span>
               </button>
             </>
           )}
@@ -376,81 +773,47 @@ export default function CourseSidebar() {
             <>
               <button 
                 onClick={handleAddQuiz}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center justify-between border border-slate-200 bg-white px-4 py-3.5 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <FileText size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Module Quiz</span>
+                  <GraduationCap size={16} className="text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Add Module Quiz</span>
                 </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-slate-400" />
               </button>
 
               <button 
                 onClick={handleAddAssignment}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center justify-between border border-slate-200 bg-white px-4 py-3.5 rounded-xl hover:bg-slate-50 hover:border-blue-200 transition-all text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <ClipboardList size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Module Assignment</span>
+                  <ClipboardList size={16} className="text-blue-600" />
+                  <span className="text-sm font-semibold text-slate-800">Add Module Assignment</span>
                 </div>
-                <ChevronDown size={14} className="text-gray-400" />
+                <ChevronDown size={14} className="text-slate-400" />
               </button>
 
               <button 
                 onClick={handleAddLesson}
-                className="w-full flex items-center gap-3 border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
+                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/15 hover:bg-blue-50/30 px-4 py-3.5 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600"
               >
-                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
                   <Plus size={12} strokeWidth={3} />
                 </div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Lesson</span>
+                <span className="text-sm font-semibold text-blue-600">Add Lesson</span>
               </button>
             </>
           )}
 
-          {!activeModuleId && (
-            <>
-              <button 
-                onClick={handleAddQuiz}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Course Quiz</span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400" />
-              </button>
-
-              <button 
-                onClick={handleAddAssignment}
-                className="w-full flex items-center justify-between border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <ClipboardList size={16} className="text-gray-400" />
-                  <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Course Assignment</span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400" />
-              </button>
-
-              <button 
-                onClick={handleAddModule}
-                className="w-full flex items-center gap-3 border border-gray-200 dark:border-border/70 bg-card px-4 py-3 rounded-2xl hover:bg-muted transition-all shadow-sm"
-              >
-                <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Plus size={12} strokeWidth={3} />
-                </div>
-                <span className="text-sm font-semibold text-gray-600 dark:text-muted-foreground">Add Module</span>
-              </button>
-            </>
-          )}
         </div>
       </div>
+
 
       {/* FOOTER ADD MODULE BUTTON */}
       <div className="mt-auto pt-8">
         <button 
           onClick={handleAddModule}
-          className="w-full flex items-center justify-center gap-2 border border-blue-100 bg-blue-50/50 text-blue-600 py-3 rounded-2xl hover:bg-blue-50 transition-all font-bold text-sm shadow-sm"
+          className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm"
         >
           <Plus size={16} /> Add Another Module
         </button>
