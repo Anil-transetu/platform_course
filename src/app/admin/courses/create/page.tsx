@@ -5,48 +5,23 @@ import { ArrowRight, UploadCloud, Image as ImageIcon, BookOpen, Sparkles, Tag, G
 import { useRouter, useParams } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
-import { useCreateCourse, useUpdateCourse, useAssignmentsLookup } from "@/features/admin/courses/api/course-api";
-import { getDefaultEditorRoute, cn } from "@/lib/utils";
-import { useDomains } from "@/features/admin/domains/api/domain-api";
-import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCourse } from "@/features/admin/courses/api/course-api";
 
-// Static domain list — will be replaced by API data in Phase 1
-const DOMAIN_OPTIONS = [
-  "Engineering",
-  "Design",
-  "Business",
-  "Marketing",
-  "Data Science",
-  "Product Management",
-  "Finance",
-  "Health & Wellness",
-  "Web Development",
-  "Mobile Development",
-];
-
-const toastApiError = (err: any, fallbackMessage: string) => {
-  if (typeof window !== "undefined" && !navigator.onLine) {
-    toast.error("Network disconnected. Please check your connection.");
-    return;
-  }
-  toast.error(err.message || fallbackMessage);
-};
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const params = useParams();
-  const editId = params?.id ? String(params.id) : undefined;
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  const { data: fetchedCourse, isLoading } = useCourse(id || undefined);
+  
 
-  const { course, cleanCourse, setCourseDetails, resetCourse } = useCourseStore();
-  const { title, thumbnail_url = "", description = "", domain = "", tags = [] } = course;
-  const [tagInput, setTagInput] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  const { course, setCourseDetails, addModule, setCourse, resetCourse } = useCourseStore();
+  const { title, thumbnail_url = "", description = "", domain = "", tags = "" } = course;
 
-  const [status, setStatus] = useState<"draft" | "published">("draft");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [hasInitialized, setHasInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const createMutation = useCreateCourse();
@@ -114,116 +89,70 @@ export default function CreateCoursePage() {
   }, [finalAssessmentSearch, finalAssessmentOpen]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (finalAssessmentRef.current && !finalAssessmentRef.current.contains(event.target as Node)) {
-        setFinalAssessmentOpen(false);
-      }
-      if (domainRef.current && !domainRef.current.contains(event.target as Node)) {
-        setDomainOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (id && fetchedCourse && !hasInitialized) {
+      const mappedModules = (fetchedCourse.modules || []).map((m: any) => ({
+        id: String(m.id),
+        title: m.name || "",
+        description: m.description || "",
+        lessons: (m.topics || []).map((t: any) => ({
+          id: String(t.id),
+          title: t.name || "",
+          content: t.content_text || t.text || "",
+          topics: (t.lessons || []).map((l: any) => ({
+            id: String(l.id),
+            title: l.name || "",
+            content: l.content_text || l.text || "",
+          })),
+          quizzes: (t.quizzes || []).map((q: any) => ({
+            id: String(q.id),
+            title: q.name || "",
+          })),
+          assignments: (t.assignments || []).map((a: any) => ({
+            id: String(a.id),
+            title: a.title || a.name || "",
+          })),
+        })),
+        quizzes: (m.quizzes || []).map((q: any) => ({
+          id: String(q.id),
+          title: q.name || "",
+        })),
+        assignments: (m.assignments || []).map((a: any) => ({
+          id: String(a.id),
+          title: a.title || a.name || "",
+        })),
+      }));
 
-  const handleDomainKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const allOptions = ["", ...filteredDomainOptions];
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setDomainFocusedIndex((prev) => (prev + 1) % allOptions.length);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setDomainFocusedIndex((prev) => (prev - 1 + allOptions.length) % allOptions.length);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (domainFocusedIndex >= 0 && domainFocusedIndex < allOptions.length) {
-        handleFieldChange("domain", allOptions[domainFocusedIndex]);
-        setDomainOpen(false);
-      }
-    } else if (e.key === "Escape") {
-      setDomainOpen(false);
-    }
-  };
-
-  const handleFaKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const listLength = filteredFinalAssessments.length + 1; // +1 for "No final assessment"
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setFaFocusedIndex((prev) => (prev + 1) % listLength);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setFaFocusedIndex((prev) => (prev - 1 + listLength) % listLength);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (faFocusedIndex === 0) {
-        void handleFinalAssessmentChange("");
-        setFinalAssessmentOpen(false);
-      } else if (faFocusedIndex > 0 && faFocusedIndex < listLength) {
-        const selectedId = filteredFinalAssessments[faFocusedIndex - 1].id;
-        void handleFinalAssessmentChange(String(selectedId));
-        setFinalAssessmentOpen(false);
-      }
-    } else if (e.key === "Escape") {
-      setFinalAssessmentOpen(false);
-    }
-  };
-
-  const handleFinalAssessmentChange = async (value: string) => {
-    setFinalAssessmentId(value);
-    const numVal = value ? Number(value) : null;
-    const selectedAssignment = (finalAssessments || []).find((assignment: any) => String(assignment.id) === String(value));
-    const faObj = selectedAssignment
-      ? { id: selectedAssignment.id, title: selectedAssignment.title || selectedAssignment.assignment_title }
-      : null;
-
-    useCourseStore.setState((state) => ({
-      course: {
-        ...state.course,
-        final_assessment_id: numVal,
-        final_assessment: faObj || (numVal === null ? null : (state.course as any).final_assessment)
-      }
-    }));
-
-    if (course.id) {
-      try {
-        await updateMutation.mutateAsync({
-          id: course.id,
-          data: { final_assessment_id: numVal },
-        });
-        toast.success("Final assessment updated.");
-      } catch (err: any) {
-        toastApiError(err, "Failed to update final assessment");
-      }
-    }
-  };
-
-  const courseFA = (course as any).final_assessment || (course as any).finalAssessment;
-  const selectedFinalAssessment = (finalAssessments || []).find((assignment: any) => String(assignment.id) === String(finalAssessmentId));
-
-  let selectedFinalAssessmentLabel = "No final assessment";
-  if (selectedFinalAssessment) {
-    selectedFinalAssessmentLabel = selectedFinalAssessment.title || selectedFinalAssessment.assignment_title || `Assignment ${selectedFinalAssessment.id}`;
-  } else if (courseFA && (String(courseFA.id) === String(finalAssessmentId) || (!finalAssessmentId && courseFA.title))) {
-    selectedFinalAssessmentLabel = courseFA.title || courseFA.name || courseFA.assignment_title || "No final assessment";
-  } else if (finalAssessmentId) {
-    selectedFinalAssessmentLabel = `Assignment ${finalAssessmentId}`;
-  }
-
-  // Reset course to a clean slate on first render if it has no title and we are not in edit mode
-  useEffect(() => {
-    if (!course.title && !course.id && !editId) {
+      setCourse({
+        id: fetchedCourse.id,
+        title: fetchedCourse.name || "",
+        domain: fetchedCourse.domain_id ? String(fetchedCourse.domain_id) : "Web Development",
+        tags: fetchedCourse.tags ? (Array.isArray(fetchedCourse.tags) ? fetchedCourse.tags.join(", ") : String(fetchedCourse.tags)) : "",
+        thumbnail_url: fetchedCourse.thumbnail_url || "",
+        description: fetchedCourse.description || "",
+        modules: mappedModules,
+        quizzes: (fetchedCourse.quizzes || []).map((q: any) => ({
+          id: String(q.id),
+          title: q.name || "",
+        })),
+        assignments: (fetchedCourse.assignments || []).map((a: any) => ({
+          id: String(a.id),
+          title: a.title || a.name || "",
+        })),
+      });
+      setHasInitialized(true);
+    } else if (!id && !hasInitialized) {
       resetCourse();
+      setHasInitialized(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId]);
+  }, [fetchedCourse, setCourse, id, resetCourse, hasInitialized]);
 
-  // Sync status state with course from store (pre-fill edit form)
-  useEffect(() => {
-    if (course.id) {
-      const isPublished = course.status === "Published" || course.status === "published" || course.status === "active";
-      setStatus(isPublished ? "published" : "draft");
-    }
-  }, [course.id, course.status]);
+  if (id && isLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 bg-slate-100 min-h-screen">
+        <div className="text-slate-500 font-medium">Loading course data...</div>
+      </div>
+    );
+  }
 
   const validateField = (field: string, value: string): string => {
     let error = "";
@@ -478,7 +407,7 @@ export default function CreateCoursePage() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-800 tracking-tight">Course Configuration</h1>
-              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Define your course details before building the curriculum</p>
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Define your course details, structure, and content elements</p>
             </div>
           </div>
         </div>
@@ -862,10 +791,10 @@ export default function CreateCoursePage() {
               {thumbnail_url ? (
                 <div className="relative group/thumb aspect-video rounded-xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={thumbnail_url}
-                    alt="Course cover preview"
-                    className="w-full h-full object-cover"
+                  <img 
+                    src={thumbnail_url} 
+                    alt="Course cover preview" 
+                    className="w-full h-full object-cover" 
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                   <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center gap-2">

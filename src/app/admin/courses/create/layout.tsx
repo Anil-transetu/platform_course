@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronRight, PanelLeftClose, PanelLeftOpen, AlertTriangle } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCourseStore, Quiz as StoreQuiz, Assignment as StoreAssignment } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
+import { useCourseStore } from "@/store/useCourseStore";
 import { toast } from "sonner";
 import { useCreateCourse, useUpdateCourse, useUpdateModule, useUpdateLesson, useUpdateTopic, useCreateModule, useCreateLesson, useCreateTopic } from "@/features/admin/courses/api/course-api";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -225,21 +224,34 @@ function modulesChangedOutsideLessons(course: any, cleanCourse: any) {
 export default function CourseCreationLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-
-  const isComponentMountedRef = useRef(true);
-  const isSavingRef = useRef(false);
-
+  
+  const lastSavedPayloadsRef = useRef<Map<string, string>>(new Map());
+  const quizzesCacheRef = useRef<any[] | null>(null);
+  const assignmentsCacheRef = useRef<any[] | null>(null);
+  const previousIdRef = useRef<string | null>(null);
+  
   const [mounted, setMounted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [pendingNavigationKind, setPendingNavigationKind] = useState<"save" | "discard" | "cancel" | null>(null);
-
-  const {
-    course,
-    cleanCourse,
-    activeModuleId,
-    activeLessonId,
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Reset caches when course ID changes
+  useEffect(() => {
+    if (id !== previousIdRef.current) {
+      lastSavedPayloadsRef.current.clear();
+      quizzesCacheRef.current = null;
+      assignmentsCacheRef.current = null;
+      previousIdRef.current = id;
+    }
+  }, [id]);
+  
+  const { 
+    course, 
+    activeModuleId, 
+    activeLessonId, 
     activeTopicId,
     activeQuizId,
     activeAssignmentId,

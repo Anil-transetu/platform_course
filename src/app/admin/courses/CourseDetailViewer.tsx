@@ -346,9 +346,8 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         <div className="space-y-6">
           {/* COURSE HERO IMAGE BANNER */}
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl shadow-sm overflow-hidden relative min-h-[220px] flex flex-col justify-end">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src={getDisplayThumbnailUrl(course.thumbnail_url) || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
+              src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
               alt={course.name} 
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"; }}
