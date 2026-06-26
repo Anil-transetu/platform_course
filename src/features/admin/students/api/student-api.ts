@@ -3,36 +3,11 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 // Students API - fetches directly from backend to avoid server-to-localhost proxy issues on Vercel
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/students`;
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json"
-  };
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      headers["Authorization"] = `Bearer ${match[2]}`;
-    }
-  }
-  return headers;
-}
 
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = err.message || err.detail || "API request failed";
-
-    if (message.toLowerCase().includes("token expired") || response.status === 401) {
-      if (typeof document !== "undefined") {
-        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
-    }
-    throw new Error(message);
-  }
-  return response.json();
-}
 
 import { Student, StudentStats } from "@/types/student";
+import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+
 
 /**
  * Mapping helper: Splits a full name into first and last name
