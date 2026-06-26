@@ -95,6 +95,11 @@ interface CourseState {
   deleteCourseAssignment: (assignmentId: string) => void;
   moveLessonItem: (moduleId: string, lessonId: string, itemId: string, direction: 'up' | 'down') => void;
   moveModuleItem: (moduleId: string, itemId: string, direction: 'up' | 'down') => void;
+
+  deletedModules: string[];
+  deletedLessons: string[];
+  deletedTopics: string[];
+  clearDeletedItems: () => void;
 }
 
 export const useCourseStore = create<CourseState>()(
@@ -113,6 +118,9 @@ export const useCourseStore = create<CourseState>()(
   activeTopicId: null,
   activeQuizId: null,
   activeAssignmentId: null,
+  deletedModules: [],
+  deletedLessons: [],
+  deletedTopics: [],
 
   setCourseDetails: (title, description, thumbnail_url, domain = '', tags = '') => set((state) => ({
     course: { ...state.course, title, description, thumbnail_url, domain, tags }
@@ -138,6 +146,9 @@ export const useCourseStore = create<CourseState>()(
     activeTopicId: null,
     activeQuizId: null,
     activeAssignmentId: null,
+    deletedModules: [],
+    deletedLessons: [],
+    deletedTopics: [],
   }),
 
   resetCourse: () => set({
@@ -154,7 +165,12 @@ export const useCourseStore = create<CourseState>()(
     activeTopicId: null,
     activeQuizId: null,
     activeAssignmentId: null,
+    deletedModules: [],
+    deletedLessons: [],
+    deletedTopics: [],
   }),
+
+  clearDeletedItems: () => set({ deletedModules: [], deletedLessons: [], deletedTopics: [] }),
 
   addModule: () => {
     const id = 'temp-' + crypto.randomUUID();
@@ -191,6 +207,7 @@ export const useCourseStore = create<CourseState>()(
         ...state.course,
         modules: remainingModules,
       },
+      deletedModules: String(id).startsWith('temp-') ? state.deletedModules : [...state.deletedModules, String(id)],
       activeModuleId: newActiveModuleId,
       activeLessonId: wasActive ? null : state.activeLessonId,
       activeTopicId: wasActive ? null : state.activeTopicId,
@@ -263,6 +280,7 @@ export const useCourseStore = create<CourseState>()(
         return m;
       }),
     },
+    deletedLessons: String(lessonId).startsWith('temp-') ? state.deletedLessons : [...state.deletedLessons, String(lessonId)],
     activeLessonId: state.activeLessonId === lessonId ? null : state.activeLessonId,
     activeTopicId: state.activeLessonId === lessonId ? null : state.activeTopicId,
     activeQuizId: state.activeLessonId === lessonId ? null : state.activeQuizId,
@@ -368,6 +386,7 @@ export const useCourseStore = create<CourseState>()(
           return m;
         }),
       },
+      deletedTopics: String(topicId).startsWith('temp-') ? state.deletedTopics : [...state.deletedTopics, String(topicId)],
       activeTopicId: state.activeTopicId === topicId ? null : state.activeTopicId,
     }));
   },
