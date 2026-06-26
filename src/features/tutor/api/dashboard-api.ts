@@ -1,42 +1,13 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { TutorBatch } from "@/app/tutor/dashboard/columns";
+import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const STATS_URL = `${API_HOST}/api/v1/tutor-portal/stats`;
 const DASHBOARD_URL = `${API_HOST}/api/v1/tutor-portal/dashboard`;
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      headers["Authorization"] = `Bearer ${match[2]}`;
-    }
-  }
-  return headers;
-}
 
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = err.message || err.detail || "API request failed";
-
-    if (
-      message.toLowerCase().includes("token expired") ||
-      response.status === 401
-    ) {
-      if (typeof document !== "undefined") {
-        document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
-    }
-    throw new Error(message);
-  }
-  return response.json();
-}
 
 /**
  * Fetch tutor dashboard stats

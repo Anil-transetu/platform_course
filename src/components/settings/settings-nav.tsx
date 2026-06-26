@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, Bell, Palette, LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export function SettingsNav() {
@@ -40,7 +41,10 @@ export function SettingsNav() {
         onClick={() => {
           document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          window.location.href = "/login";
+          toast.success("Successfully logged out");
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1000);
         }}
       >
         <LogOut className="w-4 h-4" />
