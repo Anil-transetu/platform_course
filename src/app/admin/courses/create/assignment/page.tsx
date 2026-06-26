@@ -75,10 +75,11 @@ export default function AssignmentLibraryPage() {
 
   const truncateText = (text?: string, limit: number = 120) => {
     if (!text) return "";
-    if (text.length > limit) {
-      return text.substring(0, limit) + "...";
+    const cleanText = text.replace(/<[^>]*>?/gm, '');
+    if (cleanText.length > limit) {
+      return cleanText.substring(0, limit) + "...";
     }
-    return text;
+    return cleanText;
   };
 
   const getStatusBadge = (status?: string) => {
