@@ -13,7 +13,7 @@ import {
   ArrowLeft, 
   Terminal, 
   Settings, 
-  ExternalLink 
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,7 +25,7 @@ import CourseDeleteDialog from "./CourseDeleteDialog";
 import { buildCourseColumns, buildDomainColumns, Course } from "./columns";
 import { Domain } from "@/types/domain";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
   useDomains,
   useDomainStats,
@@ -288,10 +288,10 @@ export default function CoursesPage() {
     try {
       if (domainModal.mode === "add") {
         await createDomainMutation.mutateAsync(data);
-        toast.success("Domain created successfully");
+        toast.success("Domain created successfully!");
       } else if (domainModal.domain) {
         await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data });
-        toast.success("Domain updated successfully");
+        toast.success("Domain updated successfully!");
         
         // Update local viewing state if currently viewing this domain
         if (viewingDomain && viewingDomain.id === domainModal.domain.id) {
@@ -315,14 +315,14 @@ export default function CoursesPage() {
     if (deleteDialog.type === "course" && deleteDialog.item) {
       try {
         await deleteCourseMutation.mutateAsync(deleteDialog.item.id);
-        toast.success("Course deleted successfully");
+        toast.success("Course deleted successfully!");
       } catch (err: any) {
         toast.error(err.message || "Failed to delete course");
       }
     } else if (deleteDialog.item) {
       try {
         await deleteDomainMutation.mutateAsync(deleteDialog.item.id);
-        toast.success("Domain deleted successfully");
+        toast.success("Domain deleted successfully!");
         if (viewingDomain && viewingDomain.id === deleteDialog.item.id) {
           setViewingDomain(null);
         }
@@ -618,23 +618,48 @@ export default function CoursesPage() {
           </div>
 
           {/* Final Assessment Card */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1 text-left">
-              <h2 className="text-lg font-bold text-slate-800">Final Assessment</h2>
-              <button
-                onClick={handleOpenAssignment}
-                className="text-base font-bold text-blue-600 hover:text-blue-800 pt-1 text-left hover:underline block"
-              >
-                {finalAssignmentName}
-              </button>
-            </div>
-
-            <button
-              onClick={handleOpenAssignment}
-              className="bg-blue-600 text-white hover:bg-blue-700 px-5 py-2.5 rounded-xl shadow-sm text-sm font-semibold flex items-center gap-2 transition-colors self-start sm:self-center flex-shrink-0"
-            >
-              <ExternalLink size={16} /> Open Assignment
-            </button>
+          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
+            <h2 className="text-base font-bold text-slate-800 border-b border-gray-100 pb-3">Final Assessment</h2>
+            
+            {matchedAssignment ? (
+              <div className="space-y-4">
+                <h3 className="text-base font-bold text-blue-600">
+                  {matchedAssignment.title || matchedAssignment.assignment_title || "Untitled Assignment"}
+                </h3>
+                
+                <div 
+                  className="text-sm text-slate-600 leading-relaxed prose prose-slate max-w-none"
+                  dangerouslySetInnerHTML={{ __html: matchedAssignment.description || "<p>No description provided for this assignment.</p>" }}
+                />
+                
+                {matchedAssignment.evaluation_matrix && matchedAssignment.evaluation_matrix.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <h4 className="text-sm font-bold text-slate-700 mb-3">Evaluation Rubric</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {matchedAssignment.evaluation_matrix.map((criteria: any, cIdx: number) => (
+                        <div key={cIdx} className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                          <span className="font-semibold text-sm text-slate-800 block">{criteria.name}</span>
+                          <span className="text-xs font-medium text-slate-500 block">Max Score: {criteria.marks}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="pt-2">
+                  <button
+                    onClick={handleOpenAssignment}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <ExternalLink size={14} /> Open Full Assessment Page
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 py-4 italic text-center bg-slate-50 rounded-xl">
+                No final assessment has been assigned to this domain yet.
+              </p>
+            )}
           </div>
         </div>
 
@@ -658,7 +683,6 @@ export default function CoursesPage() {
       buttonOnclick={() => {}}
       extraActions={extraHeaderActions}
     >
-      <Toaster position="top-right" />
       {isScreenLoading ? (
         <CoursePageSkeleton />
       ) : (

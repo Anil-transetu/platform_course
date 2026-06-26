@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useCourse } from "@/features/admin/courses/api/course-api";
-import { useDomains } from "@/features/admin/domains/api/domain-api";
+
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -14,8 +14,6 @@ export default function CreateCoursePage() {
   const id = searchParams.get("id");
   const { data: fetchedCourse, isLoading } = useCourse(id || undefined);
   
-  const { data: domainsRes } = useDomains(1, 100);
-  const domainsList = domainsRes?.data || [];
 
   const { course, setCourseDetails, addModule, setCourse, resetCourse } = useCourseStore();
   const { title, thumbnail_url = "", description = "", domain = "", tags = "" } = course;
@@ -23,12 +21,13 @@ export default function CreateCoursePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [formError, setFormError] = useState("");
+  const [hasInitialized, setHasInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
 
   useEffect(() => {
-    if (fetchedCourse) {
+    if (id && fetchedCourse && !hasInitialized) {
       const mappedModules = (fetchedCourse.modules || []).map((m: any) => ({
         id: String(m.id),
         title: m.name || "",
@@ -78,8 +77,12 @@ export default function CreateCoursePage() {
           title: a.title || a.name || "",
         })),
       });
+      setHasInitialized(true);
+    } else if (!id && !hasInitialized) {
+      resetCourse();
+      setHasInitialized(true);
     }
-  }, [fetchedCourse, setCourse]);
+  }, [fetchedCourse, setCourse, id, resetCourse, hasInitialized]);
 
   if (id && isLoading) {
     return (
@@ -170,8 +173,8 @@ export default function CreateCoursePage() {
               <Sparkles size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Course Blueprint</h1>
-              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Configure your course metadata and curriculum blueprint</p>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Course Configuration</h1>
+              <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Define your course details, structure, and content elements</p>
             </div>
           </div>
         </div>
@@ -330,6 +333,7 @@ export default function CreateCoursePage() {
                     src={thumbnail_url} 
                     alt="Course cover preview" 
                     className="w-full h-full object-cover" 
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                   <div className="absolute inset-0 bg-black/45 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
@@ -369,33 +373,6 @@ export default function CreateCoursePage() {
                   </div>
                 </div>
               )}
-
-              <div className="flex flex-col gap-3">
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute inset-x-0 border-t border-slate-100"></div>
-                  <span className="relative bg-white px-2.5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    OR ENTER URL
-                  </span>
-                </div>
-
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={thumbnail_url}
-                    onChange={(e) => handleFieldChange("thumbnail_url", e.target.value)}
-                    className="w-full px-3 py-2.5 pr-8 rounded-lg bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-xs font-semibold text-slate-800 placeholder-slate-400"
-                    placeholder="https://example.com/cover.png"
-                  />
-                  {thumbnail_url && (
-                    <button
-                      onClick={() => handleFieldChange("thumbnail_url", "")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-              </div>
             </div>
 
 

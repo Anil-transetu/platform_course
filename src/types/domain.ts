@@ -11,6 +11,7 @@ export interface Domain {
   assignment_ids?: number[];
   courses_list?: any[];
   assignments_list?: any[];
+  domain_image_url?: string;
   view?: number;
 }
 

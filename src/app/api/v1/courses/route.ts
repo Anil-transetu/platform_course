@@ -33,7 +33,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = await response.json();
+    const textData = await response.text();
+    let data;
+    try {
+      data = textData ? JSON.parse(textData) : {};
+    } catch (e) {
+      data = { message: textData || "Invalid JSON response from backend" };
+    }
+
     return NextResponse.json(data, {
       headers: {
         "Cache-Control": "no-store, max-age=0, must-revalidate",
@@ -67,7 +74,14 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const textData = await response.text();
+    let data;
+    try {
+      data = textData ? JSON.parse(textData) : {};
+    } catch (e) {
+      data = { message: textData || "Invalid JSON response from backend" };
+    }
+
     if (!response.ok) {
       console.error(`POST Course backend error:`, data);
     }
