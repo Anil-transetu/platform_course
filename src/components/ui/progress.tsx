@@ -1,23 +1,3 @@
-<<<<<<< HEAD
-"use client"
-
-import * as React from "react"
-import { Progress as ProgressPrimitive } from "radix-ui"
-
-import { cn } from "@/lib/utils"
-
-function Progress({
-  className,
-  value,
-  indicatorClassName,
-  ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root> & { indicatorClassName?: string }) {
-  return (
-    <ProgressPrimitive.Root
-      data-slot="progress"
-      className={cn(
-        "relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted",
-=======
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Field, FieldLabel } from "@/components/ui/field"
@@ -38,23 +18,10 @@ export function Progress({
       data-slot="progress"
       className={cn(
         "relative h-1.5 w-full overflow-hidden rounded-full bg-slate-100",
->>>>>>> d02bf19c3bd1a348437e5c29da4bc8e1e13f0700
         className
       )}
       {...props}
     >
-<<<<<<< HEAD
-      <ProgressPrimitive.Indicator
-        data-slot="progress-indicator"
-        className={cn("size-full flex-1 bg-primary transition-all", indicatorClassName)}
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
-      />
-    </ProgressPrimitive.Root>
-  )
-}
-
-export { Progress }
-=======
       <div
         className={cn("h-full w-full transition-all rounded-full bg-primary", indicatorClassName)}
         style={{ width: `${value || 0}%` }}
@@ -92,4 +59,3 @@ export function ProgressWithLabel({
     </Field>
   )
 }
->>>>>>> d02bf19c3bd1a348437e5c29da4bc8e1e13f0700

@@ -2,15 +2,12 @@
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import StatsCard from "@/components/ui/StatsCard";
-import { Layers, FileText, Users, CalendarDays, Eye, CheckCircle2 } from "lucide-react";
+import { FileText, Users, CalendarDays } from "lucide-react";
 import { useTutorQuizManagementStats, useTutorQuizManagementBatches } from "@/features/tutor/api/quizmanagement-api";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
 import DataTable from "@/components/reusable/DataTable";
-import { buildTutorBatchColumns, TutorBatch } from "../dashboard/columns";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { buildQuizColumns } from './columns'
+
 
 export default function TutorQuizzesPage() {
   const [page, setPage] = useState(1);
@@ -18,7 +15,7 @@ export default function TutorQuizzesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const columns = buildTutorBatchColumns();
+  const columns = buildQuizColumns();
 
   // Debounce search term
   useEffect(() => {
@@ -64,30 +61,6 @@ export default function TutorQuizzesPage() {
   const handleSearchChange = (val: string) => {
     setSearch(val);
   };
-
-  const actions = (row: TutorBatch) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48 shadow-lg border-border">
-        <DropdownMenuItem asChild>
-          <Link href={`/tutor/courses/${row.id}`} className="cursor-pointer flex items-center gap-2">
-            <Eye className="h-4 w-4 text-slate-500" />
-            <span className="font-medium text-slate-700">View Course</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={`/tutor/batches/${row.id}/attendance`} className="cursor-pointer flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-blue-500" />
-            <span className="font-medium text-slate-700">Mark Attendance</span>
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
 
   const stats = statsData || {};
@@ -155,7 +128,6 @@ export default function TutorQuizzesPage() {
               data={batchesList}
               columns={columns}
               loading={isFetchingBatches}
-              actions={actions}
               rowKey={(row) => row.id}
               search={{
                 enabled: true,

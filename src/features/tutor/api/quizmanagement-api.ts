@@ -68,7 +68,7 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
     }
 
     if (query.toString()) {
-        url += `? ${query.toString()} `;
+        url += `?${query.toString()}`;
     }
 
     const response = await fetch(url, {
@@ -82,14 +82,16 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
     const data = result?.data?.data || result?.data || [];
     const total = result?.data?.total || result?.total || data.length;
 
-    // Map data to match frontend columns structure
+    // Map data to match frontend columns structure (QuizOverview)
     const mappedData = Array.isArray(data) ? data.map((b: any) => ({
-        id: b.id || b.batch_id,
-        name: b.name || b.batch_name || "N/A",
-        course: b.course || b.course_name || "N/A",
-        schedule: b.schedule || "N/A",
-        allocationTime: b.allocationTime || b.allocation_time || "N/A",
-        progress: b.progress || 0,
+        id: b.batch_id || b.id || 0,
+        batch_id: b.batch_id || b.id || 0,
+        batch_name: b.batch_name || b.name || "N/A",
+        course_name: b.course_name || b.course || "N/A",
+        latest_quiz: b.latest_quiz || b.latestQuiz || "N/A",
+        submissions_ratio: b.submissions_ratio || b.submissionsRatio || "0/0",
+        submission_percentage: b.submission_percentage ?? b.submissionPercentage ?? b.progress ?? 0,
+        average_score: b.average_score ?? b.averageScore ?? 0,
     })) : [];
 
     return {
