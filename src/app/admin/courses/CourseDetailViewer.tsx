@@ -129,18 +129,13 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         <div className="space-y-6">
           {/* COURSE HERO IMAGE BANNER */}
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl shadow-sm overflow-hidden relative min-h-[220px] flex flex-col justify-end">
-            {course.thumbnail_url ? (
-              <>
-                <img 
-                  src={course.thumbnail_url} 
-                  alt={course.name} 
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
-              </>
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700" />
-            )}
+            <img 
+              src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
+              alt={course.name} 
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"; }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
             
             <div className="p-8 relative text-white z-10">
               <div className="flex flex-wrap items-center gap-2 mb-3">

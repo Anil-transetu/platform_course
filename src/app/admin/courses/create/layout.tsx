@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,11 +12,28 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+  
+  const lastSavedPayloadsRef = useRef<Map<string, string>>(new Map());
+  const quizzesCacheRef = useRef<any[] | null>(null);
+  const assignmentsCacheRef = useRef<any[] | null>(null);
+  const previousIdRef = useRef<string | null>(null);
   
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+  
+  // Reset caches when course ID changes
+  useEffect(() => {
+    if (id !== previousIdRef.current) {
+      lastSavedPayloadsRef.current.clear();
+      quizzesCacheRef.current = null;
+      assignmentsCacheRef.current = null;
+      previousIdRef.current = id;
+    }
+  }, [id]);
   
   const { 
     course, 
@@ -57,10 +74,8 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     const clean: any = {};
     for (const key of Object.keys(obj)) {
       const val = obj[key];
+      // Only skip null/undefined, keep empty arrays (like quizzes: [], assignments: [])
       if (val === null || val === undefined) {
-        continue;
-      }
-      if (Array.isArray(val) && val.length === 0) {
         continue;
       }
       clean[key] = val;
@@ -139,15 +154,42 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         return res;
       };
 
+      // Process deleted items
+      const { deletedModules, deletedLessons, deletedTopics, clearDeletedItems } = useCourseStore.getState();
+      
+      for (const mId of deletedModules) {
+        if (!mId.startsWith('temp-')) {
+          await secureFetch(`/api/v1/modules/${mId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete module', e));
+        }
+      }
+      for (const lId of deletedLessons) {
+        if (!lId.startsWith('temp-')) {
+          // UI Lesson maps to Backend Topic
+          await secureFetch(`/api/v1/topics/${lId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI lesson', e));
+        }
+      }
+      for (const tId of deletedTopics) {
+        if (!tId.startsWith('temp-')) {
+          // UI Topic maps to Backend Lesson
+          await secureFetch(`/api/v1/lessons/${tId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI topic', e));
+        }
+      }
+      
+      clearDeletedItems();
+
       // Fetch all quizzes and assignments to build title-to-ID lookup maps
-      let quizzesList: any[] = [];
-      try {
-        const quizzesRes = await secureFetch("/api/v1/quizzes");
-        const quizzesJson = await quizzesRes.json();
-        quizzesList = quizzesJson.data || quizzesJson || [];
-      } catch (err: any) {
-        if (err.message === "Token expired") throw err;
-        console.warn("Failed to fetch quizzes list, fallback to empty", err);
+      let quizzesList: any[] | null = quizzesCacheRef.current;
+      if (!quizzesList) {
+        try {
+          const quizzesRes = await secureFetch("/api/v1/quizzes");
+          const quizzesJson = await quizzesRes.json();
+          quizzesList = quizzesJson.data || quizzesJson || [];
+          quizzesCacheRef.current = quizzesList;
+        } catch (err: any) {
+          if (err.message === "Token expired") throw err;
+          console.warn("Failed to fetch quizzes list, fallback to empty", err);
+          quizzesList = [];
+        }
       }
 
       const quizTitleToIdMap = new Map<string, number>();
@@ -160,14 +202,18 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         }
       }
 
-      let assignmentsList: any[] = [];
-      try {
-        const assignmentsRes = await secureFetch("/api/v1/assignments");
-        const assignmentsJson = await assignmentsRes.json();
-        assignmentsList = assignmentsJson.data || assignmentsJson || [];
-      } catch (err: any) {
-        if (err.message === "Token expired") throw err;
-        console.warn("Failed to fetch assignments list, fallback to empty", err);
+      let assignmentsList: any[] | null = assignmentsCacheRef.current;
+      if (!assignmentsList) {
+        try {
+          const assignmentsRes = await secureFetch("/api/v1/assignments");
+          const assignmentsJson = await assignmentsRes.json();
+          assignmentsList = assignmentsJson.data || assignmentsJson || [];
+          assignmentsCacheRef.current = assignmentsList;
+        } catch (err: any) {
+          if (err.message === "Token expired") throw err;
+          console.warn("Failed to fetch assignments list, fallback to empty", err);
+          assignmentsList = [];
+        }
       }
 
       const assignmentTitleToIdMap = new Map<string, number>();
@@ -223,6 +269,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         const json = await res.json();
         courseId = json.data?.id || json.id;
         updatedCourse.id = courseId;
+        lastSavedPayloadsRef.current.set(`course-${courseId}`, payloadStr);
 
         // Update search parameter in window URL
         if (typeof window !== "undefined" && courseId) {
@@ -246,6 +293,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
               assignments: courseAssignments,
             })),
           });
+          lastSavedPayloadsRef.current.set(`course-${courseId}`, activePayloadStr);
         }
       } else {
         await secureFetch(`/api/v1/courses/${courseId}`, {
@@ -276,33 +324,39 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           .filter((id): id is number => id !== null);
 
         if (isNewModule) {
+          const payloadStr = JSON.stringify(cleanPayload({
+            name: m.title || `Module ${mIdx + 1}`,
+            description: m.description || "",
+            order_num: mIdx + 1,
+            quizzes: mQuizzes,
+            assignments: mAssignments,
+          }));
           const res = await secureFetch(`/api/v1/courses/${courseId}/modules`, {
             method: "POST",
-            body: JSON.stringify(cleanPayload({
-              name: m.title || `Module ${mIdx + 1}`,
-              description: m.description || "",
-              order_num: mIdx + 1,
-              quizzes: mQuizzes,
-              assignments: mAssignments,
-            })),
+            body: payloadStr,
           });
           const json = await res.json();
           moduleId = String(json.data?.id || json.id);
           updatedCourse.modules[mIdx].id = moduleId;
+          lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
           if (m.id === newActiveModuleId) {
             newActiveModuleId = moduleId;
           }
         } else {
-          await secureFetch(`/api/v1/modules/${moduleId}`, {
-            method: "PUT",
-            body: JSON.stringify(cleanPayload({
-              name: m.title || `Module ${mIdx + 1}`,
-              description: m.description || "",
-              order_num: mIdx + 1,
-              quizzes: mQuizzes,
-              assignments: mAssignments,
-            })),
-          });
+          const payloadStr = JSON.stringify(cleanPayload({
+            name: m.title || `Module ${mIdx + 1}`,
+            description: m.description || "",
+            order_num: mIdx + 1,
+            quizzes: mQuizzes,
+            assignments: mAssignments,
+          }));
+          if (lastSavedPayloadsRef.current.get(`module-${moduleId}`) !== payloadStr) {
+            await secureFetch(`/api/v1/modules/${moduleId}`, {
+              method: "PUT",
+              body: payloadStr,
+            });
+            lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
+          }
         }
 
         // 3. Topics (UI Lessons) Loop
@@ -336,20 +390,22 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           });
 
           if (isNewTopic) {
+            const payloadStr = JSON.stringify(cleanPayload({
+              name: l.title || `Lesson ${lIdx + 1}`,
+              content_text: l.content || "",
+              text: l.content || "",
+              order_num: lIdx + 1,
+              quizzes: lQuizzes,
+              assignments: lAssignments,
+            }));
             const res = await secureFetch(`/api/v1/modules/${moduleId}/topics`, {
               method: "POST",
-              body: JSON.stringify(cleanPayload({
-                name: l.title || `Lesson ${lIdx + 1}`,
-                content_text: l.content || "",
-                text: l.content || "",
-                order_num: lIdx + 1,
-                quizzes: lQuizzes,
-                assignments: lAssignments,
-              })),
+              body: payloadStr,
             });
             const json = await res.json();
             topicId = String(json.data?.id || json.id);
             updatedCourse.modules[mIdx].lessons[lIdx].id = topicId;
+            lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
             if (l.id === newActiveLessonId) {
               newActiveLessonId = topicId;
             }
@@ -360,66 +416,71 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
               );
             }
           } else {
-            await secureFetch(`/api/v1/topics/${topicId}`, {
-              method: "PUT",
-              body: JSON.stringify(cleanPayload({
-                name: l.title || `Lesson ${lIdx + 1}`,
-                content_text: l.content || "",
-                text: l.content || "",
-                order_num: lIdx + 1,
-                quizzes: lQuizzes,
-                assignments: lAssignments,
-              })),
-            });
+            const payloadStr = JSON.stringify(cleanPayload({
+              name: l.title || `Lesson ${lIdx + 1}`,
+              content_text: l.content || "",
+              text: l.content || "",
+              order_num: lIdx + 1,
+              quizzes: lQuizzes,
+              assignments: lAssignments,
+            }));
+            if (lastSavedPayloadsRef.current.get(`topic-${topicId}`) !== payloadStr) {
+              await secureFetch(`/api/v1/topics/${topicId}`, {
+                method: "PUT",
+                body: payloadStr,
+              });
+              lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
+            }
           }
 
-          // 4. Lessons (UI Topics) Loop
+          // 4. Sub-Topics (Backend Lessons) Loop
           for (let tIdx = 0; tIdx < sortedTopics.length; tIdx++) {
             const t = sortedTopics[tIdx];
-            const isNewLesson = String(t.id).startsWith("temp-");
-            let lessonId = t.id;
+            const isNewSubTopic = String(t.id).startsWith("temp-");
+            let subTopicId = t.id;
 
-            if (isNewLesson) {
+            if (isNewSubTopic) {
+              const payloadStr = JSON.stringify(cleanPayload({
+                name: t.title || `Topic ${tIdx + 1}`,
+                type: "text",
+                text: t.content || "",
+                content_text: t.content || "",
+                duration_minutes: 15,
+                order_num: tIdx + 1,
+              }));
               const res = await secureFetch(`/api/v1/topics/${topicId}/lessons`, {
                 method: "POST",
-                body: JSON.stringify(cleanPayload({
-                  name: t.title || `Topic ${tIdx + 1}`,
-                  type: "text",
-                  text: t.content || "",
-                  content_text: t.content || "",
-                  duration_minutes: 15,
-                  order_num: tIdx + 1,
-                })),
+                body: payloadStr,
               });
               const json = await res.json();
-              lessonId = String(json.data?.id || json.id);
-              
-              // Find topic in store and update ID
-              const topicInStore = updatedCourse.modules[mIdx].lessons[lIdx].topics.find((topic: any) => topic.id === t.id);
-              if (topicInStore) {
-                topicInStore.id = lessonId;
-              }
+              subTopicId = String(json.data?.id || json.id);
+              updatedCourse.modules[mIdx].lessons[lIdx].topics[tIdx].id = subTopicId;
+              lastSavedPayloadsRef.current.set(`lesson-${subTopicId}`, payloadStr);
               if (t.id === newActiveTopicId) {
-                newActiveTopicId = lessonId;
+                newActiveTopicId = subTopicId;
               }
               // Update order array inside lesson
               if (updatedCourse.modules[mIdx].lessons[lIdx].order) {
                 updatedCourse.modules[mIdx].lessons[lIdx].order = updatedCourse.modules[mIdx].lessons[lIdx].order.map((o: any) => 
-                  o.id === t.id ? { ...o, id: lessonId } : o
+                  o.id === t.id ? { ...o, id: subTopicId } : o
                 );
               }
             } else {
-              await secureFetch(`/api/v1/lessons/${lessonId}`, {
-                method: "PUT",
-                body: JSON.stringify(cleanPayload({
-                  name: t.title || `Topic ${tIdx + 1}`,
-                  type: "text",
-                  text: t.content || "",
-                  content_text: t.content || "",
-                  duration_minutes: 15,
-                  order_num: tIdx + 1,
-                })),
-              });
+              const payloadStr = JSON.stringify(cleanPayload({
+                name: t.title || `Topic ${tIdx + 1}`,
+                type: "text",
+                text: t.content || "",
+                content_text: t.content || "",
+                duration_minutes: 15,
+                order_num: tIdx + 1,
+              }));
+              if (lastSavedPayloadsRef.current.get(`lesson-${subTopicId}`) !== payloadStr) {
+                await secureFetch(`/api/v1/lessons/${subTopicId}`, {
+                  method: "PUT",
+                  body: payloadStr,
+                });
+                lastSavedPayloadsRef.current.set(`lesson-${subTopicId}`, payloadStr);
+              }
             }
           }
         }
@@ -439,6 +500,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
 
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
+      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
 
       if (!isSilent) {
         toast.success(

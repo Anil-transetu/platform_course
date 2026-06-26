@@ -288,7 +288,7 @@ export default function CourseSidebar() {
                     ];
 
                     return (
-                      <div className="flex flex-col pl-4 ml-3 border-l border-slate-200 gap-1.5">
+                      <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                         {items.map((item, itemIdx) => {
                           if (item.type === 'lesson') {
                             const lesson = module.lessons.find(l => l.id === item.id);
@@ -373,7 +373,7 @@ export default function CourseSidebar() {
                                   ];
                                   
                                   return (
-                                    <div className="flex flex-col pl-4 mt-0.5 border-l border-slate-200 gap-1 ml-4.5">
+                                    <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                       {lessonItems.map((lItem, lItemIdx) => {
                                         if (lItem.type === 'topic') {
                                           const topic = lesson.topics.find(t => t.id === lItem.id);
@@ -657,16 +657,56 @@ export default function CourseSidebar() {
             })
           )}
 
-          {/* FINAL ASSESSMENT (as last item in the list) */}
+          {/* COURSE-LEVEL QUIZZES */}
+          {course.quizzes && course.quizzes.length > 0 ? (
+            course.quizzes.map((quiz) => {
+              const isQuizActive = activeQuizId === quiz.id;
+              return (
+                <div 
+                  key={`course-quiz-${quiz.id}`}
+                  onClick={() => handleCourseQuizClick(quiz.id)}
+                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
+                    isQuizActive 
+                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                      : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                    <GraduationCap className={isQuizActive ? "text-white" : "text-blue-600"} size={16} />
+                    <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isQuizActive ? "text-white" : "text-slate-800"}`}>
+                      {quiz.title || "Course Quiz"}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteCourseQuiz(quiz.id);
+                      if (activeQuizId === quiz.id) {
+                        router.push('/admin/courses/create');
+                      }
+                    }}
+                    className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
+                      isQuizActive
+                        ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
+                        : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
+                    }`}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })
+          ) : null}
+
+          {/* COURSE-LEVEL ASSIGNMENTS */}
           {course.assignments && course.assignments.length > 0 ? (
-            (() => {
-              const assignment = course.assignments[0];
+            course.assignments.map((assignment) => {
               const isAssignmentActive = activeAssignmentId === assignment.id;
               return (
                 <div 
                   key={`course-assignment-${assignment.id}`}
                   onClick={() => handleCourseAssignmentClick(assignment.id)}
-                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${
+                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
                     isAssignmentActive 
                       ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
                       : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
@@ -696,9 +736,24 @@ export default function CourseSidebar() {
                   </button>
                 </div>
               );
-            })()
-          ) : (
-            course.modules.length > 0 && (
+            })
+          ) : null}
+
+          {/* ADD NEW COURSE-LEVEL CONTENT */}
+          {course.modules.length > 0 && (
+            <>
+              <button 
+                onClick={() => {
+                  addCourseQuiz();
+                  router.push('/admin/courses/create/quiz');
+                }}
+                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
+              >
+                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
+                  <Plus size={14} strokeWidth={3} />
+                </div>
+                <span className="text-xs font-semibold">Add Course Quiz</span>
+              </button>
               <button 
                 onClick={() => {
                   addCourseAssignment();
@@ -707,11 +762,11 @@ export default function CourseSidebar() {
                 className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
               >
                 <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Plus size={12} strokeWidth={3} />
+                  <Plus size={14} strokeWidth={3} />
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Add Final Assessment</span>
+                <span className="text-xs font-semibold">Add Course Assignment</span>
               </button>
-            )
+            </>
           )}
         </div>
       </div>

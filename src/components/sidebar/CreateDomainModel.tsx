@@ -47,6 +47,7 @@ export default function CreateDomainModal({
 }: CreateDomainModalProps) {
   const [domainName, setDomainName] = useState("");
   const [description, setDescription] = useState("");
+  const [domainImageUrl, setDomainImageUrl] = useState("");
   
   // Under new requirement, finalAssignment holds the selected assignment's ID
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>("");
@@ -63,6 +64,14 @@ export default function CreateDomainModal({
   const [assignmentSearchInput, setAssignmentSearchInput] = useState("");
   const [showAssignmentDropdown, setShowAssignmentDropdown] = useState(false);
   const assignmentDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const objectUrl = URL.createObjectURL(file);
+      setDomainImageUrl(objectUrl);
+    }
+  };
 
   // Fetch available assignments from the backend API using lookup and list
   const { data: lookupRes } = useAssignmentsLookup();
@@ -102,6 +111,7 @@ export default function CreateDomainModal({
       if (domain && (mode === "edit" || mode === "view")) {
         setDomainName(domain.name || "");
         setDescription(domain.description || "");
+        setDomainImageUrl(domain.domain_image_url || "");
         setTags(domain.tags || []);
         setStatus(domain.status || "Active");
         
@@ -113,6 +123,7 @@ export default function CreateDomainModal({
       } else {
         setDomainName("");
         setDescription("");
+        setDomainImageUrl("");
         setSelectedAssignmentId("");
         setTags([]);
         setStatus("Active");
@@ -153,6 +164,7 @@ export default function CreateDomainModal({
     onSubmit({
       name: domainName,
       description,
+      domain_image_url: domainImageUrl,
       tags: tags, // tags contain selected courses names
       course_ids: (availableCourses.length > 0 ? availableCourses : AVAILABLE_COURSES)
         .filter((c: any) => tags.includes(c.name))
@@ -232,6 +244,23 @@ export default function CreateDomainModal({
               }`}
             />
             {errors.description && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.description}</p>}
+          </div>
+
+          {/* DOMAIN IMAGE UPLOAD */}
+          <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">
+              Image
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              disabled={mode === "view"}
+              onChange={handleFileChange}
+              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white transition-colors text-slate-700 border-gray-200 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {domainImageUrl && domainImageUrl.startsWith("blob:") && (
+              <p className="text-[10px] text-green-600 font-semibold mt-1">Image selected for upload</p>
+            )}
           </div>
 
           {/* TAGS (COURSES SEARCH SELECTOR) */}

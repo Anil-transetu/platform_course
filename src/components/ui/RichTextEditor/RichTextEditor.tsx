@@ -20,17 +20,9 @@ import {
   Strikethrough, 
   List, 
   ListOrdered, 
-  AlignLeft, 
-  AlignCenter, 
-  AlignRight, 
-  AlignJustify, 
   Undo, 
   Redo, 
-  Eraser, 
   ChevronDown, 
-  Indent as IndentIcon, 
-  Outdent as OutdentIcon,
-  Code,
   Palette,
   Paintbrush,
   Check
@@ -253,7 +245,7 @@ const ColorDropdown: React.FC<ColorDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-1 z-50 p-2 bg-white border border-slate-200 rounded-lg shadow-lg grid grid-cols-5 gap-1 min-w-[140px]">
+        <div className="absolute left-0 mt-2 z-50 p-3 bg-white border border-slate-200 rounded-xl shadow-xl grid grid-cols-5 gap-2 min-w-[200px]">
           {colors.map((c) => (
             <button
               key={c.value}
@@ -263,9 +255,9 @@ const ColorDropdown: React.FC<ColorDropdownProps> = ({
                 setIsOpen(false);
               }}
               title={c.name}
-              className={`w-6 h-6 rounded-md border transition-transform hover:scale-110 focus:outline-none flex items-center justify-center ${
+              className={`w-7 h-7 rounded-full border transition-transform hover:scale-110 focus:outline-none flex items-center justify-center ${
                 value === c.value 
-                  ? 'border-blue-600 scale-105 shadow-sm' 
+                  ? 'border-blue-600 scale-105 shadow-md ring-2 ring-blue-500/20' 
                   : 'border-slate-200'
               }`}
               style={{ 
@@ -487,14 +479,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
             >
               <Strikethrough size={16} />
             </ToolbarButton>
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().toggleCode().run()} 
-              isActive={editor.isActive('code')}
-              tooltip="Inline Code"
-            >
-              <Code size={16} />
-            </ToolbarButton>
-
             {/* Colors */}
             <ColorDropdown 
               icon={<Palette size={16} />}
@@ -526,38 +510,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
             <div className="w-[1px] h-6 bg-slate-200 mx-1" />
 
-            {/* Alignments */}
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().setTextAlign('left').run()} 
-              isActive={editor.isActive({ textAlign: 'left' })}
-              tooltip="Align Left"
-            >
-              <AlignLeft size={16} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().setTextAlign('center').run()} 
-              isActive={editor.isActive({ textAlign: 'center' })}
-              tooltip="Align Center"
-            >
-              <AlignCenter size={16} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().setTextAlign('right').run()} 
-              isActive={editor.isActive({ textAlign: 'right' })}
-              tooltip="Align Right"
-            >
-              <AlignRight size={16} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().setTextAlign('justify').run()} 
-              isActive={editor.isActive({ textAlign: 'justify' })}
-              tooltip="Justify"
-            >
-              <AlignJustify size={16} />
-            </ToolbarButton>
-
-            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
-
             {/* Lists */}
             <ToolbarButton 
               onClick={() => editor.chain().focus().toggleBulletList().run()} 
@@ -574,29 +526,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               <ListOrdered size={16} />
             </ToolbarButton>
 
-            {/* Indent / Outdent */}
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().outdent().run()} 
-              tooltip="Decrease Indent"
-            >
-              <OutdentIcon size={16} />
-            </ToolbarButton>
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().indent().run()} 
-              tooltip="Increase Indent"
-            >
-              <IndentIcon size={16} />
-            </ToolbarButton>
-
-            <div className="w-[1px] h-6 bg-slate-200 mx-1" />
-
-            {/* Actions */}
-            <ToolbarButton 
-              onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} 
-              tooltip="Clear Formatting"
-            >
-              <Eraser size={16} />
-            </ToolbarButton>
           </div>
         
         {/* TEXTAREA CONTENT */}
