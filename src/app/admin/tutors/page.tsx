@@ -25,7 +25,8 @@ import { Tutor } from "@/types/tutor";
 import TutorFormModal from "./TutorFormModal";
 import TutorDeleteDialog from "./TutorDeleteDialog";
 import { buildTutorColumns } from "./columns";
-import { Toaster, toast } from "react-hot-toast";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import {
   useTutors,
   useTutorStats,
@@ -88,10 +89,24 @@ function TutorsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, domainFilter, statusFilter]);
 
   // Modal state
   const [formModal, setFormModal] = useState<{
@@ -120,7 +135,7 @@ function TutorsPageContent() {
   });
 
   // Queries & Mutations
-  const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, search, statusFilter, domainFilter);
+  const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, debouncedSearch, statusFilter, domainFilter);
   const { data: tutorStats, isLoading: isStatsLoading } = useTutorStats();
 
   const createTutor = useCreateTutor();
@@ -150,7 +165,6 @@ function TutorsPageContent() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
     },
   };
 
@@ -273,7 +287,7 @@ function TutorsPageContent() {
           <DataTable<Tutor>
             data={displayTutors}
             columns={buildTutorColumns()}
-            loading={isLoading}
+            loading={isLoading || isFetching}
             rowKey={(tutor) => String(tutor.id)}
             search={searchConfig}
             filters={filterConfig}

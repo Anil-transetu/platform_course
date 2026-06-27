@@ -102,17 +102,21 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "status",
       label: "Status",
-      render: (_, row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-            row.status === "Active"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {row.status}
-        </span>
-      ),
+      render: (_, row) => {
+        const status = (row.status as string) || "Inactive";
+        const isActive = status.toLowerCase() === "active";
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+              isActive
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {isActive ? "Active" : "Inactive"}
+          </span>
+        );
+      },
     },
   ];
 }

@@ -203,25 +203,50 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       size="2xl"
     >
       <div className="space-y-6 mt-4">
-        {/* Row 1: Full Name & Email Address */}
+        {/* Row 1: Full Name (Full Width) */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            value={form.name}
+            onChange={(e) => {
+              setForm({ ...form, name: e.target.value });
+              if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+            }}
+            placeholder="e.g. Dr. John Doe"
+            className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+              errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.name}</p>
+          )}
+        </div>
+
+        {/* Row 2: Status & Email Address */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Full Name <span className="text-red-500">*</span>
+              Status <span className="text-red-500">*</span>
             </label>
-            <input
-              value={form.name}
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-                if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+            <Select
+              value={form.status}
+              onValueChange={(val) => {
+                setForm({ ...form, status: val });
+                if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
               }}
-              placeholder="e.g. Dr. John Doe"
-              className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
-                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.name}</p>
+            >
+              <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-700 dark:text-foreground capitalize">
+                <SelectValue placeholder="Select status..." />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.status}</p>
             )}
           </div>
           <div>
@@ -247,7 +272,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
         </div>
 
-        {/* Row 2: Contact Number & Password */}
+        {/* Row 3: Contact Number & Password */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
@@ -278,7 +303,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                   setForm({ ...form, password: e.target.value });
                   if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
                 }}
-                placeholder="........"
+                placeholder={mode === "edit" ? "••••••••" : "........"}
                 autoComplete="new-password"
                 className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
                   errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
@@ -287,7 +312,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -298,7 +323,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
         </div>
 
-        {/* Row 3: Domains & Tags */}
+        {/* Row 4: Domains & Tags */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
@@ -421,34 +446,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               </div>
             )}
           </div>
-        </div>
-
-        {/* Row 4: Status */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Status <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={form.status}
-              onValueChange={(val) => {
-                setForm({ ...form, status: val });
-                if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
-              }}
-            >
-              <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-700 dark:text-foreground capitalize">
-                <SelectValue placeholder="Select status..." />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.status && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.status}</p>
-            )}
-          </div>
-          <div></div>
         </div>
 
         {/* Footer actions */}
