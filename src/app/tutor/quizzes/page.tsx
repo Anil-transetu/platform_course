@@ -65,9 +65,16 @@ export default function TutorQuizzesPage() {
 
   const stats = statsData || {};
 
-  const batchesList = batchesData?.data || [];
-  const totalItems = batchesData?.total || 0;
+  const batchesList = Array.isArray(batchesData) ? batchesData : batchesData?.data || [];
+  const totalItems = batchesData?.total || stats.total_batches || batchesList.length || 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+
+  // If the backend returned more items than rowsPerPage, it means it didn't paginate, so we slice locally.
+  let visibleData = batchesList;
+  if (batchesList.length > rowsPerPage) {
+    const start = (page - 1) * rowsPerPage;
+    visibleData = batchesList.slice(start, start + rowsPerPage);
+  }
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto space-y-6 flex flex-col h-full">
@@ -85,34 +92,20 @@ export default function TutorQuizzesPage() {
       ) : (
         <>
           {/* Stats Cards Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
             <StatsCard
-              title="Total Assigned Batches"
-              value={stats.total_assigned_batches ?? 0}
+              title="Total Batches"
+              value={stats.total_batches ?? 0}
               icon={<Users size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
             />
             <StatsCard
-              title="Total Students"
-              value={stats.total_students ?? 0}
-              icon={<Users size={20} />}
-              iconBgClass="bg-purple-50"
-              iconColorClass="text-purple-600"
-            />
-            <StatsCard
-              title="Pending Review"
-              value={stats.pending_reviews ?? 0}
+              title="Total Submissions"
+              value={stats.total_submissions ?? 0}
               icon={<FileText size={20} />}
               iconBgClass="bg-orange-50"
               iconColorClass="text-orange-600"
-            />
-            <StatsCard
-              title="Total Quizzes"
-              value={stats.total_quizzes ?? 0}
-              icon={<CalendarDays size={20} />}
-              iconBgClass="bg-green-50"
-              iconColorClass="text-green-600"
             />
             <StatsCard
               title="Average Score"
@@ -125,7 +118,7 @@ export default function TutorQuizzesPage() {
           {/* Batch Management Table Section */}
           <div className="flex justify-between items-center mb-8">
             <DataTable
-              data={batchesList}
+              data={visibleData}
               columns={columns}
               loading={isFetchingBatches}
               rowKey={(row) => row.id}
