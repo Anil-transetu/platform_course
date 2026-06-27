@@ -41,10 +41,7 @@ export function SettingsNav() {
         onClick={() => {
           document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          toast.success("Successfully logged out");
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1000);
+          window.location.replace("/login?msg=logout_success");
         }}
       >
         <LogOut className="w-4 h-4" />

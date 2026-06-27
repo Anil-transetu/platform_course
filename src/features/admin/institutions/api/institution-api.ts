@@ -30,8 +30,8 @@ export interface Institution {
 export interface InstitutionStats {
   total_institutions: number;
   active_institutions: number;
-  average_courses_per_institution: number;
-  pending_registrations: number;
+avgCoursesPerInstitution: number;
+  pendingRegistrations: number;
 }
 
 

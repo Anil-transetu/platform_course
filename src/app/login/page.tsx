@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthLayout from "@/components/layouts/AuthLayout";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
@@ -23,6 +23,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showContactAdmin, setShowContactAdmin] = useState(false);
+
+  const toastShown = React.useRef(false);
+
+  useEffect(() => {
+    if (toastShown.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const msg = params.get("msg");
+    if (msg === "session_expired") {
+      toast.error("Session expired, please log in again");
+      toastShown.current = true;
+      router.replace("/login");
+    } else if (msg === "logout_success") {
+      toast.success("Logged out successfully");
+      toastShown.current = true;
+      router.replace("/login");
+    }
+  }, [router]);
 
   if (showForgotPassword) {
     return <ForgotPasswordPage onBackToLogin={() => setShowForgotPassword(false)} />;
