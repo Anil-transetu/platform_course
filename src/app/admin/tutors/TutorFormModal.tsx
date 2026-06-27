@@ -46,11 +46,12 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     password: "",
     domains: [] as string[],
     tags: [] as string[],
-    status: "active",
+    status: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form | "domains" | "tags", string>>>({});
 
+  // Custom Domain input state
   // Custom Domain input state
   const [isAddingCustomDomain, setIsAddingCustomDomain] = useState(false);
   const [customDomainInput, setCustomDomainInput] = useState("");
@@ -58,8 +59,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   // Tag input state
   const [tagInput, setTagInput] = useState("");
 
+  // Lazy loading state for domains API call
+  const [loadDomains, setLoadDomains] = useState(false);
+
   // Fetch available domains from API
-  const { data: domainsRes } = useDomains(1, 100);
+  const { data: domainsRes } = useDomains(1, 100, undefined, undefined, { enabled: loadDomains });
   const apiDomains = Array.isArray(domainsRes) ? domainsRes : domainsRes?.data || [];
   const apiDomainNames = apiDomains.map((d: any) => d.name || d.domain_name).filter(Boolean);
   
@@ -79,7 +83,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: tutor.domains || [],
           tags: tutor.tags || [],
-          status: tutor.status ? tutor.status.toLowerCase() : "active",
+          status: tutor.status ? tutor.status.toLowerCase() : "",
         });
       } else {
         setForm({
@@ -89,7 +93,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: [],
           tags: [],
-          status: "active",
+          status: "",
         });
       }
       setErrors({});
@@ -97,6 +101,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       setIsAddingCustomDomain(false);
       setCustomDomainInput("");
       setTagInput("");
+      setLoadDomains(false);
     }
   }, [mode, tutor, open]);
 
@@ -129,6 +134,10 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
     if (form.tags.some(t => hasEmoji(t))) {
       e.tags = "Tags cannot contain emojis";
+    }
+
+    if (!form.status) {
+      e.status = "Status is required";
     }
 
     setErrors(e);
@@ -237,7 +246,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                 if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
               }}
             >
-              <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-700 dark:text-foreground capitalize">
+              <SelectTrigger className={`w-full border rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between capitalize ${
+                form.status ? "text-gray-700 dark:text-foreground" : "text-gray-400"
+              } ${
+                errors.status ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}>
                 <SelectValue placeholder="Select status..." />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
@@ -374,6 +387,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                     setIsAddingCustomDomain(true);
                   } else if (val && !form.domains.includes(val)) {
                     setForm({ ...form, domains: [...form.domains, val] });
+                  }
+                }}
+                onOpenChange={(open) => {
+                  if (open) {
+                    setLoadDomains(true);
                   }
                 }}
               >

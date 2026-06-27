@@ -315,13 +315,15 @@ function TutorsPageContent() {
       </div>
       )}
 
-      <TutorFormModal
-        open={formModal.open}
-        mode={formModal.mode}
-        tutor={formModal.tutor}
-        onClose={() => setFormModal({ open: false, mode: "add", tutor: null })}
-        onSave={handleSaveTutor}
-      />
+      {formModal.open && (
+        <TutorFormModal
+          open={formModal.open}
+          mode={formModal.mode}
+          tutor={formModal.tutor}
+          onClose={() => setFormModal({ open: false, mode: "add", tutor: null })}
+          onSave={handleSaveTutor}
+        />
+      )}
       
       <TutorDeleteDialog
         open={deleteDialog.open}
