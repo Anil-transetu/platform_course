@@ -113,7 +113,8 @@ export async function fetchQuizzes(
     query.append("search", search);
   }
   if (statusFilter && statusFilter !== "ALL") {
-    query.append("status", statusFilter.toLowerCase());
+    const apiStatus = statusFilter.toUpperCase() === "ACTIVE" ? "published" : statusFilter.toLowerCase();
+    query.append("status", apiStatus);
   }
   
   if (query.toString()) {

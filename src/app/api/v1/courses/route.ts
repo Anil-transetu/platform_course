@@ -68,6 +68,9 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      console.error(`POST Course backend error:`, data);
+    }
     return NextResponse.json(data, {
       headers: {
         "Cache-Control": "no-store, max-age=0, must-revalidate",

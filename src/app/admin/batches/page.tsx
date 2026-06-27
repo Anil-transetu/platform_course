@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Batch } from "@/types/batch";
 import { buildBatchColumns } from "./columns";
 import BatchFormModal from "./BatchFormModal";
+import BulkUploadModal from "./BulkUploadModal";
 import BatchDeleteDialog from "./BatchDeleteDialog";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
@@ -16,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye } from "lucide-react";
+import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 
 // Dummy data for batches
@@ -120,13 +121,7 @@ function BatchesPageContent() {
     batch: null,
   });
 
-  useEffect(() => {
-    if (searchParams.get("action") === "create") {
-      setFormModal({ open: true, mode: "add", batch: null });
-      // Optionally replace the URL so it doesn't keep reopening on refresh
-      router.replace("/admin/batches");
-    }
-  }, [searchParams, router]);
+  const [bulkModal, setBulkModal] = useState(false);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -202,6 +197,16 @@ function BatchesPageContent() {
   const inactiveBatches = totalBatches - activeBatches;
   const totalStudents = totalBatches * (statsData?.averageStudentsPerBatch ?? 0);
 
+  const extraHeaderActions = (
+    <button
+      onClick={() => setBulkModal(true)}
+      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
+    >
+      <Upload size={16} />
+      Bulk Upload CSV
+    </button>
+  );
+
   return (
     <ListingScreenTemplate
       headerText="Batch Management"
@@ -209,6 +214,7 @@ function BatchesPageContent() {
       buttonLabel="Create New Batch"
       buttonRequired={true}
       buttonOnclick={() => setFormModal({ open: true, mode: "add", batch: null })}
+      extraActions={extraHeaderActions}
     >
       {isLoading ? (
         <UserPageSkeleton />
@@ -283,6 +289,11 @@ function BatchesPageContent() {
         mode={formModal.mode}
         batch={formModal.batch}
         onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
+      />
+
+      <BulkUploadModal
+        open={bulkModal}
+        onClose={() => setBulkModal(false)}
       />
       
       <BatchDeleteDialog

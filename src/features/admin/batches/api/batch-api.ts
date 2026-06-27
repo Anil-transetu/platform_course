@@ -259,3 +259,27 @@ export async function uploadBatchStudentsCsv(id: string | number, file: File) {
 export function getBatchStudentsExportPdfUrl(id: string | number): string {
   return `${API_HOST}/api/v1/batches/${id}/students/export-pdf`;
 }
+
+/**
+ * Download batch bulk upload template
+ */
+export async function downloadBatchBulkUploadTemplate() {
+  const url = `${API_HOST}/api/v1/batches/bulk-upload/template`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to download template");
+  }
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = "batch_students_bulk_upload_template.csv";
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(downloadUrl);
+  document.body.removeChild(a);
+}
+

@@ -180,6 +180,21 @@ export async function deleteInstitution(id: string | number): Promise<void> {
 }
 
 /**
+ * Fetch institutions from outlook endpoint (using /api/v1/institutions/lookup)
+ */
+export async function fetchInstitutionsOutlook(): Promise<Institution[]> {
+  const url = `${API_HOST}/api/v1/institutions/lookup`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const data = await handleResponse(response);
+  const items = Array.isArray(data) ? data : data.data || data.institutions || [];
+  return items.map((i: any) => mapInstitution(i));
+}
+
+/**
  * Lookup institutions for dropdowns
  */
 export async function fetchInstitutionsLookup(search?: string): Promise<any[]> {
@@ -198,3 +213,5 @@ export async function fetchInstitutionsLookup(search?: string): Promise<any[]> {
   const data = await handleResponse(response);
   return data.data || [];
 }
+
+

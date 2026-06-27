@@ -25,6 +25,7 @@ export type Lesson = {
   topics: Topic[];
   quizzes: Quiz[];
   assignments: Assignment[];
+  order?: { id: string; type: 'topic' | 'quiz' | 'assignment' }[];
 };
 
 export type Module = {
@@ -34,6 +35,7 @@ export type Module = {
   lessons: Lesson[];
   quizzes?: Quiz[];
   assignments?: Assignment[];
+  order?: { id: string; type: 'lesson' | 'quiz' | 'assignment' }[];
 };
 
 export type Course = {
@@ -91,6 +93,8 @@ interface CourseState {
   addCourseAssignment: () => string;
   updateCourseAssignment: (assignmentId: string, updates: Partial<Assignment>) => void;
   deleteCourseAssignment: (assignmentId: string) => void;
+  moveLessonItem: (moduleId: string, lessonId: string, itemId: string, direction: 'up' | 'down') => void;
+  moveModuleItem: (moduleId: string, itemId: string, direction: 'up' | 'down') => void;
 }
 
 export const useCourseStore = create<CourseState>()(
@@ -115,7 +119,20 @@ export const useCourseStore = create<CourseState>()(
   })),
 
   setCourse: (course) => set({
-    course,
+    course: {
+      ...course,
+      modules: (course.modules || []).map(m => ({
+        ...m,
+        lessons: (m.lessons || []).map(l => {
+          if (l.order && l.order.length > 0) return l;
+          const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+          (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+          (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+          (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+          return { ...l, order };
+        })
+      }))
+    },
     activeModuleId: course.modules[0]?.id || null,
     activeLessonId: course.modules[0]?.lessons[0]?.id || null,
     activeTopicId: null,
@@ -140,7 +157,7 @@ export const useCourseStore = create<CourseState>()(
   }),
 
   addModule: () => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
     set((state) => ({
       course: {
         ...state.course,
@@ -162,30 +179,47 @@ export const useCourseStore = create<CourseState>()(
     }
   })),
 
-  deleteModule: (id) => set((state) => ({
-    course: {
-      ...state.course,
-      modules: state.course.modules.filter(m => m.id !== id),
-    },
-    activeModuleId: state.activeModuleId === id ? null : state.activeModuleId,
-    activeLessonId: state.activeModuleId === id ? null : state.activeLessonId,
-    activeTopicId: state.activeModuleId === id ? null : state.activeTopicId,
-    activeQuizId: state.activeModuleId === id ? null : state.activeQuizId,
-    activeAssignmentId: state.activeModuleId === id ? null : state.activeAssignmentId,
-  })),
+  deleteModule: (id) => set((state) => {
+    const remainingModules = state.course.modules.filter(m => m.id !== id);
+    const wasActive = state.activeModuleId === id;
+    const newActiveModuleId = wasActive 
+      ? (remainingModules[0]?.id || null) 
+      : state.activeModuleId;
+
+    return {
+      course: {
+        ...state.course,
+        modules: remainingModules,
+      },
+      activeModuleId: newActiveModuleId,
+      activeLessonId: wasActive ? null : state.activeLessonId,
+      activeTopicId: wasActive ? null : state.activeTopicId,
+      activeQuizId: wasActive ? null : state.activeQuizId,
+      activeAssignmentId: wasActive ? null : state.activeAssignmentId,
+    };
+  }),
 
   setActiveModule: (id) => set({ activeModuleId: id, activeLessonId: null, activeTopicId: null, activeQuizId: null, activeAssignmentId: null }),
 
   addLesson: (moduleId) => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
     set((state) => ({
       course: {
         ...state.course,
         modules: state.course.modules.map(m => {
           if (m.id === moduleId) {
+            const order = m.order 
+              ? [...m.order, { id, type: 'lesson' as const }] 
+              : [
+                  ...(m.lessons || []).map(l => ({ id: l.id, type: 'lesson' as const })),
+                  ...(m.quizzes || []).map(q => ({ id: q.id, type: 'quiz' as const })),
+                  ...(m.assignments || []).map(a => ({ id: a.id, type: 'assignment' as const })),
+                  { id, type: 'lesson' as const }
+                ];
             return {
               ...m,
               lessons: [...m.lessons, { id, title: '', content: '', topics: [], quizzes: [], assignments: [] }],
+              order
             };
           }
           return m;
@@ -223,6 +257,7 @@ export const useCourseStore = create<CourseState>()(
           return {
             ...m,
             lessons: m.lessons.filter(l => l.id !== lessonId),
+            order: m.order ? m.order.filter(o => o.id !== lessonId) : undefined
           };
         }
         return m;
@@ -237,7 +272,15 @@ export const useCourseStore = create<CourseState>()(
   setActiveLesson: (id) => set({ activeLessonId: id, activeTopicId: null, activeQuizId: null, activeAssignmentId: null }),
 
   addTopic: (moduleId, lessonId) => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
     set((state) => ({
       course: {
         ...state.course,
@@ -247,9 +290,11 @@ export const useCourseStore = create<CourseState>()(
               ...m,
               lessons: m.lessons.map(l => {
                 if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
                   return {
-                    ...l,
-                    topics: [...l.topics, { id, title: '', content: '' }],
+                    ...updatedL,
+                    topics: [...updatedL.topics, { id, title: '', content: '' }],
+                    order: [...(updatedL.order || []), { id, type: 'topic' }]
                   };
                 }
                 return l;
@@ -291,52 +336,83 @@ export const useCourseStore = create<CourseState>()(
     }
   })),
 
-  deleteTopic: (moduleId, lessonId, topicId) => set((state) => ({
-    course: {
-      ...state.course,
-      modules: state.course.modules.map(m => {
-        if (m.id === moduleId) {
-          return {
-            ...m,
-            lessons: m.lessons.map(l => {
-              if (l.id === lessonId) {
-                return {
-                  ...l,
-                  topics: l.topics.filter(t => t.id !== topicId),
-                };
-              }
-              return l;
-            }),
-          };
-        }
-        return m;
-      }),
-    },
-    activeTopicId: state.activeTopicId === topicId ? null : state.activeTopicId,
-  })),
+  deleteTopic: (moduleId, lessonId, topicId) => {
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
+    set((state) => ({
+      course: {
+        ...state.course,
+        modules: state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            return {
+              ...m,
+              lessons: m.lessons.map(l => {
+                if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
+                  return {
+                    ...updatedL,
+                    topics: updatedL.topics.filter(t => t.id !== topicId),
+                    order: (updatedL.order || []).filter(o => o.id !== topicId)
+                  };
+                }
+                return l;
+              }),
+            };
+          }
+          return m;
+        }),
+      },
+      activeTopicId: state.activeTopicId === topicId ? null : state.activeTopicId,
+    }));
+  },
 
   setActiveTopic: (id) => set({ activeTopicId: id, activeQuizId: null, activeAssignmentId: null }),
 
   addQuiz: (moduleId, lessonId) => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
     set((state) => ({
       course: {
         ...state.course,
         modules: state.course.modules.map(m => {
           if (m.id === moduleId) {
             if (!lessonId) {
+              const order = m.order 
+                ? [...m.order, { id, type: 'quiz' as const }] 
+                : [
+                    ...(m.lessons || []).map(l => ({ id: l.id, type: 'lesson' as const })),
+                    ...(m.quizzes || []).map(q => ({ id: q.id, type: 'quiz' as const })),
+                    ...(m.assignments || []).map(a => ({ id: a.id, type: 'assignment' as const })),
+                    { id, type: 'quiz' as const }
+                  ];
               return {
                 ...m,
                 quizzes: [...(m.quizzes || []), { id, title: '' }],
+                order
               };
             }
             return {
               ...m,
               lessons: m.lessons.map(l => {
                 if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
                   return {
-                    ...l,
-                    quizzes: [...(l.quizzes || []), { id, title: '' }],
+                    ...updatedL,
+                    quizzes: [...(updatedL.quizzes || []), { id, title: '' }],
+                    order: [...(updatedL.order || []), { id, type: 'quiz' }]
                   };
                 }
                 return l;
@@ -361,18 +437,28 @@ export const useCourseStore = create<CourseState>()(
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
           if (!lessonId) {
+            const updatedQuizzes = (m.quizzes || []).map(q => q.id === quizId ? { ...q, ...updates } : q);
+            const updatedOrder = updates.id && m.order
+              ? m.order.map(o => (o.id === quizId && o.type === 'quiz') ? { ...o, id: String(updates.id) } : o)
+              : m.order;
             return {
               ...m,
-              quizzes: (m.quizzes || []).map(q => q.id === quizId ? { ...q, ...updates } : q),
+              quizzes: updatedQuizzes,
+              order: updatedOrder
             };
           }
           return {
             ...m,
             lessons: m.lessons.map(l => {
               if (l.id === lessonId) {
+                const updatedQuizzes = l.quizzes.map(q => q.id === quizId ? { ...q, ...updates } : q);
+                const updatedOrder = updates.id && l.order
+                  ? l.order.map(o => (o.id === quizId && o.type === 'quiz') ? { ...o, id: String(updates.id) } : o)
+                  : l.order;
                 return {
                   ...l,
-                  quizzes: l.quizzes.map(q => q.id === quizId ? { ...q, ...updates } : q),
+                  quizzes: updatedQuizzes,
+                  order: updatedOrder
                 };
               }
               return l;
@@ -384,40 +470,15 @@ export const useCourseStore = create<CourseState>()(
     }
   })),
 
-  deleteQuiz: (moduleId, lessonId, quizId) => set((state) => ({
-    course: {
-      ...state.course,
-      modules: state.course.modules.map(m => {
-        if (m.id === moduleId) {
-          if (!lessonId) {
-            return {
-              ...m,
-              quizzes: (m.quizzes || []).filter(q => q.id !== quizId),
-            };
-          }
-          return {
-            ...m,
-            lessons: m.lessons.map(l => {
-              if (l.id === lessonId) {
-                return {
-                  ...l,
-                  quizzes: l.quizzes.filter(q => q.id !== quizId),
-                };
-              }
-              return l;
-            }),
-          };
-        }
-        return m;
-      }),
-    },
-    activeQuizId: state.activeQuizId === quizId ? null : state.activeQuizId,
-  })),
-
-  setActiveQuiz: (id) => set({ activeQuizId: id, activeTopicId: null, activeAssignmentId: null, activeModuleId: null, activeLessonId: null }),
-
-  addAssignment: (moduleId, lessonId) => {
-    const id = crypto.randomUUID();
+  deleteQuiz: (moduleId, lessonId, quizId) => {
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
     set((state) => ({
       course: {
         ...state.course,
@@ -426,16 +487,73 @@ export const useCourseStore = create<CourseState>()(
             if (!lessonId) {
               return {
                 ...m,
-                assignments: [...(m.assignments || []), { id, title: '' }],
+                quizzes: (m.quizzes || []).filter(q => q.id !== quizId),
+                order: m.order ? m.order.filter(o => o.id !== quizId) : undefined
               };
             }
             return {
               ...m,
               lessons: m.lessons.map(l => {
                 if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
                   return {
-                    ...l,
-                    assignments: [...(l.assignments || []), { id, title: '' }],
+                    ...updatedL,
+                    quizzes: updatedL.quizzes.filter(q => q.id !== quizId),
+                    order: (updatedL.order || []).filter(o => o.id !== quizId)
+                  };
+                }
+                return l;
+              }),
+            };
+          }
+          return m;
+        }),
+      },
+      activeQuizId: state.activeQuizId === quizId ? null : state.activeQuizId,
+    }));
+  },
+
+  setActiveQuiz: (id) => set({ activeQuizId: id, activeTopicId: null, activeAssignmentId: null }),
+
+  addAssignment: (moduleId, lessonId) => {
+    const id = 'temp-' + crypto.randomUUID();
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
+    set((state) => ({
+      course: {
+        ...state.course,
+        modules: state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            if (!lessonId) {
+              const order = m.order 
+                ? [...m.order, { id, type: 'assignment' as const }] 
+                : [
+                    ...(m.lessons || []).map(l => ({ id: l.id, type: 'lesson' as const })),
+                    ...(m.quizzes || []).map(q => ({ id: q.id, type: 'quiz' as const })),
+                    ...(m.assignments || []).map(a => ({ id: a.id, type: 'assignment' as const })),
+                    { id, type: 'assignment' as const }
+                  ];
+              return {
+                ...m,
+                assignments: [...(m.assignments || []), { id, title: '' }],
+                order
+              };
+            }
+            return {
+              ...m,
+              lessons: m.lessons.map(l => {
+                if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
+                  return {
+                    ...updatedL,
+                    assignments: [...(updatedL.assignments || []), { id, title: '' }],
+                    order: [...(updatedL.order || []), { id, type: 'assignment' }]
                   };
                 }
                 return l;
@@ -460,18 +578,28 @@ export const useCourseStore = create<CourseState>()(
       modules: state.course.modules.map(m => {
         if (m.id === moduleId) {
           if (!lessonId) {
+            const updatedAssignments = (m.assignments || []).map(a => a.id === assignmentId ? { ...a, ...updates } : a);
+            const updatedOrder = updates.id && m.order
+              ? m.order.map(o => (o.id === assignmentId && o.type === 'assignment') ? { ...o, id: String(updates.id) } : o)
+              : m.order;
             return {
               ...m,
-              assignments: (m.assignments || []).map(a => a.id === assignmentId ? { ...a, ...updates } : a),
+              assignments: updatedAssignments,
+              order: updatedOrder
             };
           }
           return {
             ...m,
             lessons: m.lessons.map(l => {
               if (l.id === lessonId) {
+                const updatedAssignments = l.assignments.map(a => a.id === assignmentId ? { ...a, ...updates } : a);
+                const updatedOrder = updates.id && l.order
+                  ? l.order.map(o => (o.id === assignmentId && o.type === 'assignment') ? { ...o, id: String(updates.id) } : o)
+                  : l.order;
                 return {
                   ...l,
-                  assignments: l.assignments.map(a => a.id === assignmentId ? { ...a, ...updates } : a),
+                  assignments: updatedAssignments,
+                  order: updatedOrder
                 };
               }
               return l;
@@ -483,40 +611,53 @@ export const useCourseStore = create<CourseState>()(
     }
   })),
 
-  deleteAssignment: (moduleId, lessonId, assignmentId) => set((state) => ({
-    course: {
-      ...state.course,
-      modules: state.course.modules.map(m => {
-        if (m.id === moduleId) {
-          if (!lessonId) {
+  deleteAssignment: (moduleId, lessonId, assignmentId) => {
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
+    set((state) => ({
+      course: {
+        ...state.course,
+        modules: state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            if (!lessonId) {
+              return {
+                ...m,
+                assignments: (m.assignments || []).filter(a => a.id !== assignmentId),
+                order: m.order ? m.order.filter(o => o.id !== assignmentId) : undefined
+              };
+            }
             return {
               ...m,
-              assignments: (m.assignments || []).filter(a => a.id !== assignmentId),
+              lessons: m.lessons.map(l => {
+                if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
+                  return {
+                    ...updatedL,
+                    assignments: updatedL.assignments.filter(a => a.id !== assignmentId),
+                    order: (updatedL.order || []).filter(o => o.id !== assignmentId)
+                  };
+                }
+                return l;
+              }),
             };
           }
-          return {
-            ...m,
-            lessons: m.lessons.map(l => {
-              if (l.id === lessonId) {
-                return {
-                  ...l,
-                  assignments: l.assignments.filter(a => a.id !== assignmentId),
-                };
-              }
-              return l;
-            }),
-          };
-        }
-        return m;
-      }),
-    },
-    activeAssignmentId: state.activeAssignmentId === assignmentId ? null : state.activeAssignmentId,
-  })),
+          return m;
+        }),
+      },
+      activeAssignmentId: state.activeAssignmentId === assignmentId ? null : state.activeAssignmentId,
+    }));
+  },
 
-  setActiveAssignment: (id) => set({ activeAssignmentId: id, activeTopicId: null, activeQuizId: null, activeModuleId: null, activeLessonId: null }),
+  setActiveAssignment: (id) => set({ activeAssignmentId: id, activeTopicId: null, activeQuizId: null }),
 
   addCourseQuiz: () => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
     set((state) => ({
       course: {
         ...state.course,
@@ -547,7 +688,7 @@ export const useCourseStore = create<CourseState>()(
   })),
 
   addCourseAssignment: () => {
-    const id = crypto.randomUUID();
+    const id = 'temp-' + crypto.randomUUID();
     set((state) => ({
       course: {
         ...state.course,
@@ -577,6 +718,87 @@ export const useCourseStore = create<CourseState>()(
     activeAssignmentId: state.activeAssignmentId === assignmentId ? null : state.activeAssignmentId
   })),
 
+  moveLessonItem: (moduleId, lessonId, itemId, direction) => {
+    const ensureLessonOrder = (l: Lesson): Lesson => {
+      if (l.order && l.order.length > 0) return l;
+      const order: { id: string; type: 'topic' | 'quiz' | 'assignment' }[] = [];
+      (l.topics || []).forEach(t => order.push({ id: t.id, type: 'topic' }));
+      (l.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (l.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...l, order };
+    };
+    set((state) => ({
+      course: {
+        ...state.course,
+        modules: state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            return {
+              ...m,
+              lessons: m.lessons.map(l => {
+                if (l.id === lessonId) {
+                  const updatedL = ensureLessonOrder(l);
+                  const order = [...(updatedL.order || [])];
+                  const index = order.findIndex(o => o.id === itemId);
+                  if (index === -1) return l;
+                  
+                  const newIndex = direction === 'up' ? index - 1 : index + 1;
+                  if (newIndex < 0 || newIndex >= order.length) return l;
+                  
+                  const temp = order[index];
+                  order[index] = order[newIndex];
+                  order[newIndex] = temp;
+                  
+                  return {
+                    ...updatedL,
+                    order
+                  };
+                }
+                return l;
+              })
+            };
+          }
+          return m;
+        })
+      }
+    }));
+  },
+
+  moveModuleItem: (moduleId, itemId, direction) => {
+    const ensureModuleOrder = (m: Module): Module => {
+      if (m.order && m.order.length > 0) return m;
+      const order: { id: string; type: 'lesson' | 'quiz' | 'assignment' }[] = [];
+      (m.lessons || []).forEach(l => order.push({ id: l.id, type: 'lesson' }));
+      (m.quizzes || []).forEach(q => order.push({ id: q.id, type: 'quiz' }));
+      (m.assignments || []).forEach(a => order.push({ id: a.id, type: 'assignment' }));
+      return { ...m, order };
+    };
+    set((state) => ({
+      course: {
+        ...state.course,
+        modules: state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            const updatedM = ensureModuleOrder(m);
+            const order = [...(updatedM.order || [])];
+            const index = order.findIndex(o => o.id === itemId);
+            if (index === -1) return m;
+            
+            const newIndex = direction === 'up' ? index - 1 : index + 1;
+            if (newIndex < 0 || newIndex >= order.length) return m;
+            
+            const temp = order[index];
+            order[index] = order[newIndex];
+            order[newIndex] = temp;
+            
+            return {
+              ...updatedM,
+              order
+            };
+          }
+          return m;
+        })
+      }
+    }));
+  },
   }),
   {
     name: 'transetu-course-creation-store',

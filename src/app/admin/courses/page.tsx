@@ -26,6 +26,8 @@ import {
   useDeleteCourse
 } from "@/features/admin/courses/api/course-api";
 import CourseDetailViewer from "./CourseDetailViewer";
+import AssignmentDetailViewer from "./AssignmentDetailViewer";
+import { useCourseStore } from "@/store/useCourseStore";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -172,14 +174,13 @@ export default function CoursesPage() {
   const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
   // Track course selected for details viewing
   const [viewingCourse, setViewingCourse] = useState<any | null>(null);
+  const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
     if (viewId && activeTab === "courses") {
-      setViewingCourse({ id: viewId });
-    } else {
-      setViewingCourse(null);
+      router.push(`/admin/courses/view?id=${viewId}`);
     }
-  }, [viewId, activeTab]);
+  }, [viewId, activeTab, router]);
 
   // States for Associated Courses list in Domain Detail View
   const [courseSearch, setCourseSearch] = useState("");
@@ -355,15 +356,29 @@ export default function CoursesPage() {
       >
         <Plus size={16} /> Create New Domain
       </button>
-      <Link href="/admin/courses/create">
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold">
-          <Plus size={16} /> Create New Course
-        </button>
-      </Link>
+      <button 
+        onClick={() => {
+          useCourseStore.getState().resetCourse();
+          router.push("/admin/courses/create");
+        }}
+        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold"
+      >
+        <Plus size={16} /> Create New Course
+      </button>
     </div>
   );
 
   const isScreenLoading = activeTab === "courses" ? isLoadingCourses : isDomainsLoading;
+
+  // Render Assignment Detail View
+  if (viewingAssignmentId) {
+    return (
+      <AssignmentDetailViewer
+        assignmentId={viewingAssignmentId}
+        onBack={() => setViewingAssignmentId(null)}
+      />
+    );
+  }
 
   // Render Course Detail View
   if (viewingCourse) {
@@ -381,15 +396,15 @@ export default function CoursesPage() {
 
   // Render Domain Detail View
   if (viewingDomain) {
-    // Determine courses associated with the domain tags
-    const associatedCoursesList = ALL_COURSES_DETAILS.filter(c => 
-      viewingDomain.tags?.some(tag => tag.toLowerCase() === c.name.toLowerCase())
-    );
+    // Determine courses associated with the domain
+    const associatedCoursesList = viewingDomain.courses_list || [];
 
     // Apply local search and status filtering on the Associated Courses
     const filteredAssociatedCourses = associatedCoursesList.filter((c) => {
       const matchesSearch = c.name.toLowerCase().includes(courseSearch.toLowerCase());
-      const matchesStatus = courseStatusFilter === "All" || c.status.toLowerCase() === courseStatusFilter.toLowerCase();
+      const matchesStatus = courseStatusFilter === "All" || 
+        (c.status || "").toLowerCase() === courseStatusFilter.toLowerCase() ||
+        (courseStatusFilter.toLowerCase() === "active" && (c.status === "in_progress" || c.status === "active" || c.status === "published"));
       return matchesSearch && matchesStatus;
     });
 
@@ -416,18 +431,18 @@ export default function CoursesPage() {
       {
         key: "category",
         label: "CATEGORY",
-        render: (val: any, row: any) => <span className="text-slate-500 text-sm">{row.category}</span>
+        render: (val: any, row: any) => <span className="text-slate-500 text-sm max-w-[200px] truncate block">{row.category || row.description || "N/A"}</span>
       },
       {
         key: "modules",
         label: "TOTAL MODULES",
-        render: (val: any, row: any) => <span className="text-slate-600 font-medium text-sm text-center block w-full">{row.modules}</span>
+        render: (val: any, row: any) => <span className="text-slate-600 font-medium text-sm text-center block w-full">{row.no_of_modules || (row.modules ? row.modules.length : 0) || 0}</span>
       },
       {
         key: "status",
         label: "STATUS",
         render: (val: any, row: any) => {
-          const isActive = row.status === "Active" || row.status === "active";
+          const isActive = row.status === "Active" || row.status === "active" || row.status === "published" || row.status === "in_progress";
           return (
             <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
               isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-orange-50 text-orange-600 border border-orange-100"
@@ -477,7 +492,7 @@ export default function CoursesPage() {
 
     const handleOpenAssignment = () => {
       if (viewingDomain.assignment_ids && viewingDomain.assignment_ids.length > 0) {
-        router.push(`/admin/assignments/${viewingDomain.assignment_ids[0]}`);
+        setViewingAssignmentId(String(viewingDomain.assignment_ids[0]));
       } else {
         toast.error("No final assignment assigned to this domain yet.");
       }
@@ -559,7 +574,7 @@ export default function CoursesPage() {
                 filters={associatedCoursesFilterConfig}
                 actions={(course) => (
                   <button 
-                    onClick={() => router.push(`/admin/courses?view=${course.id}`)}
+                    onClick={() => router.push(`/admin/courses/view?id=${course.id}`)}
                     className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
                   >
                     <Eye size={14} />
@@ -572,11 +587,14 @@ export default function CoursesPage() {
 
           {/* Final Assessment Card */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
+            <div className="space-y-1 text-left">
               <h2 className="text-lg font-bold text-slate-800">Final Assessment</h2>
-              <p className="text-base font-bold text-slate-800 pt-1">
+              <button
+                onClick={handleOpenAssignment}
+                className="text-base font-bold text-blue-600 hover:text-blue-800 pt-1 text-left hover:underline block"
+              >
                 {finalAssignmentName}
-              </p>
+              </button>
             </div>
 
             <button
@@ -665,7 +683,7 @@ export default function CoursesPage() {
                 <ActionMenu 
                   onView={() => {
                     if (activeTab === "courses") {
-                      router.push(`/admin/courses?view=${item.id}`);
+                      router.push(`/admin/courses/view?id=${item.id}`);
                     } else {
                       setViewingDomain(item);
                     }
@@ -712,6 +730,7 @@ export default function CoursesPage() {
         onClose={() => setDeleteDialog({ open: false, item: null, type: "course" })}
         onConfirm={handleDelete}
       />
+
     </ListingScreenTemplate>
   );
 }
