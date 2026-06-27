@@ -13,7 +13,9 @@ const BASE_URL = `${API_HOST}/api/v1/batches`;
  */
 export function mapBatch(b: Record<string, any>): Batch {
   const tutorName = b.tutor || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
-  const enrollmentsCount = b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0);
+  const enrollmentsCount = b.student_count !== undefined 
+    ? b.student_count 
+    : (b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0));
   
   return {
     ...b,
@@ -21,6 +23,7 @@ export function mapBatch(b: Record<string, any>): Batch {
     name: b.batch_name || b.name || "N/A",
     institution: b.institution_name || b.Institution?.name || "N/A",
     course: b.course || b.Course?.name || "N/A",
+    domain: b.domain_name || b.Domain?.name || "N/A",
     instructor: tutorName,
     start_date: b.start_date ? b.start_date.split("T")[0] : "",
     end_date: b.end_date ? b.end_date.split("T")[0] : "",
@@ -29,7 +32,8 @@ export function mapBatch(b: Record<string, any>): Batch {
     completion_percentage: b.completion_percentage || 0,
     institution_id: b.institution_id || b.Institution?.id,
     tutor_id: b.tutor_id || (b.batchTutors && b.batchTutors[0]?.tutor_id),
-    course_id: b.course_id
+    course_id: b.course_id,
+    domain_id: b.domain_id || b.Domain?.id || null
   };
 }
 
@@ -95,9 +99,8 @@ export async function fetchBatchById(id: string | number) {
  * Create a new batch
  */
 export async function createBatch(data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -105,6 +108,11 @@ export async function createBatch(data: Record<string, unknown>) {
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
     status: data.status || "active"
   };
+
+  // Only include course_id / domain_id when they have a real value
+  // (backend Joi schema rejects null values for these fields)
+  if (data.course_id) payload.course_id = Number(data.course_id);
+  if (data.domain_id) payload.domain_id = Number(data.domain_id);
 
   const response = await fetch(BASE_URL, {
     method: "POST",
@@ -119,9 +127,8 @@ export async function createBatch(data: Record<string, unknown>) {
  * Update an existing batch
  */
 export async function updateBatch(id: string | number, data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -129,6 +136,11 @@ export async function updateBatch(id: string | number, data: Record<string, unkn
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
     status: data.status || "active"
   };
+
+  // Only include course_id / domain_id when they have a real value
+  // (backend Joi schema rejects null values for these fields)
+  if (data.course_id) payload.course_id = Number(data.course_id);
+  if (data.domain_id) payload.domain_id = Number(data.domain_id);
 
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
@@ -282,4 +294,31 @@ export async function downloadBatchBulkUploadTemplate() {
   window.URL.revokeObjectURL(downloadUrl);
   document.body.removeChild(a);
 }
+
+/**
+ * Fetch courses lookup
+ */
+export async function fetchCoursesLookup(): Promise<any[]> {
+  const url = `${API_HOST}/api/v1/courses/lookup`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || [];
+}
+
+/**
+ * Fetch domains lookup
+ */
+export async function fetchDomainsLookup(): Promise<any[]> {
+  const url = `${API_HOST}/api/v1/domains/lookup`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || [];
+}
+
 

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import { useDeleteBatch } from "@/hooks/use-batches";
 

@@ -4,14 +4,15 @@ import { useUploadBatchStudentsCsv } from "@/hooks/use-batches";
 import { downloadBatchBulkUploadTemplate } from "@/features/admin/batches/api/batch-api";
 import { Modal } from "@/components/ui/modal";
 import { Info, Download, Upload, File, X } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
+  batchId?: string | number;
 }
 
-export default function BulkUploadModal({ open, onClose }: Props) {
+export default function BulkUploadModal({ open, onClose, batchId }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +47,7 @@ export default function BulkUploadModal({ open, onClose }: Props) {
       return;
     }
 
-    uploadMutation.mutate({ id: "15", file }, {
+    uploadMutation.mutate({ id: batchId || "15", file }, {
       onSuccess: () => {
         onClose();
         setFile(null);

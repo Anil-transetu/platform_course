@@ -18,38 +18,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
-import { Toaster } from "react-hot-toast";
 
-// Dummy data for batches
-const DUMMY_BATCHES: Batch[] = [
-  {
-    id: "101",
-    name: "Computer Science - 2024 - Section A",
-    instructor: "Dr. Robert Wilson",
-    students: 45,
-    status: "Active",
-    institution: "Global Tech Institute",
-    course: "Java Development"
-  },
-  {
-    id: "102",
-    name: "Web Development Bootcamp",
-    instructor: "Sarah Jenkins",
-    students: 32,
-    status: "Active",
-    institution: "National University",
-    course: "Web Development"
-  },
-  {
-    id: "103",
-    name: "Data Science Fundamentals",
-    instructor: "Michael Chang",
-    students: 28,
-    status: "Inactive",
-    institution: "Global Tech Institute",
-    course: "Data Science"
-  }
-];
+
 
 function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
@@ -220,7 +190,6 @@ function BatchesPageContent() {
         <UserPageSkeleton />
       ) : (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
-        <Toaster position="top-right" />
         
         <StatsGrid>
           <StatsCard

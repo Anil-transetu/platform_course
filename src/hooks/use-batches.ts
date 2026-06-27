@@ -10,8 +10,10 @@ import {
   fetchBatchStudentsStats,
   fetchBatchStudents,
   uploadBatchStudentsCsv,
+  fetchCoursesLookup,
+  fetchDomainsLookup,
 } from "@/features/admin/batches/api/batch-api";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 const QUERY_KEY = "batches";
 
@@ -113,5 +115,21 @@ export function useUploadBatchStudentsCsv() {
     onError: (err: any) => {
       toast.error(err.message || "Failed to upload CSV");
     },
+  });
+}
+
+export function useCoursesLookup() {
+  return useQuery({
+    queryKey: ["coursesLookup"],
+    queryFn: fetchCoursesLookup,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useDomainsLookup() {
+  return useQuery({
+    queryKey: ["domainsLookup"],
+    queryFn: fetchDomainsLookup,
+    staleTime: 5 * 60 * 1000,
   });
 }

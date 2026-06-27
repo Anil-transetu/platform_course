@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Batch } from "@/types/batch";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
@@ -80,14 +79,13 @@ export function buildBatchColumns(): Column<Batch>[] {
         const status = (row.status as string) || "Inactive";
         const isActive = status.toLowerCase() === "active";
         return (
-          <Badge className={cn(
-            "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
-            isActive 
-              ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          )}>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+            isActive
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}>
             {status}
-          </Badge>
+          </span>
         );
       },
     },

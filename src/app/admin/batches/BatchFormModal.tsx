@@ -3,10 +3,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
 import { Search, ChevronDown, X } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
-import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
+import { useCreateBatch, useUpdateBatch, useBatch, useCoursesLookup, useDomainsLookup } from "@/hooks/use-batches";
+import InstitutionSelect from "../users/InstitutionSelect";
 import { useTutors } from "@/features/admin/tutor/api/tutor-api";
 import { useStudents } from "@/hooks/use-students";
 
@@ -22,7 +22,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     name: "",
     institution_id: "",
     tutor_id: "",
-    course_key: "java-dev",
+    course_id: "",
+    domain_id: "",
     start_date: "",
     end_date: "",
     status: "active",
@@ -42,7 +43,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const prevInstitutionIdRef = useRef(form.institution_id);
 
   // API hooks
-  const { data: institutions } = useInstitutionsOutlook();
+  const { data: courses } = useCoursesLookup();
+  const { data: domains } = useDomainsLookup();
   const { data: tutorsData } = useTutors(1, 100);
   const { data: studentsData } = useStudents(
     1,
@@ -83,9 +85,10 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       if (activeBatch) {
         setForm({
           name: activeBatch.name || "",
-          institution_id: String(activeBatch.institution_id || ""),
-          tutor_id: String(activeBatch.tutor_id || ""),
-          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "java-dev",
+          institution_id: activeBatch.institution_id ? String(activeBatch.institution_id) : "",
+          tutor_id: activeBatch.tutor_id ? String(activeBatch.tutor_id) : "",
+          course_id: activeBatch.course_id ? String(activeBatch.course_id) : "",
+          domain_id: activeBatch.domain_id ? String(activeBatch.domain_id) : "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
@@ -101,13 +104,14 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         } else {
           setSelectedStudents([]);
         }
-        prevInstitutionIdRef.current = String(activeBatch.institution_id || "");
+        prevInstitutionIdRef.current = activeBatch.institution_id ? String(activeBatch.institution_id) : "";
       } else {
         setForm({
           name: "",
           institution_id: "",
           tutor_id: "",
-          course_key: "java-dev",
+          course_id: "",
+          domain_id: "",
           start_date: "",
           end_date: "",
           status: "active",
@@ -162,7 +166,12 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
 
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
-    if (!form.course_key) newErrors.course_key = "Course is required";
+    
+    if (!form.course_id && !form.domain_id) {
+      newErrors.course_id = "Select either Course or Domain";
+      newErrors.domain_id = "Select either Course or Domain";
+    }
+    
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
     if (selectedStudents.length === 0) {
       newErrors.enroll_students = "Enroll Students is required";
@@ -180,16 +189,20 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       return;
     }
     
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: null,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
       status: form.status,
     };
+
+    // Only include course_id / domain_id when they have a real value
+    // (backend Joi schema rejects null/empty values for these fields)
+    if (form.course_id) payload.course_id = Number(form.course_id);
+    if (form.domain_id) payload.domain_id = Number(form.domain_id);
 
     if (mode === "add") {
       createMutation.mutate(payload, {
@@ -218,9 +231,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     >
       <div className="space-y-4 mt-1">
         
-        {/* BATCH NAME & SELECT INSTITUTION */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        {/* BATCH NAME & STATUS */}
+        <div className="flex gap-4">
+          <div className="flex-1">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               BATCH NAME <span className="text-red-500">*</span>
             </label>
@@ -232,44 +245,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             />
             {errors.name && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.name}</p>}
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT INSTITUTION <span className="text-red-500">*</span>
-            </label>
-            <Select value={form.institution_id} onValueChange={(val) => setForm({...form, institution_id: val})}>
-              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.institution_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-                <SelectValue placeholder="Select Institution" />
-              </SelectTrigger>
-              <SelectContent>
-                {(institutions || []).map((inst: any) => (
-                  <SelectItem key={inst.id} value={String(inst.id)}>
-                    {inst.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.institution_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.institution_id}</p>}
-          </div>
-        </div>
-
-        {/* SELECT COURSE & STATUS */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT COURSE <span className="text-red-500">*</span>
-            </label>
-            <Select value={form.course_key} onValueChange={(val) => setForm({...form, course_key: val})}>
-              <SelectTrigger className="w-full h-[42px] px-4 rounded-xl border border-gray-200 bg-gray-50/50 text-slate-700 text-sm">
-                <SelectValue placeholder="Select Course" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="java-dev">Java Development</SelectItem>
-                <SelectItem value="web-dev">Web Development</SelectItem>
-                <SelectItem value="data-science">Data Science</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
+          <div className="w-[180px]">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               STATUS <span className="text-red-500">*</span>
             </label>
@@ -283,6 +259,62 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
               </SelectContent>
             </Select>
             {errors.status && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.status}</p>}
+          </div>
+        </div>
+
+        {/* SELECT INSTITUTION */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            SELECT INSTITUTION <span className="text-red-500">*</span>
+          </label>
+          <InstitutionSelect
+            value={form.institution_id}
+            onChange={(val) => setForm({ ...form, institution_id: val })}
+            initialName={mode === "edit" ? (fullBatch?.institution || batch?.institution) : undefined}
+            error={!!errors.institution_id}
+          />
+          {errors.institution_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.institution_id}</p>}
+        </div>
+
+        {/* SELECT COURSE & SELECT DOMAINS */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              SELECT COURSE {!form.domain_id && <span className="text-red-500">*</span>}
+            </label>
+            <Select value={form.course_id || "none"} onValueChange={(val) => setForm({...form, course_id: val === "none" ? "" : val})}>
+              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.course_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
+                <SelectValue placeholder="Select Course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (No Course)</SelectItem>
+                {(courses || []).map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.course_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.course_id}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              SELECT DOMAINS {!form.course_id && <span className="text-red-500">*</span>}
+            </label>
+            <Select value={form.domain_id || "none"} onValueChange={(val) => setForm({...form, domain_id: val === "none" ? "" : val})}>
+              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.domain_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
+                <SelectValue placeholder="Select Domain" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None (No Domain)</SelectItem>
+                {(domains || []).map((d: any) => (
+                  <SelectItem key={d.id} value={String(d.id)}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.domain_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.domain_id}</p>}
           </div>
         </div>
 
