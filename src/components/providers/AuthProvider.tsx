@@ -37,6 +37,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           } else {
             // Token is invalid or expired
             useAuthStore.getState().logout();
+            window.location.replace("/login?msg=session_expired");
           }
         } else {
           // If there's no valid token/role
@@ -44,6 +45,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         }
       } catch (err) {
         useAuthStore.getState().logout();
+        window.location.replace("/login?msg=session_expired");
       } finally {
         setLoading(false);
         setIsInitializing(false);

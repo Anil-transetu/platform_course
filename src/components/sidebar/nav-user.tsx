@@ -76,7 +76,7 @@ export default function NavUser() {
               className="rounded-xl border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-3 py-3 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => {
                 logout();
-                window.location.replace("/login");
+                window.location.replace("/login?msg=logout_success");
               }}
             >
               <LogOut className="w-5 h-5 shrink-0" />

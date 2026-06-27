@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Building, CheckCircle, BookOpen, Clock, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Building, CheckCircle, BookOpen, Clock, MoreVertical, Pencil, Trash2, Landmark } from "lucide-react";
 
 function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
@@ -216,7 +216,7 @@ function InstitutionsPageContent() {
             <StatsCard 
               title="Total Institutions" 
               value={stats?.total_institutions ?? totalCount} 
-              icon={<Building size={20} />} 
+              icon={<Landmark size={20} />} 
               iconBgClass="bg-blue-50" 
               iconColorClass="text-blue-600" 
               tooltip="Total number of registered institutions on the platform" 
@@ -231,7 +231,7 @@ function InstitutionsPageContent() {
             />
             <StatsCard 
               title="Avg. Courses / Inst." 
-              value={stats?.average_courses_per_institution?.toFixed(1) ?? "0"} 
+              value={stats?.avgCoursesPerInstitution?.toFixed(1) ?? "0"} 
               icon={<BookOpen size={20} />} 
               iconBgClass="bg-purple-50" 
               iconColorClass="text-purple-600" 
@@ -239,7 +239,7 @@ function InstitutionsPageContent() {
             />
             <StatsCard 
               title="Pending Registrations" 
-              value={stats?.pending_registrations ?? 0} 
+              value={stats?.pendingRegistrations ?? 0} 
               icon={<Clock size={20} />} 
               iconBgClass="bg-orange-50" 
               iconColorClass="text-orange-600" 

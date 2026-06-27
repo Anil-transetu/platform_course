@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useContactRequests, useContactRequestStats } from "@/features/admin/users/api/contact-requests-api";
+import { useContactRequests, useContactRequestStats, useDeleteContactRequest } from "@/features/admin/users/api/contact-requests-api";
+import { toast } from "sonner";
 import { ContactRequest } from "@/types/contact-request";
 import { buildPendingColumns } from "./columns-pending";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
+import DeleteDialog from "@/components/reusable/DeleteDialog";
 import { Users, UserPlus, Building, MoreVertical, Check, X } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,6 +70,9 @@ export default function PendingRequestsTab({
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ContactRequest | null>(null);
 
   // Debounce search term
   useEffect(() => {
@@ -90,6 +95,7 @@ export default function PendingRequestsTab({
   );
 
   const { data: stats } = useContactRequestStats();
+  const deleteMutation = useDeleteContactRequest();
 
   const requestsList = requestsData?.data?.records || [];
   const totalCount = requestsData?.data?.pagination?.total_records || 0;
@@ -176,7 +182,8 @@ export default function PendingRequestsTab({
                 // To be implemented or leave as placeholder to match existing pattern
               }}
               onReject={() => {
-                // To be implemented
+                setItemToDelete(request);
+                setDeleteDialogOpen(true);
               }}
             />
           </div>
@@ -188,6 +195,24 @@ export default function PendingRequestsTab({
         onRowsPerPageChange={setRowsPerPage}
         paginationInfo={paginationInfo}
         showPagination={true}
+      />
+
+      <DeleteDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onSubmit={() => {
+          if (itemToDelete) {
+            deleteMutation.mutate(itemToDelete.id, {
+              onSuccess: () => {
+                toast.success("Contact request deleted successfully");
+                setDeleteDialogOpen(false);
+              },
+              onError: (err: any) => toast.error(err.message || "Failed to delete contact request"),
+            });
+          }
+        }}
+        itemName={itemToDelete?.first_name ? `${itemToDelete.first_name} ${itemToDelete.last_name}` : "this pending request"}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   );

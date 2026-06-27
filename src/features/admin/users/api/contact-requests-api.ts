@@ -1,4 +1,4 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { ContactRequest, ContactRequestStats, ContactRequestsResponse, ContactRequestStatsResponse } from "@/types/contact-request";
 import { getAuthHeaders, handleResponse } from "@/lib/api-client";
 
@@ -87,5 +87,29 @@ export function useContactRequestStats(options?: { enabled?: boolean }) {
     queryKey: ["contactRequestStats"],
     queryFn: () => fetchContactRequestStats(),
     enabled: options?.enabled !== false,
+  });
+}
+
+/**
+ * Delete a contact request
+ */
+export async function deleteContactRequest(id: string | number): Promise<void> {
+  const response = await fetch(`${BASE_URL}/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  return handleResponse(response);
+}
+
+export function useDeleteContactRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string | number) => deleteContactRequest(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contactRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["contactRequestStats"] });
+    },
   });
 }

@@ -44,7 +44,7 @@ export default function InstitutionFormModal({ open, onClose, mode, institution 
           contacts: institution.contacts && institution.contacts.length > 0 
             ? institution.contacts 
             : [{ name: "", role: "", email: "", phone: "" }],
-          status: institution.status === "inactive" ? "false" : "true",
+          status: institution.status?.toLowerCase() === "inactive" ? "false" : "true",
         });
       } else {
         setForm({
