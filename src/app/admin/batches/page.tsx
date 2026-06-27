@@ -162,10 +162,11 @@ function BatchesPageContent() {
     ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
-  const totalBatches = statsData?.totalBatches ?? 0;
-  const activeBatches = statsData?.activeBatches ?? 0;
-  const inactiveBatches = totalBatches - activeBatches;
-  const totalStudents = totalBatches * (statsData?.averageStudentsPerBatch ?? 0);
+  const totalBatches = Number(statsData?.totalBatches ?? statsData?.total_batches ?? 0);
+  const activeBatches = Number(statsData?.activeBatches ?? statsData?.active_batches ?? 0);
+  const inactiveBatches = Math.max(0, totalBatches - activeBatches);
+  const averageStudents = Number(statsData?.averageStudentsPerBatch ?? statsData?.average_students_per_batch ?? 0);
+  const totalStudents = Math.round(totalBatches * averageStudents);
 
   const extraHeaderActions = (
     <button

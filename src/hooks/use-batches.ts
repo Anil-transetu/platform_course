@@ -118,18 +118,20 @@ export function useUploadBatchStudentsCsv() {
   });
 }
 
-export function useCoursesLookup() {
-  return useQuery({
-    queryKey: ["coursesLookup"],
-    queryFn: fetchCoursesLookup,
+export function useCoursesLookup(search?: string, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["coursesLookup", search],
+    queryFn: () => fetchCoursesLookup(search),
     staleTime: 5 * 60 * 1000,
+    ...options,
   });
 }
 
-export function useDomainsLookup() {
-  return useQuery({
-    queryKey: ["domainsLookup"],
-    queryFn: fetchDomainsLookup,
+export function useDomainsLookup(search?: string, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["domainsLookup", search],
+    queryFn: () => fetchDomainsLookup(search),
     staleTime: 5 * 60 * 1000,
+    ...options,
   });
 }

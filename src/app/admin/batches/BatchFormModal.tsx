@@ -2,13 +2,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
-import { Search, ChevronDown, X } from "lucide-react";
-import { toast } from "sonner";
+import { Search, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch, useCoursesLookup, useDomainsLookup } from "@/hooks/use-batches";
-import InstitutionSelect from "../users/InstitutionSelect";
-import { useTutors } from "@/features/admin/tutor/api/tutor-api";
-import { useStudents } from "@/hooks/use-students";
+import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
+import BatchInstitutionSelect from "./BatchInstitutionSelect";
+import CourseSelect from "./CourseSelect";
+import DomainSelect from "./DomainSelect";
+import TutorSelect from "./TutorSelect";
+import { fetchStudents } from "@/features/admin/students/api/student-api";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
 interface Props {
   open: boolean;
@@ -26,52 +28,40 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     domain_id: "",
     start_date: "",
     end_date: "",
-    status: "active",
+    status: "",
   });
 
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  
-  const [instructorSearch, setInstructorSearch] = useState("");
-  const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
-  const tutorDropdownRef = useRef<HTMLDivElement>(null);
   const prevInstitutionIdRef = useRef(form.institution_id);
 
   // API hooks
-  const { data: courses } = useCoursesLookup();
-  const { data: domains } = useDomainsLookup();
-  const { data: tutorsData } = useTutors(1, 100);
-  const { data: studentsData } = useStudents(
-    1,
-    500,
-    undefined,
-    undefined,
-    undefined,
-    form.institution_id || undefined
-  );
+  const { data: studentsData } = useQuery<any, Error>({
+    queryKey: ["students", { page: 1, limit: 500, institutionId: form.institution_id }],
+    queryFn: () => fetchStudents(1, 500, undefined, undefined, undefined, form.institution_id || undefined),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+    enabled: open && dropdownOpen && !!form.institution_id,
+  });
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
 
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
 
-  const tutors = tutorsData?.data || (Array.isArray(tutorsData) ? tutorsData : []);
   const allStudents = form.institution_id
     ? (studentsData?.data || (Array.isArray(studentsData) ? studentsData : []))
     : [];
 
-  // Click outside listener for student and tutor search dropdowns
+  // Click outside listener for student search dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
-      }
-      if (tutorDropdownRef.current && !tutorDropdownRef.current.contains(event.target as Node)) {
-        setInstructorDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -114,15 +104,13 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           domain_id: "",
           start_date: "",
           end_date: "",
-          status: "active",
+          status: "",
         });
         setSelectedStudents([]);
         prevInstitutionIdRef.current = "";
       }
       setStudentSearch("");
-      setInstructorSearch("");
       setDropdownOpen(false);
-      setInstructorDropdownOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
@@ -140,13 +128,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     (s: any) =>
       s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
       s.email.toLowerCase().includes(studentSearch.toLowerCase())
-  );
-
-  // Filter tutors based on search input
-  const filteredTutors = tutors.filter(
-    (t: any) =>
-      t.name.toLowerCase().includes(instructorSearch.toLowerCase()) ||
-      (t.email && t.email.toLowerCase().includes(instructorSearch.toLowerCase()))
   );
 
   const validate = () => {
@@ -178,7 +159,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
     if (!form.start_date.trim()) newErrors.start_date = "Start Date is required";
     if (!form.end_date.trim()) newErrors.end_date = "End Date is required";
-    if (!form.status.trim()) newErrors.status = "Status is required";
+    if (!form.status) newErrors.status = "Status is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -200,7 +181,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     };
 
     // Only include course_id / domain_id when they have a real value
-    // (backend Joi schema rejects null/empty values for these fields)
     if (form.course_id) payload.course_id = Number(form.course_id);
     if (form.domain_id) payload.domain_id = Number(form.domain_id);
 
@@ -219,7 +199,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
   };
 
-  const selectedTutor = tutors.find((t: any) => String(t.id) === form.tutor_id);
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -267,7 +246,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
             SELECT INSTITUTION <span className="text-red-500">*</span>
           </label>
-          <InstitutionSelect
+          <BatchInstitutionSelect
             value={form.institution_id}
             onChange={(val) => setForm({ ...form, institution_id: val })}
             initialName={mode === "edit" ? (fullBatch?.institution || batch?.institution) : undefined}
@@ -282,38 +261,24 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT COURSE {!form.domain_id && <span className="text-red-500">*</span>}
             </label>
-            <Select value={form.course_id || "none"} onValueChange={(val) => setForm({...form, course_id: val === "none" ? "" : val})}>
-              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.course_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-                <SelectValue placeholder="Select Course" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None (No Course)</SelectItem>
-                {(courses || []).map((c: any) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CourseSelect
+              value={form.course_id}
+              onChange={(val) => setForm({ ...form, course_id: val })}
+              initialName={mode === "edit" ? (fullBatch?.course || batch?.course) : undefined}
+              error={!!errors.course_id}
+            />
             {errors.course_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.course_id}</p>}
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT DOMAINS {!form.course_id && <span className="text-red-500">*</span>}
             </label>
-            <Select value={form.domain_id || "none"} onValueChange={(val) => setForm({...form, domain_id: val === "none" ? "" : val})}>
-              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.domain_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-                <SelectValue placeholder="Select Domain" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None (No Domain)</SelectItem>
-                {(domains || []).map((d: any) => (
-                  <SelectItem key={d.id} value={String(d.id)}>
-                    {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DomainSelect
+              value={form.domain_id}
+              onChange={(val) => setForm({ ...form, domain_id: val })}
+              initialName={mode === "edit" ? (fullBatch?.domain || batch?.domain) : undefined}
+              error={!!errors.domain_id}
+            />
             {errors.domain_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.domain_id}</p>}
           </div>
         </div>
@@ -322,51 +287,17 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         <div className="grid grid-cols-2 gap-4">
           
           {/* Instructor search-select */}
-          <div ref={tutorDropdownRef} className="relative">
+          <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               INSTRUCTOR <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                value={instructorSearch || (selectedTutor ? selectedTutor.name : "")}
-                onChange={(e) => {
-                  setInstructorSearch(e.target.value);
-                  setInstructorDropdownOpen(true);
-                }}
-                onFocus={() => {
-                  setInstructorSearch("");
-                  setInstructorDropdownOpen(true);
-                }}
-                placeholder="Search and select instructor..."
-                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.tutor_id ? "border-red-500" : "border-gray-200"}`}
-              />
-              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-            </div>
+            <TutorSelect
+              value={form.tutor_id}
+              onChange={(val) => setForm({ ...form, tutor_id: val })}
+              initialName={mode === "edit" ? (fullBatch?.instructor || batch?.instructor) : undefined}
+              error={!!errors.tutor_id}
+            />
             {errors.tutor_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tutor_id}</p>}
-
-            {/* Instructor Dropdown */}
-            {instructorDropdownOpen && (
-              <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
-                {filteredTutors.length === 0 ? (
-                  <div className="p-3 text-sm text-gray-500 text-center">No instructors found</div>
-                ) : (
-                  filteredTutors.map((tutor: any) => (
-                    <div
-                      key={tutor.id}
-                      onClick={() => {
-                        setForm({ ...form, tutor_id: String(tutor.id) });
-                        setInstructorSearch(tutor.name);
-                        setInstructorDropdownOpen(false);
-                      }}
-                      className="px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 text-slate-800 transition-colors"
-                    >
-                      {tutor.name}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </div>
 
           {/* Enroll Students search-select */}

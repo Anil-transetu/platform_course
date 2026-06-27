@@ -298,8 +298,13 @@ export async function downloadBatchBulkUploadTemplate() {
 /**
  * Fetch courses lookup
  */
-export async function fetchCoursesLookup(): Promise<any[]> {
-  const url = `${API_HOST}/api/v1/courses/lookup`;
+export async function fetchCoursesLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/courses/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
@@ -311,8 +316,13 @@ export async function fetchCoursesLookup(): Promise<any[]> {
 /**
  * Fetch domains lookup
  */
-export async function fetchDomainsLookup(): Promise<any[]> {
-  const url = `${API_HOST}/api/v1/domains/lookup`;
+export async function fetchDomainsLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/domains/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
