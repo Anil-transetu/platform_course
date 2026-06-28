@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import StatsCard from "@/components/ui/StatsCard";
-import { FileText, Users, CalendarDays } from "lucide-react";
+import { FileText, Users, CircleCheck } from "lucide-react";
 import { useTutorQuizManagementStats, useTutorQuizManagementBatches } from "@/features/tutor/api/quizmanagement-api";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
 import DataTable from "@/components/reusable/DataTable";
@@ -85,39 +85,25 @@ export default function TutorQuizzesPage() {
       ) : (
         <>
           {/* Stats Cards Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
             <StatsCard
-              title="Total Assigned Batches"
-              value={stats.total_assigned_batches ?? 0}
+              title="Total Batches"
+              value={stats.total_batches ?? 0}
               icon={<Users size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
             />
             <StatsCard
-              title="Total Students"
-              value={stats.total_students ?? 0}
-              icon={<Users size={20} />}
+              title="Total Submissions"
+              value={stats.total_submissions ?? 0}
+              icon={<FileText size={20} />}
               iconBgClass="bg-purple-50"
               iconColorClass="text-purple-600"
             />
             <StatsCard
               title="Pending Review"
               value={stats.pending_reviews ?? 0}
-              icon={<FileText size={20} />}
-              iconBgClass="bg-orange-50"
-              iconColorClass="text-orange-600"
-            />
-            <StatsCard
-              title="Total Quizzes"
-              value={stats.total_quizzes ?? 0}
-              icon={<CalendarDays size={20} />}
-              iconBgClass="bg-green-50"
-              iconColorClass="text-green-600"
-            />
-            <StatsCard
-              title="Average Score"
-              value={stats.average_score ?? 0}
-              icon={<CalendarDays size={20} />}
+              icon={<CircleCheck size={20} />}
               iconBgClass="bg-green-50"
               iconColorClass="text-green-600"
             />
