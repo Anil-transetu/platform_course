@@ -744,18 +744,6 @@ export default function CourseSidebar() {
             <>
               <button 
                 onClick={() => {
-                  addCourseQuiz();
-                  router.push('/admin/courses/create/quiz');
-                }}
-                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
-              >
-                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Plus size={14} strokeWidth={3} />
-                </div>
-                <span className="text-xs font-semibold">Add Course Quiz</span>
-              </button>
-              <button 
-                onClick={() => {
                   addCourseAssignment();
                   router.push('/admin/courses/create/assignment');
                 }}
