@@ -20,8 +20,8 @@ export default function CourseSelect({ value, onChange, initialName, error }: Co
   const [selectedName, setSelectedName] = useState(initialName || "");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // We only run the query when the dropdown is open
-  const { data: courses, isLoading } = useCoursesLookup(debouncedSearch, { enabled: isOpen });
+  // We run the query when the dropdown is open or when there is a value
+  const { data: courses, isLoading } = useCoursesLookup(debouncedSearch, { enabled: isOpen || !!value });
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function CourseSelect({ value, onChange, initialName, error }: Co
 
   // Keep internal selectedName in sync with initialName on edit mount
   useEffect(() => {
-    if (initialName && !selectedName) {
+    if (initialName && (!selectedName || selectedName === "N/A" || selectedName === "None")) {
       setSelectedName(initialName);
     }
   }, [initialName, selectedName]);

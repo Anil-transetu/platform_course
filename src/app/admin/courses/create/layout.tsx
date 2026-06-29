@@ -107,7 +107,14 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           },
         });
         if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
+          let errData: any = {};
+          let text = "";
+          try {
+            text = await res.text();
+            errData = JSON.parse(text);
+          } catch (e) {
+            errData = { message: text || res.statusText || `Status ${res.status}` };
+          }
           let messageStr = "API request failed";
           if (errData.errors) {
             if (Array.isArray(errData.errors)) {
@@ -208,7 +215,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             name: currentCourse.title,
             description: currentCourse.description || "Platform Course",
             thumbnail_url: currentCourse.thumbnail_url || undefined,
-            domain_id: currentCourse.domain && !isNaN(Number(currentCourse.domain)) ? Number(currentCourse.domain) : undefined,
             tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
             quizzes: courseQuizzes,
             assignments: courseAssignments,
@@ -235,7 +241,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
               description: currentCourse.description || "Platform Course",
               thumbnail_url: currentCourse.thumbnail_url || undefined,
               status: "active",
-              domain_id: currentCourse.domain && !isNaN(Number(currentCourse.domain)) ? Number(currentCourse.domain) : undefined,
               tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
               quizzes: courseQuizzes,
               assignments: courseAssignments,
@@ -250,7 +255,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             description: currentCourse.description || "Platform Course",
             thumbnail_url: currentCourse.thumbnail_url || undefined,
             status: backendStatus,
-            domain_id: currentCourse.domain && !isNaN(Number(currentCourse.domain)) ? Number(currentCourse.domain) : undefined,
             tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
             quizzes: courseQuizzes,
             assignments: courseAssignments,

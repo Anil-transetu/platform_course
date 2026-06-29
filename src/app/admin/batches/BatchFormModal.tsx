@@ -36,6 +36,11 @@ const formatDateString = (date: Date | undefined) => {
   return `${y}-${m}-${d}`;
 };
 
+const getDisplayValue = (val?: string) => {
+  if (!val || val === "N/A") return "None";
+  return val;
+};
+
 export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [form, setForm] = useState({
     name: "",
@@ -60,7 +65,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   // API hooks
   const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
     form.institution_id ? Number(form.institution_id) : "",
-    { enabled: !!form.institution_id }
+    { enabled: !!form.institution_id && dropdownOpen }
   );
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
@@ -149,8 +154,16 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
 
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
-    if (!form.course_id) newErrors.course_id = "Course is required";
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
+    
+    if (!form.course_id && !form.domain_id) {
+      newErrors.course_id = "You must select either a Course or a Domain";
+      newErrors.domain_id = "You must select either a Course or a Domain";
+    } else if (form.course_id && form.domain_id) {
+      newErrors.course_id = "You cannot select both a Course and a Domain";
+      newErrors.domain_id = "You cannot select both a Course and a Domain";
+    }
+
     if (selectedStudents.length === 0) {
       newErrors.enroll_students = "Enroll Students is required";
     }
@@ -240,7 +253,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT COURSE <span className="text-red-500">*</span>
+              SELECT COURSE
             </label>
             <CourseSelect
               value={form.course_id}
@@ -449,22 +462,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         )}
 
-        {/* Separate Bulk Upload Trigger inside the Form (only when editing) */}
-        {mode === "edit" && batch?.id && (
-          <div className="flex justify-between items-center p-3 bg-blue-50/40 rounded-xl border border-blue-50">
-            <div className="text-xs text-blue-700">
-              Need to enroll students in bulk? Upload a CSV file directly.
-            </div>
-            <button
-              type="button"
-              onClick={() => setBulkOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
-            >
-              <Upload size={14} className="mr-1" />
-              Bulk Upload CSV
-            </button>
-          </div>
-        )}
 
         {/* Footer actions */}
         <div className="flex justify-end items-center gap-4 pt-4 border-t border-gray-100">

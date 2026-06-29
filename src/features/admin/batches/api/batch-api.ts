@@ -21,7 +21,14 @@ function getAuthHeaders(): Record<string, string> {
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
+    let err: any = {};
+    let text = "";
+    try {
+      text = await response.text();
+      err = JSON.parse(text);
+    } catch (e) {
+      err = { message: text || response.statusText || `Status ${response.status}` };
+    }
     let messageStr = "API request failed";
     if (err.errors) {
       if (Array.isArray(err.errors)) {
