@@ -156,8 +156,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       setInstructorSearch("");
       setCourseSearch("");
       setDropdownOpen(false);
-      setInstructorDropdownOpen(false);
-      setCourseDropdownOpen(false);
+      setStartDateOpen(false);
+      setEndDateOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
