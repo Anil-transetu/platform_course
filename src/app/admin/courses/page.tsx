@@ -518,9 +518,17 @@ export default function CoursesPage() {
 
           {/* Domain card info */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex gap-4 items-start">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 ${getAvatarColor(viewingDomain.id)}`}>
-              {getInitials(viewingDomain.name)}
-            </div>
+            {viewingDomain.domain_image_url ? (
+              <img
+                src={viewingDomain.domain_image_url}
+                alt={viewingDomain.name}
+                className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-100 shadow-sm"
+              />
+            ) : (
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 ${getAvatarColor(viewingDomain.id)}`}>
+                {getInitials(viewingDomain.name)}
+              </div>
+            )}
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <div>
@@ -587,18 +595,31 @@ export default function CoursesPage() {
 
           {/* Final Assessment Card */}
           <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
-            <h2 className="text-base font-bold text-slate-800 border-b border-gray-100 pb-3">Final Assessment</h2>
+            <div className="flex items-center border-b border-gray-100 pb-3">
+              <h2 className="text-base font-bold text-slate-800">Final Assessment</h2>
+            </div>
             
             {matchedAssignment ? (
               <div className="space-y-4">
-                <h3 className="text-base font-bold text-blue-600">
-                  {matchedAssignment.title || matchedAssignment.assignment_title || "Untitled Assignment"}
-                </h3>
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="text-base font-bold text-blue-600">
+                    {matchedAssignment.title || matchedAssignment.assignment_title || "Untitled Assignment"}
+                  </h3>
+                  <button
+                    onClick={handleOpenAssignment}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-150 flex-shrink-0"
+                  >
+                    <SquareArrowOutUpRight size={15} />
+                    Open Full Assessment Page
+                  </button>
+                </div>
                 
-                <div 
-                  className="text-sm text-slate-600 leading-relaxed prose prose-slate max-w-none"
-                  dangerouslySetInnerHTML={{ __html: matchedAssignment.description || "<p>No description provided for this assignment.</p>" }}
-                />
+                {matchedAssignment.description && (
+                  <div 
+                    className="text-sm text-slate-600 leading-relaxed prose prose-slate max-w-none"
+                    dangerouslySetInnerHTML={{ __html: matchedAssignment.description }}
+                  />
+                )}
                 
                 {matchedAssignment.evaluation_matrix && matchedAssignment.evaluation_matrix.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-slate-100">
@@ -613,15 +634,6 @@ export default function CoursesPage() {
                     </div>
                   </div>
                 )}
-                
-                <div className="pt-2">
-                  <button
-                    onClick={handleOpenAssignment}
-                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    <ExternalLink size={14} /> Open Full Assessment Page
-                  </button>
-                </div>
               </div>
             ) : (
               <p className="text-sm text-slate-500 py-4 italic text-center bg-slate-50 rounded-xl">
