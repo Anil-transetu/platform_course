@@ -144,6 +144,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       }
       setStudentSearch("");
       setDropdownOpen(false);
+      setStartDateOpen(false);
+      setEndDateOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
