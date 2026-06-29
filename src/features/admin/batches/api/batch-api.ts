@@ -1,21 +1,70 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Batch } from "@/types/batch";
-import { getAuthHeaders, handleResponse } from "@/lib/api-client";
 
+const TUTOR_LOOKUP_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com"}/api/v1/tutors/lookup`;
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/batches`;
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(^| )token=([^;]+)/);
+    if (match) {
+      headers["Authorization"] = `Bearer ${match[2]}`;
+    }
+  }
+  return headers;
+}
 
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let messageStr = "API request failed";
+    if (err.errors) {
+      if (Array.isArray(err.errors)) {
+        messageStr = err.errors.map((e: any) => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
+      } else if (typeof err.errors === "object") {
+        messageStr = Object.values(err.errors).flat().join(", ");
+      } else {
+        messageStr = String(err.errors);
+      }
+    } else if (Array.isArray(err.message)) {
+      messageStr = err.message.join(", ");
+    } else if (err.message) {
+      messageStr = err.message;
+    } else if (err.detail) {
+      messageStr = err.detail;
+    }
+
+    const isTokenExpired =
+      messageStr.toLowerCase().includes("token expired") ||
+      response.status === 401;
+
+    if (!isTokenExpired) {
+      console.error("API ERROR:", err);
+    } else {
+      if (typeof document !== "undefined") {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        window.location.href = "/login";
+      }
+    }
+    throw new Error(messageStr);
+  }
+  return response.json();
+}
 
 /**
  * Mapping helper: Normalizes batch data from backend to frontend format
  */
 export function mapBatch(b: Record<string, any>): Batch {
   const tutorName = b.tutor || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
-  const enrollmentsCount = b.student_count !== undefined 
-    ? b.student_count 
-    : (b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0));
+  const enrollmentsCount = b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0);
   
   return {
     ...b,
@@ -23,7 +72,6 @@ export function mapBatch(b: Record<string, any>): Batch {
     name: b.batch_name || b.name || "N/A",
     institution: b.institution_name || b.Institution?.name || "N/A",
     course: b.course || b.Course?.name || "N/A",
-    domain: b.domain_name || b.Domain?.name || "N/A",
     instructor: tutorName,
     start_date: b.start_date ? b.start_date.split("T")[0] : "",
     end_date: b.end_date ? b.end_date.split("T")[0] : "",
@@ -32,8 +80,7 @@ export function mapBatch(b: Record<string, any>): Batch {
     completion_percentage: b.completion_percentage || 0,
     institution_id: b.institution_id || b.Institution?.id,
     tutor_id: b.tutor_id || (b.batchTutors && b.batchTutors[0]?.tutor_id),
-    course_id: b.course_id,
-    domain_id: b.domain_id || b.Domain?.id || null
+    course_id: b.course_id
   };
 }
 
@@ -99,8 +146,9 @@ export async function fetchBatchById(id: string | number) {
  * Create a new batch
  */
 export async function createBatch(data: Record<string, unknown>) {
-  const payload: Record<string, unknown> = {
+  const payload = {
     name: data.name,
+    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -108,11 +156,6 @@ export async function createBatch(data: Record<string, unknown>) {
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
     status: data.status || "active"
   };
-
-  // Only include course_id / domain_id when they have a real value
-  // (backend Joi schema rejects null values for these fields)
-  if (data.course_id) payload.course_id = Number(data.course_id);
-  if (data.domain_id) payload.domain_id = Number(data.domain_id);
 
   const response = await fetch(BASE_URL, {
     method: "POST",
@@ -127,8 +170,9 @@ export async function createBatch(data: Record<string, unknown>) {
  * Update an existing batch
  */
 export async function updateBatch(id: string | number, data: Record<string, unknown>) {
-  const payload: Record<string, unknown> = {
+  const payload = {
     name: data.name,
+    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -136,11 +180,6 @@ export async function updateBatch(id: string | number, data: Record<string, unkn
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
     status: data.status || "active"
   };
-
-  // Only include course_id / domain_id when they have a real value
-  // (backend Joi schema rejects null values for these fields)
-  if (data.course_id) payload.course_id = Number(data.course_id);
-  if (data.domain_id) payload.domain_id = Number(data.domain_id);
 
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
@@ -272,99 +311,66 @@ export function getBatchStudentsExportPdfUrl(id: string | number): string {
   return `${API_HOST}/api/v1/batches/${id}/students/export-pdf`;
 }
 
-/**
- * Download batch bulk upload template
- */
-export async function downloadBatchBulkUploadTemplate() {
-  const url = `${API_HOST}/api/v1/batches/bulk-upload/template`;
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to download template");
-  }
-  const blob = await response.blob();
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = downloadUrl;
-  a.download = "batch_students_bulk_upload_template.csv";
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(downloadUrl);
-  document.body.removeChild(a);
+// ─── Tutor Lookup (Batch Management only) ────────────────────────────────────
+// Uses GET /api/v1/tutors/lookup to fetch tutors filtered by institution.
+// This is intentionally separate from the global Tutor Management API
+// (GET /api/v1/tutors) and must only be used within Batch Management forms.
+
+export interface TutorLookupItem {
+  id: string | number;
+  name: string;
+  email?: string;
+}
+
+function mapTutorLookup(u: Record<string, any>): TutorLookupItem {
+  return {
+    id: u.tutor_id ?? u.id,
+    name: u.tutor_name || u.full_name || u.name || "N/A",
+    email: u.email || "",
+  };
 }
 
 /**
- * Fetch courses lookup
+ * Fetch tutors from the lookup endpoint, optionally filtered by institution_id.
+ * Used exclusively in the Batch Create / Edit forms.
  */
-export async function fetchCoursesLookup(search?: string): Promise<any[]> {
-  let url = `${API_HOST}/api/v1/courses/lookup`;
-  if (search) {
-    const query = new URLSearchParams();
-    query.append("search", search);
-    url += `?${query.toString()}`;
-  }
+export async function fetchTutorsLookup(
+  institution_id?: string | number,
+  search?: string
+): Promise<TutorLookupItem[]> {
+  const query = new URLSearchParams();
+  if (institution_id) query.append("institution_id", String(institution_id));
+  if (search) query.append("search", search);
+
+  const url = query.toString()
+    ? `${TUTOR_LOOKUP_URL}?${query.toString()}`
+    : TUTOR_LOOKUP_URL;
+
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
   });
+
   const result = await handleResponse(response);
-  return result.data || [];
+  const items: Record<string, any>[] = Array.isArray(result)
+    ? result
+    : result.data || result.tutors || [];
+
+  return items.map(mapTutorLookup);
 }
 
 /**
- * Fetch domains lookup
+ * React Query hook — wraps fetchTutorsLookup for Batch Management forms.
+ * Re-fetches automatically whenever institution_id changes.
  */
-export async function fetchDomainsLookup(search?: string): Promise<any[]> {
-  let url = `${API_HOST}/api/v1/domains/lookup`;
-  if (search) {
-    const query = new URLSearchParams();
-    query.append("search", search);
-    url += `?${query.toString()}`;
-  }
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-  const result = await handleResponse(response);
-  return result.data || [];
-}
-
-/**
- * Fetch students lookup by institution ID
- */
-export async function fetchStudentLookup(institutionId: string | number): Promise<any[]> {
-  if (!institutionId) return [];
-  const url = `${API_HOST}/api/v1/students/lookup?institution_id=${institutionId}`;
-  const response = await fetch(url, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
-  const result = await handleResponse(response);
-  const rawList = result.data || (Array.isArray(result) ? result : []);
-  if (!Array.isArray(rawList)) return [];
-
-  return rawList.map((s: Record<string, any>) => {
-    const rawId = s.student_id || s.id;
-    let cleanId = rawId;
-    if (rawId !== undefined && rawId !== null) {
-      const strippedId = String(rawId).replace(/[^0-9]/g, "");
-      if (strippedId) cleanId = parseInt(strippedId, 10);
-    }
-
-    const firstName = s.first_name || "";
-    const lastName = s.last_name || "";
-    const name = s.student_name || s.name || `${firstName} ${lastName}`.trim() || `Student #${cleanId}`;
-
-    return {
-      ...s,
-      id: cleanId,
-      name,
-      email: s.email || "",
-    };
+export function useTutorsLookup(
+  institution_id?: string | number,
+  search?: string
+) {
+  return useQuery({
+    queryKey: ["tutors-lookup-batch", { institution_id, search }],
+    queryFn: () => fetchTutorsLookup(institution_id, search),
+    staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 }
-
-
-
