@@ -64,7 +64,7 @@ async function handleResponse(response: Response) {
  */
 export function mapBatch(b: Record<string, any>): Batch {
   const tutorName = b.tutor || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
-  const enrollmentsCount = b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0);
+  const enrollmentsCount = b.student_count !== undefined ? Number(b.student_count) : (b.students !== undefined ? Number(b.students) : (b.Enrollments ? b.Enrollments.length : 0));
   
   return {
     ...b,
@@ -80,7 +80,9 @@ export function mapBatch(b: Record<string, any>): Batch {
     completion_percentage: b.completion_percentage || 0,
     institution_id: b.institution_id || b.Institution?.id,
     tutor_id: b.tutor_id || (b.batchTutors && b.batchTutors[0]?.tutor_id),
-    course_id: b.course_id
+    course_id: b.course_id,
+    domain_id: b.domain_id || b.Domain?.id,
+    domain: b.domain || b.Domain?.name || "N/A"
   };
 }
 
@@ -149,6 +151,7 @@ export async function createBatch(data: Record<string, unknown>) {
   const payload = {
     name: data.name,
     course_id: data.course_id ? Number(data.course_id) : null,
+    domain_id: data.domain_id ? Number(data.domain_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -173,6 +176,7 @@ export async function updateBatch(id: string | number, data: Record<string, unkn
   const payload = {
     name: data.name,
     course_id: data.course_id ? Number(data.course_id) : null,
+    domain_id: data.domain_id ? Number(data.domain_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
@@ -427,4 +431,15 @@ export async function fetchStudentLookup(institutionId?: string | number): Promi
   });
   const result = await handleResponse(response);
   return result.data || result || [];
+}
+
+export async function downloadBatchBulkUploadTemplate(): Promise<Blob> {
+  const response = await fetch(`${BASE_URL}/bulk-upload/template`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to download template");
+  }
+  return response.blob();
 }

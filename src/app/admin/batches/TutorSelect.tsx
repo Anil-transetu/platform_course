@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Search, ChevronDown, Check, Loader2, User } from "lucide-react";
-import { fetchTutors } from "@/features/admin/tutor/api/tutor-api";
+import { fetchTutorsLookup } from "@/features/admin/batches/api/batch-api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 
@@ -11,9 +11,10 @@ interface TutorSelectProps {
   onChange: (value: string) => void;
   initialName?: string;
   error?: boolean;
+  institutionId?: string | number;
 }
 
-export default function TutorSelect({ value, onChange, initialName, error }: TutorSelectProps) {
+export default function TutorSelect({ value, onChange, initialName, error, institutionId }: TutorSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -22,15 +23,15 @@ export default function TutorSelect({ value, onChange, initialName, error }: Tut
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // We only run the query when the dropdown is open
-  const { data: tutorsData, isLoading } = useQuery<any, Error>({
-    queryKey: ["tutors", { page: 1, limit: 100, search: debouncedSearch }],
-    queryFn: () => fetchTutors(1, 100, debouncedSearch),
-    staleTime: 5 * 60 * 1000,
+  const { data: tutorsData, isLoading } = useQuery<any[], Error>({
+    queryKey: ["tutors-lookup-batch", { institutionId, search: debouncedSearch }],
+    queryFn: () => fetchTutorsLookup(institutionId || undefined, debouncedSearch || undefined),
+    staleTime: 2 * 60 * 1000,
     placeholderData: keepPreviousData,
     enabled: isOpen,
   });
 
-  const tutors = tutorsData?.data || (Array.isArray(tutorsData) ? tutorsData : []);
+  const tutors = tutorsData || [];
 
   // Close dropdown on outside click
   useEffect(() => {

@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, DragEvent } from "react";
 import { useUploadBatchStudentsCsv } from "@/hooks/use-batches";
+import { downloadBatchBulkUploadTemplate } from "@/features/admin/batches/api/batch-api";
 import { Modal } from "@/components/ui/modal";
 import { Info, Download, Upload, File, X } from "lucide-react";
 import { toast } from "sonner";
@@ -54,16 +55,21 @@ export default function BulkUploadModal({ open, onClose, batchId }: Props) {
     });
   };
 
-  const handleDownloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,first_name,last_name,email,status\nJohn,Doe,john.doe@example.com,active\nJane,Smith,jane.smith@example.com,active";
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "batch_student_enrollment_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success("Template downloaded successfully");
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await downloadBatchBulkUploadTemplate();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "batch_student_enrollment_template.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Template downloaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to download template");
+    }
   };
 
   return (

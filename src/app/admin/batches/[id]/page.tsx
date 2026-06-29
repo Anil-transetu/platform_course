@@ -1,23 +1,22 @@
 "use client";
 import React, { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { buildEnrolledStudentColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import { ArrowLeft, Users, UserCheck, UserMinus, Download, Upload } from "lucide-react";
+import { ArrowLeft, Users, UserCheck, UserMinus, Download } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { toast } from "sonner";
 import {
-  useBatch,
   useBatchStudents,
   useBatchStudentsStats,
 } from "@/hooks/use-batches";
 import { getBatchStudentsExportPdfUrl } from "@/features/admin/batches/api/batch-api";
-import BulkUploadModal from "../BulkUploadModal";
 
 export default function EnrolledStudentsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const batchId = resolvedParams.id;
 
@@ -26,7 +25,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   const [status, setStatus] = useState<"All" | "ACTIVE" | "COMPLETED">("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [bulkModal, setBulkModal] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -42,7 +40,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   }, [debouncedSearch, status]);
 
   // API hooks
-  const { data: batchDetail } = useBatch(batchId);
   const { data: studentsResponse, isLoading: isStudentsLoading, isFetching: isStudentsFetching } = useBatchStudents(
     batchId,
     page,
@@ -129,13 +126,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   const extraHeaderActions = (
     <div className="flex items-center gap-3">
       <button
-        onClick={() => setBulkModal(true)}
-        className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border border-gray-200 rounded-xl hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
-      >
-        <Upload size={16} />
-        Bulk Upload CSV
-      </button>
-      <button
         onClick={() => router.push("/admin/batches")}
         className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border border-gray-200 rounded-xl hover:bg-gray-50 bg-white transition-all text-gray-700 shadow-sm"
       >
@@ -152,7 +142,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
     </div>
   );
 
-  const batchName = batchDetail?.name || "Loading Batch...";
+  const batchName = searchParams.get("name") || batchStats?.batch_name || batchStats?.name || "Batch";
 
   return (
     <ListingScreenTemplate
@@ -215,11 +205,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
         />
       </div>
       )}
-      <BulkUploadModal
-        open={bulkModal}
-        onClose={() => setBulkModal(false)}
-        batchId={batchId}
-      />
     </ListingScreenTemplate>
   );
 }

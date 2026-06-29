@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
 
-
-
 function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
@@ -45,8 +43,8 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
+            e.stopPropagation();
+            onEdit();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
         >
@@ -55,8 +53,8 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
+            e.stopPropagation();
+            onDelete();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
         >
@@ -91,7 +89,10 @@ function BatchesPageContent() {
     batch: null,
   });
 
-  const [bulkModal, setBulkModal] = useState(false);
+  const [bulkModal, setBulkModal] = useState<{ open: boolean; batchId?: string | number }>({
+    open: false,
+    batchId: undefined,
+  });
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -164,13 +165,12 @@ function BatchesPageContent() {
 
   const totalBatches = Number(statsData?.totalBatches ?? statsData?.total_batches ?? 0);
   const activeBatches = Number(statsData?.activeBatches ?? statsData?.active_batches ?? 0);
-  const inactiveBatches = Math.max(0, totalBatches - activeBatches);
-  const averageStudents = Number(statsData?.averageStudentsPerBatch ?? statsData?.average_students_per_batch ?? 0);
-  const totalStudents = Math.round(totalBatches * averageStudents);
+  const inactiveBatches = Number(statsData?.inactiveBatches ?? statsData?.inactive_batches ?? Math.max(0, totalBatches - activeBatches));
+  const totalStudents = Number(statsData?.totalStudents ?? statsData?.total_students ?? 0);
 
   const extraHeaderActions = (
     <button
-      onClick={() => setBulkModal(true)}
+      onClick={() => setBulkModal({ open: true, batchId: undefined })}
       className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
     >
       <Upload size={16} />
@@ -236,7 +236,7 @@ function BatchesPageContent() {
           actions={(batch) => (
             <div className="flex items-center justify-center">
               <ActionMenu 
-                onView={() => router.push(`/admin/batches/${batch.id}`)}
+                onView={() => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
                 onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
                 onDelete={() => setDeleteDialog({ open: true, batch })}
               />
@@ -254,16 +254,19 @@ function BatchesPageContent() {
       )}
 
       {/* Modals */}
-      <BatchFormModal
-        open={formModal.open}
-        mode={formModal.mode}
-        batch={formModal.batch}
-        onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
-      />
+      {formModal.open && (
+        <BatchFormModal
+          open={formModal.open}
+          mode={formModal.mode}
+          batch={formModal.batch}
+          onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
+        />
+      )}
 
       <BulkUploadModal
-        open={bulkModal}
-        onClose={() => setBulkModal(false)}
+        open={bulkModal.open}
+        batchId={bulkModal.batchId}
+        onClose={() => setBulkModal({ open: false, batchId: undefined })}
       />
       
       <BatchDeleteDialog
