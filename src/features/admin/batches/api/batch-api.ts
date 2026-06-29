@@ -374,3 +374,57 @@ export function useTutorsLookup(
     placeholderData: keepPreviousData,
   });
 }
+
+/**
+ * Fetch courses for lookup dropdown
+ */
+export async function fetchCoursesLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/courses/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Fetch domains for lookup dropdown
+ */
+export async function fetchDomainsLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/domains/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Fetch students for lookup dropdown
+ */
+export async function fetchStudentLookup(institutionId?: string | number): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/students/lookup`;
+  if (institutionId) {
+    const query = new URLSearchParams();
+    query.append("institution_id", String(institutionId));
+    url += `?${query.toString()}`;
+  }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
