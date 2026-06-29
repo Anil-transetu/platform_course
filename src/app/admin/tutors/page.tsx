@@ -211,7 +211,7 @@ function TutorsPageContent() {
         await createTutor.mutateAsync(data);
         toast.success("Tutor registered successfully");
       } else if (formModal.tutor) {
-        await updateTutor.mutateAsync({ id: formModal.tutor.id, data });
+        await updateTutor.mutateAsync({ id: formModal.tutor.id, data, originalTutor: formModal.tutor });
         toast.success("Tutor updated successfully");
       }
       setFormModal({ open: false, mode: "add", tutor: null });
@@ -223,7 +223,7 @@ function TutorsPageContent() {
   const handleDeleteTutor = async () => {
     if (deleteDialog.tutor) {
       try {
-        await deleteTutor.mutateAsync(deleteDialog.tutor.id);
+        await deleteTutor.mutateAsync({ id: deleteDialog.tutor.id, tutor: deleteDialog.tutor });
         toast.success("Tutor deleted successfully");
         setDeleteDialog({ open: false, tutor: null });
       } catch (err: any) {

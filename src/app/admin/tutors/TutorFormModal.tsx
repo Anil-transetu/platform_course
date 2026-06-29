@@ -105,38 +105,38 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     }
   }, [mode, tutor, open]);
 
-  const validate = () => {
+  const validate = (formToValidate = form) => {
     const e: Partial<Record<keyof typeof form | "domains" | "tags", string>> = {};
     
-    if (!form.name.trim()) {
+    if (!formToValidate.name.trim()) {
       e.name = "Full Name is required";
-    } else if (hasEmoji(form.name)) {
+    } else if (hasEmoji(formToValidate.name)) {
       e.name = "Full Name cannot contain emojis";
     }
 
-    if (!form.email.trim()) {
+    if (!formToValidate.email.trim()) {
       e.email = "Email Address is required";
-    } else if (hasEmoji(form.email)) {
+    } else if (hasEmoji(formToValidate.email)) {
       e.email = "Email Address cannot contain emojis";
     }
 
-    if (!form.phone.trim()) {
+    if (!formToValidate.phone.trim()) {
       e.phone = "Contact Number is required";
-    } else if (form.phone.length !== 10) {
+    } else if (formToValidate.phone.length !== 10) {
       e.phone = "Contact Number must be exactly 10 digits";
     }
 
-    if (mode === "add" && !form.password.trim()) {
+    if (mode === "add" && !formToValidate.password.trim()) {
       e.password = "Password is required";
-    } else if (form.password && hasEmoji(form.password)) {
+    } else if (formToValidate.password && hasEmoji(formToValidate.password)) {
       e.password = "Password cannot contain emojis";
     }
 
-    if (form.tags.some(t => hasEmoji(t))) {
+    if (formToValidate.tags.some(t => hasEmoji(t))) {
       e.tags = "Tags cannot contain emojis";
     }
 
-    if (!form.status) {
+    if (!formToValidate.status) {
       e.status = "Status is required";
     }
 
@@ -145,9 +145,18 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   };
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    let currentTags = form.tags;
+    if (tagInput.trim()) {
+      const newTag = tagInput.trim().toUpperCase();
+      if (!currentTags.includes(newTag)) {
+        currentTags = [...currentTags, newTag];
+      }
+    }
     
-    const payload = { ...form };
+    const updatedForm = { ...form, tags: currentTags };
+    if (!validate(updatedForm)) return;
+    
+    const payload = { ...updatedForm };
     if (mode === "edit" && !payload.password) {
       delete (payload as any).password;
     }
@@ -433,18 +442,45 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Tags
             </label>
-            <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-3 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors h-[46px] flex items-center">
+            <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-3 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors h-[46px] flex items-center justify-between">
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => {
-                  setTagInput(e.target.value);
-                  if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  const val = e.target.value;
+                  if (val.includes(",")) {
+                    const parts = val.split(",");
+                    const tagToAdd = parts[0].trim().toUpperCase();
+                    if (tagToAdd && !form.tags.includes(tagToAdd)) {
+                      setForm(prev => ({ ...prev, tags: [...prev.tags, tagToAdd] }));
+                    }
+                    setTagInput(parts.slice(1).join(","));
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  } else {
+                    setTagInput(val);
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  }
                 }}
                 onKeyDown={handleAddTag}
-                placeholder="Add tag..."
+                placeholder="Add tag... (Enter or comma)"
                 className="w-full bg-transparent border-0 outline-none text-sm placeholder-gray-400"
               />
+              {tagInput.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newTag = tagInput.trim().toUpperCase();
+                    if (newTag && !form.tags.includes(newTag)) {
+                      setForm(prev => ({ ...prev, tags: [...prev.tags, newTag] }));
+                    }
+                    setTagInput("");
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  }}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 ml-2 whitespace-nowrap focus:outline-none"
+                >
+                  Add
+                </button>
+              )}
             </div>
             {errors.tags && (
               <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.tags}</p>
