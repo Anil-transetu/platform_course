@@ -331,4 +331,40 @@ export async function fetchDomainsLookup(search?: string): Promise<any[]> {
   return result.data || [];
 }
 
+/**
+ * Fetch students lookup by institution ID
+ */
+export async function fetchStudentLookup(institutionId: string | number): Promise<any[]> {
+  if (!institutionId) return [];
+  const url = `${API_HOST}/api/v1/students/lookup?institution_id=${institutionId}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  const rawList = result.data || (Array.isArray(result) ? result : []);
+  if (!Array.isArray(rawList)) return [];
+
+  return rawList.map((s: Record<string, any>) => {
+    const rawId = s.student_id || s.id;
+    let cleanId = rawId;
+    if (rawId !== undefined && rawId !== null) {
+      const strippedId = String(rawId).replace(/[^0-9]/g, "");
+      if (strippedId) cleanId = parseInt(strippedId, 10);
+    }
+
+    const firstName = s.first_name || "";
+    const lastName = s.last_name || "";
+    const name = s.student_name || s.name || `${firstName} ${lastName}`.trim() || `Student #${cleanId}`;
+
+    return {
+      ...s,
+      id: cleanId,
+      name,
+      email: s.email || "",
+    };
+  });
+}
+
+
 

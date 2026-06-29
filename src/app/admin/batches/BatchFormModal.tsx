@@ -2,15 +2,15 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
+import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
 import BatchInstitutionSelect from "./BatchInstitutionSelect";
 import CourseSelect from "./CourseSelect";
 import DomainSelect from "./DomainSelect";
 import TutorSelect from "./TutorSelect";
-import { fetchStudents } from "@/features/admin/students/api/student-api";
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Props {
   open: boolean;
@@ -34,19 +34,39 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
   const prevInstitutionIdRef = useRef(form.institution_id);
 
+  const parseDateString = (dateStr: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    const parts = dateStr.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) return d;
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? undefined : d;
+  };
+
+  const formatDateString = (date: Date | undefined): string => {
+    if (!date || isNaN(date.getTime())) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // API hooks
-  const { data: studentsData } = useQuery<any, Error>({
-    queryKey: ["students", { page: 1, limit: 500, institutionId: form.institution_id }],
-    queryFn: () => fetchStudents(1, 500, undefined, undefined, undefined, form.institution_id || undefined),
-    placeholderData: keepPreviousData,
-    staleTime: 5 * 60 * 1000,
-    enabled: open && dropdownOpen && !!form.institution_id,
+  const { data: studentsData } = useStudentLookup(form.institution_id, {
+    enabled: open && !!form.institution_id,
   });
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
 
@@ -54,7 +74,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const updateMutation = useUpdateBatch();
 
   const allStudents = form.institution_id
-    ? (studentsData?.data || (Array.isArray(studentsData) ? studentsData : []))
+    ? (Array.isArray(studentsData) ? studentsData : ((studentsData as any)?.data || []))
     : [];
 
   // Click outside listener for student search dropdown
@@ -111,6 +131,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       }
       setStudentSearch("");
       setDropdownOpen(false);
+      setStartDateOpen(false);
+      setEndDateOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
@@ -390,24 +412,58 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               START DATE <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-slate-700 transition-colors ${errors.start_date ? "border-red-500" : "border-gray-200"}`}
-            />
+            <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`w-full flex items-center justify-between border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${!form.start_date ? "text-slate-400" : "text-slate-700 font-medium"} ${errors.start_date ? "border-red-500" : "border-gray-200"}`}
+                >
+                  <span>{form.start_date || "Select start date"}</span>
+                  <CalendarIcon size={16} className="text-gray-400" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateString(form.start_date)}
+                  onSelect={(d) => {
+                    setForm({ ...form, start_date: formatDateString(d) });
+                    setStartDateOpen(false);
+                  }}
+                  className="rounded-lg border"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
             {errors.start_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.start_date}</p>}
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               END DATE <span className="text-red-500">*</span>
             </label>
-            <input
-              type="date"
-              value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-slate-700 transition-colors ${errors.end_date ? "border-red-500" : "border-gray-200"}`}
-            />
+            <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`w-full flex items-center justify-between border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${!form.end_date ? "text-slate-400" : "text-slate-700 font-medium"} ${errors.end_date ? "border-red-500" : "border-gray-200"}`}
+                >
+                  <span>{form.end_date || "Select end date"}</span>
+                  <CalendarIcon size={16} className="text-gray-400" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateString(form.end_date)}
+                  onSelect={(d) => {
+                    setForm({ ...form, end_date: formatDateString(d) });
+                    setEndDateOpen(false);
+                  }}
+                  className="rounded-lg border"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
             {errors.end_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.end_date}</p>}
           </div>
         </div>

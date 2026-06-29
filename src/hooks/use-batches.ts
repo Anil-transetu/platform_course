@@ -12,6 +12,7 @@ import {
   uploadBatchStudentsCsv,
   fetchCoursesLookup,
   fetchDomainsLookup,
+  fetchStudentLookup,
 } from "@/features/admin/batches/api/batch-api";
 import { toast } from "sonner";
 
@@ -132,6 +133,16 @@ export function useDomainsLookup(search?: string, options?: any) {
     queryKey: ["domainsLookup", search],
     queryFn: () => fetchDomainsLookup(search),
     staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useStudentLookup(institutionId: string | number, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["studentsLookup", institutionId],
+    queryFn: () => fetchStudentLookup(institutionId),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!institutionId,
     ...options,
   });
 }
