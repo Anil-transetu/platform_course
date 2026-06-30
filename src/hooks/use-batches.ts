@@ -10,14 +10,17 @@ import {
   fetchBatchStudentsStats,
   fetchBatchStudents,
   uploadBatchStudentsCsv,
+  fetchCoursesLookup,
+  fetchDomainsLookup,
+  fetchStudentLookup,
 } from "@/features/admin/batches/api/batch-api";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 const QUERY_KEY = "batches";
 
 export function useBatches(page: number = 1, limit: number = 10, search?: string, statusFilter?: string) {
   return useQuery({
-    queryKey: [QUERY_KEY, { page, limit, search, statusFilter }],
+    queryKey: [QUERY_KEY, "list", { page, limit, search, statusFilter }],
     queryFn: () => fetchBatches(page, limit, search, statusFilter),
     placeholderData: keepPreviousData,
     staleTime: 5 * 60 * 1000,
@@ -61,7 +64,8 @@ export function useCreateBatch() {
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createBatch(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
       toast.success("Batch created successfully");
     },
     onError: (err: any) => {
@@ -76,7 +80,7 @@ export function useUpdateBatch() {
     mutationFn: ({ id, data }: { id: string | number; data: Record<string, unknown> }) =>
       updateBatch(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "detail", variables.id] });
       toast.success("Batch updated successfully");
     },
@@ -91,7 +95,8 @@ export function useDeleteBatch() {
   return useMutation({
     mutationFn: (id: string | number) => deleteBatch(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
       toast.success("Batch deleted successfully");
     },
     onError: (err: any) => {
@@ -106,6 +111,8 @@ export function useUploadBatchStudentsCsv() {
     mutationFn: ({ id, file }: { id: string | number; file: File }) =>
       uploadBatchStudentsCsv(id, file),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "students", variables.id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "students", variables.id] });
       toast.success("Students uploaded successfully");
@@ -113,5 +120,33 @@ export function useUploadBatchStudentsCsv() {
     onError: (err: any) => {
       toast.error(err.message || "Failed to upload CSV");
     },
+  });
+}
+
+export function useCoursesLookup(search?: string, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["coursesLookup", search],
+    queryFn: () => fetchCoursesLookup(search),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useDomainsLookup(search?: string, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["domainsLookup", search],
+    queryFn: () => fetchDomainsLookup(search),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useStudentLookup(institutionId: string | number, search?: string, options?: any) {
+  return useQuery<any[], Error>({
+    queryKey: ["studentsLookup", institutionId, search],
+    queryFn: () => fetchStudentLookup(institutionId, search),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!institutionId,
+    ...options,
   });
 }

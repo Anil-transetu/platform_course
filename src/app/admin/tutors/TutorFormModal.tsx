@@ -46,11 +46,12 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     password: "",
     domains: [] as string[],
     tags: [] as string[],
-    status: "active",
+    status: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form | "domains" | "tags", string>>>({});
 
+  // Custom Domain input state
   // Custom Domain input state
   const [isAddingCustomDomain, setIsAddingCustomDomain] = useState(false);
   const [customDomainInput, setCustomDomainInput] = useState("");
@@ -58,8 +59,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   // Tag input state
   const [tagInput, setTagInput] = useState("");
 
+  // Lazy loading state for domains API call
+  const [loadDomains, setLoadDomains] = useState(false);
+
   // Fetch available domains from API
-  const { data: domainsRes } = useDomains(1, 100);
+  const { data: domainsRes } = useDomains(1, 100, undefined, undefined, { enabled: loadDomains });
   const apiDomains = Array.isArray(domainsRes) ? domainsRes : domainsRes?.data || [];
   const apiDomainNames = apiDomains.map((d: any) => d.name || d.domain_name).filter(Boolean);
   
@@ -79,7 +83,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: tutor.domains || [],
           tags: tutor.tags || [],
-          status: tutor.status ? tutor.status.toLowerCase() : "active",
+          status: tutor.status ? tutor.status.toLowerCase() : "",
         });
       } else {
         setForm({
@@ -89,7 +93,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: [],
           tags: [],
-          status: "active",
+          status: "",
         });
       }
       setErrors({});
@@ -97,38 +101,43 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       setIsAddingCustomDomain(false);
       setCustomDomainInput("");
       setTagInput("");
+      setLoadDomains(false);
     }
   }, [mode, tutor, open]);
 
-  const validate = () => {
+  const validate = (formToValidate = form) => {
     const e: Partial<Record<keyof typeof form | "domains" | "tags", string>> = {};
     
-    if (!form.name.trim()) {
+    if (!formToValidate.name.trim()) {
       e.name = "Full Name is required";
-    } else if (hasEmoji(form.name)) {
+    } else if (hasEmoji(formToValidate.name)) {
       e.name = "Full Name cannot contain emojis";
     }
 
-    if (!form.email.trim()) {
+    if (!formToValidate.email.trim()) {
       e.email = "Email Address is required";
-    } else if (hasEmoji(form.email)) {
+    } else if (hasEmoji(formToValidate.email)) {
       e.email = "Email Address cannot contain emojis";
     }
 
-    if (!form.phone.trim()) {
+    if (!formToValidate.phone.trim()) {
       e.phone = "Contact Number is required";
-    } else if (form.phone.length !== 10) {
+    } else if (formToValidate.phone.length !== 10) {
       e.phone = "Contact Number must be exactly 10 digits";
     }
 
-    if (mode === "add" && !form.password.trim()) {
+    if (mode === "add" && !formToValidate.password.trim()) {
       e.password = "Password is required";
-    } else if (form.password && hasEmoji(form.password)) {
+    } else if (formToValidate.password && hasEmoji(formToValidate.password)) {
       e.password = "Password cannot contain emojis";
     }
 
-    if (form.tags.some(t => hasEmoji(t))) {
+    if (formToValidate.tags.some(t => hasEmoji(t))) {
       e.tags = "Tags cannot contain emojis";
+    }
+
+    if (!formToValidate.status) {
+      e.status = "Status is required";
     }
 
     setErrors(e);
@@ -136,9 +145,18 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
   };
 
   const handleSubmit = () => {
-    if (!validate()) return;
+    let currentTags = form.tags;
+    if (tagInput.trim()) {
+      const newTag = tagInput.trim().toUpperCase();
+      if (!currentTags.includes(newTag)) {
+        currentTags = [...currentTags, newTag];
+      }
+    }
     
-    const payload = { ...form };
+    const updatedForm = { ...form, tags: currentTags };
+    if (!validate(updatedForm)) return;
+    
+    const payload = { ...updatedForm };
     if (mode === "edit" && !payload.password) {
       delete (payload as any).password;
     }
@@ -203,25 +221,54 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       size="2xl"
     >
       <div className="space-y-6 mt-4">
-        {/* Row 1: Full Name & Email Address */}
+        {/* Row 1: Full Name (Full Width) */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            value={form.name}
+            onChange={(e) => {
+              setForm({ ...form, name: e.target.value });
+              if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+            }}
+            placeholder="e.g. Dr. John Doe"
+            className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+              errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.name}</p>
+          )}
+        </div>
+
+        {/* Row 2: Status & Email Address */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Full Name <span className="text-red-500">*</span>
+              Status <span className="text-red-500">*</span>
             </label>
-            <input
-              value={form.name}
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-                if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+            <Select
+              value={form.status}
+              onValueChange={(val) => {
+                setForm({ ...form, status: val });
+                if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
               }}
-              placeholder="e.g. Dr. John Doe"
-              className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
-                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.name}</p>
+            >
+              <SelectTrigger className={`w-full border rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between capitalize ${
+                form.status ? "text-gray-700 dark:text-foreground" : "text-gray-400"
+              } ${
+                errors.status ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}>
+                <SelectValue placeholder="Select status..." />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && (
+              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.status}</p>
             )}
           </div>
           <div>
@@ -247,7 +294,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
         </div>
 
-        {/* Row 2: Contact Number & Password */}
+        {/* Row 3: Contact Number & Password */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
@@ -278,7 +325,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                   setForm({ ...form, password: e.target.value });
                   if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
                 }}
-                placeholder="........"
+                placeholder={mode === "edit" ? "••••••••" : "........"}
                 autoComplete="new-password"
                 className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
                   errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
@@ -287,7 +334,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -298,7 +345,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           </div>
         </div>
 
-        {/* Row 3: Domains & Tags */}
+        {/* Row 4: Domains & Tags */}
         <div className="grid grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
@@ -351,6 +398,11 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
                     setForm({ ...form, domains: [...form.domains, val] });
                   }
                 }}
+                onOpenChange={(open) => {
+                  if (open) {
+                    setLoadDomains(true);
+                  }
+                }}
               >
                 <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-400">
                   <SelectValue placeholder="Select domain..." />
@@ -390,18 +442,45 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
             <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
               Tags
             </label>
-            <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-3 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors h-[46px] flex items-center">
+            <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-3 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors h-[46px] flex items-center justify-between">
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => {
-                  setTagInput(e.target.value);
-                  if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  const val = e.target.value;
+                  if (val.includes(",")) {
+                    const parts = val.split(",");
+                    const tagToAdd = parts[0].trim().toUpperCase();
+                    if (tagToAdd && !form.tags.includes(tagToAdd)) {
+                      setForm(prev => ({ ...prev, tags: [...prev.tags, tagToAdd] }));
+                    }
+                    setTagInput(parts.slice(1).join(","));
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  } else {
+                    setTagInput(val);
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  }
                 }}
                 onKeyDown={handleAddTag}
-                placeholder="Add tag..."
+                placeholder="Add tag... (Enter or comma)"
                 className="w-full bg-transparent border-0 outline-none text-sm placeholder-gray-400"
               />
+              {tagInput.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newTag = tagInput.trim().toUpperCase();
+                    if (newTag && !form.tags.includes(newTag)) {
+                      setForm(prev => ({ ...prev, tags: [...prev.tags, newTag] }));
+                    }
+                    setTagInput("");
+                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
+                  }}
+                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 ml-2 whitespace-nowrap focus:outline-none"
+                >
+                  Add
+                </button>
+              )}
             </div>
             {errors.tags && (
               <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.tags}</p>
@@ -421,34 +500,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
               </div>
             )}
           </div>
-        </div>
-
-        {/* Row 4: Status */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Status <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={form.status}
-              onValueChange={(val) => {
-                setForm({ ...form, status: val });
-                if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
-              }}
-            >
-              <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-700 dark:text-foreground capitalize">
-                <SelectValue placeholder="Select status..." />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.status && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.status}</p>
-            )}
-          </div>
-          <div></div>
         </div>
 
         {/* Footer actions */}

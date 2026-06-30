@@ -17,39 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
-import { Toaster } from "react-hot-toast";
-
-// Dummy data for batches
-const DUMMY_BATCHES: Batch[] = [
-  {
-    id: "101",
-    name: "Computer Science - 2024 - Section A",
-    instructor: "Dr. Robert Wilson",
-    students: 45,
-    status: "Active",
-    institution: "Global Tech Institute",
-    course: "Java Development"
-  },
-  {
-    id: "102",
-    name: "Web Development Bootcamp",
-    instructor: "Sarah Jenkins",
-    students: 32,
-    status: "Active",
-    institution: "National University",
-    course: "Web Development"
-  },
-  {
-    id: "103",
-    name: "Data Science Fundamentals",
-    instructor: "Michael Chang",
-    students: 28,
-    status: "Inactive",
-    institution: "Global Tech Institute",
-    course: "Data Science"
-  }
-];
+import { Layers, CheckCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
 
 function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
@@ -75,8 +43,8 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
+            e.stopPropagation();
+            onEdit();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
         >
@@ -85,8 +53,8 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
+            e.stopPropagation();
+            onDelete();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
         >
@@ -121,7 +89,10 @@ function BatchesPageContent() {
     batch: null,
   });
 
-  const [bulkModal, setBulkModal] = useState(false);
+  const [bulkModal, setBulkModal] = useState<{ open: boolean; batchId?: string | number }>({
+    open: false,
+    batchId: undefined,
+  });
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -192,14 +163,14 @@ function BatchesPageContent() {
     ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
-  const totalBatches = statsData?.totalBatches ?? 0;
-  const activeBatches = statsData?.activeBatches ?? 0;
-  const inactiveBatches = totalBatches - activeBatches;
-  const totalStudents = totalBatches * (statsData?.averageStudentsPerBatch ?? 0);
+  const totalBatches = Number(statsData?.totalBatches ?? statsData?.total_batches ?? 0);
+  const activeBatches = Number(statsData?.activeBatches ?? statsData?.active_batches ?? 0);
+  const averageStudents = Number(statsData?.averageStudentsPerBatch ?? statsData?.average_students_per_batch ?? 0);
+  const averageStudentsVal = averageStudents % 1 === 0 ? averageStudents : Number(averageStudents.toFixed(1));
 
   const extraHeaderActions = (
     <button
-      onClick={() => setBulkModal(true)}
+      onClick={() => setBulkModal({ open: true, batchId: undefined })}
       className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
     >
       <Upload size={16} />
@@ -220,7 +191,6 @@ function BatchesPageContent() {
         <UserPageSkeleton />
       ) : (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
-        <Toaster position="top-right" />
         
         <StatsGrid>
           <StatsCard
@@ -240,20 +210,12 @@ function BatchesPageContent() {
             tooltip="Currently active batches"
           />
           <StatsCard
-            title="Inactive Batches"
-            value={inactiveBatches >= 0 ? inactiveBatches : 0}
-            icon={<XCircle className="w-5 h-5" />}
-            iconBgClass="bg-red-50"
-            iconColorClass="text-red-600"
-            tooltip="Batches that are currently inactive"
-          />
-          <StatsCard
-            title="Total Students"
-            value={totalStudents}
+            title="Average Students per Batch"
+            value={averageStudentsVal}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
-            tooltip="Total students enrolled across all batches"
+            tooltip="Average number of students enrolled per batch"
           />
         </StatsGrid>
 
@@ -266,7 +228,7 @@ function BatchesPageContent() {
           actions={(batch) => (
             <div className="flex items-center justify-center">
               <ActionMenu 
-                onView={() => router.push(`/admin/batches/${batch.id}`)}
+                onView={() => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
                 onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
                 onDelete={() => setDeleteDialog({ open: true, batch })}
               />
@@ -284,16 +246,19 @@ function BatchesPageContent() {
       )}
 
       {/* Modals */}
-      <BatchFormModal
-        open={formModal.open}
-        mode={formModal.mode}
-        batch={formModal.batch}
-        onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
-      />
+      {formModal.open && (
+        <BatchFormModal
+          open={formModal.open}
+          mode={formModal.mode}
+          batch={formModal.batch}
+          onClose={() => setFormModal({ open: false, mode: "add", batch: null })}
+        />
+      )}
 
       <BulkUploadModal
-        open={bulkModal}
-        onClose={() => setBulkModal(false)}
+        open={bulkModal.open}
+        batchId={bulkModal.batchId}
+        onClose={() => setBulkModal({ open: false, batchId: undefined })}
       />
       
       <BatchDeleteDialog

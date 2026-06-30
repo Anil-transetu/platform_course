@@ -1,15 +1,14 @@
 "use client";
 import React, { useState, useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { buildEnrolledStudentColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import { ArrowLeft, Users, UserCheck, UserMinus, Download } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
-import { Toaster, toast } from "react-hot-toast";
+import { toast } from "sonner";
 import {
-  useBatch,
   useBatchStudents,
   useBatchStudentsStats,
 } from "@/hooks/use-batches";
@@ -17,6 +16,7 @@ import { getBatchStudentsExportPdfUrl } from "@/features/admin/batches/api/batch
 
 export default function EnrolledStudentsPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const resolvedParams = use(params);
   const batchId = resolvedParams.id;
 
@@ -40,7 +40,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
   }, [debouncedSearch, status]);
 
   // API hooks
-  const { data: batchDetail } = useBatch(batchId);
   const { data: studentsResponse, isLoading: isStudentsLoading, isFetching: isStudentsFetching } = useBatchStudents(
     batchId,
     page,
@@ -143,7 +142,7 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
     </div>
   );
 
-  const batchName = batchDetail?.name || "Loading Batch...";
+  const batchName = searchParams.get("name") || batchStats?.batch_name || batchStats?.name || "Batch";
 
   return (
     <ListingScreenTemplate
@@ -161,7 +160,6 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
         <UserPageSkeleton />
       ) : (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
-        <Toaster position="top-right" />
         
         {/* Status Cards */}
         <StatsGrid>

@@ -25,7 +25,8 @@ import { Tutor } from "@/types/tutor";
 import TutorFormModal from "./TutorFormModal";
 import TutorDeleteDialog from "./TutorDeleteDialog";
 import { buildTutorColumns } from "./columns";
-import { Toaster, toast } from "react-hot-toast";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import {
   useTutors,
   useTutorStats,
@@ -88,10 +89,24 @@ function TutorsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, domainFilter, statusFilter]);
 
   // Modal state
   const [formModal, setFormModal] = useState<{
@@ -120,7 +135,7 @@ function TutorsPageContent() {
   });
 
   // Queries & Mutations
-  const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, search, statusFilter, domainFilter);
+  const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, debouncedSearch, statusFilter, domainFilter);
   const { data: tutorStats, isLoading: isStatsLoading } = useTutorStats();
 
   const createTutor = useCreateTutor();
@@ -150,7 +165,6 @@ function TutorsPageContent() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
     },
   };
 
@@ -197,7 +211,7 @@ function TutorsPageContent() {
         await createTutor.mutateAsync(data);
         toast.success("Tutor registered successfully");
       } else if (formModal.tutor) {
-        await updateTutor.mutateAsync({ id: formModal.tutor.id, data });
+        await updateTutor.mutateAsync({ id: formModal.tutor.id, data, originalTutor: formModal.tutor });
         toast.success("Tutor updated successfully");
       }
       setFormModal({ open: false, mode: "add", tutor: null });
@@ -209,7 +223,7 @@ function TutorsPageContent() {
   const handleDeleteTutor = async () => {
     if (deleteDialog.tutor) {
       try {
-        await deleteTutor.mutateAsync(deleteDialog.tutor.id);
+        await deleteTutor.mutateAsync({ id: deleteDialog.tutor.id, tutor: deleteDialog.tutor });
         toast.success("Tutor deleted successfully");
         setDeleteDialog({ open: false, tutor: null });
       } catch (err: any) {
@@ -251,14 +265,6 @@ function TutorsPageContent() {
             tooltip="Tutors currently active"
           />
           <StatsCard
-            title="Inactive Tutors"
-            value={isStatsLoading ? "..." : (tutorStats?.inactive || tutorsList.filter(t => t.status?.toLowerCase() !== 'active').length || 0)}
-            icon={<Star className="w-5 h-5" />}
-            iconBgClass="bg-yellow-50"
-            iconColorClass="text-yellow-600"
-            tooltip="Tutors currently inactive"
-          />
-          <StatsCard
             title="New Tutors (Month)"
             value={isStatsLoading ? "..." : (tutorStats?.newTutors || 0)}
             icon={<UserPlus className="w-5 h-5" />}
@@ -273,7 +279,7 @@ function TutorsPageContent() {
           <DataTable<Tutor>
             data={displayTutors}
             columns={buildTutorColumns()}
-            loading={isLoading}
+            loading={isLoading || isFetching}
             rowKey={(tutor) => String(tutor.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -301,13 +307,15 @@ function TutorsPageContent() {
       </div>
       )}
 
-      <TutorFormModal
-        open={formModal.open}
-        mode={formModal.mode}
-        tutor={formModal.tutor}
-        onClose={() => setFormModal({ open: false, mode: "add", tutor: null })}
-        onSave={handleSaveTutor}
-      />
+      {formModal.open && (
+        <TutorFormModal
+          open={formModal.open}
+          mode={formModal.mode}
+          tutor={formModal.tutor}
+          onClose={() => setFormModal({ open: false, mode: "add", tutor: null })}
+          onSave={handleSaveTutor}
+        />
+      )}
       
       <TutorDeleteDialog
         open={deleteDialog.open}

@@ -206,12 +206,19 @@ export async function deleteDomain(id: string | number) {
  * TanStack Query Hooks
  */
 
-export function useDomains(page: number = 1, limit: number = 10, search?: string, statusFilter?: string) {
+export function useDomains(
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  statusFilter?: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["domains", { page, limit, search, statusFilter }],
     queryFn: () => fetchDomains(page, limit, search, statusFilter),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
+    ...options,
   });
 }
 

@@ -2,13 +2,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
-import { Search, ChevronDown, X } from "lucide-react";
-import toast from "react-hot-toast";
+import { FileText, Download, Search, ChevronDown, Info, X, Calendar as CalendarIcon, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
-import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
-import { useTutors } from "@/features/admin/tutor/api/tutor-api";
-import { useStudents } from "@/hooks/use-students";
+import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
+import { useDebounce } from "@/hooks/use-debounce";
+import BatchInstitutionSelect from "./BatchInstitutionSelect";
+import CourseSelect from "./CourseSelect";
+import DomainSelect from "./DomainSelect";
+import TutorSelect from "./TutorSelect";
+import BulkUploadModal from "./BulkUploadModal";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 interface Props {
   open: boolean;
@@ -17,59 +23,67 @@ interface Props {
   batch?: Batch | null;
 }
 
+const parseDateString = (str: string) => {
+  if (!str) return undefined;
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const formatDateString = (date: Date | undefined) => {
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const getDisplayValue = (val?: string) => {
+  if (!val || val === "N/A") return "None";
+  return val;
+};
+
 export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [form, setForm] = useState({
     name: "",
     institution_id: "",
     tutor_id: "",
-    course_key: "java-dev",
+    course_id: "",
+    domain_id: "",
     start_date: "",
     end_date: "",
-    status: "active",
+    status: "",
   });
 
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   
-  const [instructorSearch, setInstructorSearch] = useState("");
-  const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
-  const tutorDropdownRef = useRef<HTMLDivElement>(null);
-  const prevInstitutionIdRef = useRef(form.institution_id);
+
+  const debouncedSearch = useDebounce(studentSearch, 300);
 
   // API hooks
-  const { data: institutions } = useInstitutionsOutlook();
-  const { data: tutorsData } = useTutors(1, 100);
-  const { data: studentsData } = useStudents(
-    1,
-    500,
-    undefined,
-    undefined,
-    undefined,
-    form.institution_id || undefined
+  const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
+    form.institution_id ? Number(form.institution_id) : "",
+    debouncedSearch,
+    { enabled: !!form.institution_id && dropdownOpen }
   );
+  
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
 
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
 
-  const tutors = tutorsData?.data || (Array.isArray(tutorsData) ? tutorsData : []);
-  const allStudents = form.institution_id
-    ? (studentsData?.data || (Array.isArray(studentsData) ? studentsData : []))
-    : [];
+  const allStudents = studentsLookupData || [];
 
-  // Click outside listener for student and tutor search dropdowns
+  // Click outside listener for student search dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
-      }
-      if (tutorDropdownRef.current && !tutorDropdownRef.current.contains(event.target as Node)) {
-        setInstructorDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -83,9 +97,10 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       if (activeBatch) {
         setForm({
           name: activeBatch.name || "",
-          institution_id: String(activeBatch.institution_id || ""),
-          tutor_id: String(activeBatch.tutor_id || ""),
-          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "java-dev",
+          institution_id: activeBatch.institution_id ? String(activeBatch.institution_id) : "",
+          tutor_id: activeBatch.tutor_id ? String(activeBatch.tutor_id) : "",
+          course_id: activeBatch.course_id ? String(activeBatch.course_id) : "",
+          domain_id: activeBatch.domain_id ? String(activeBatch.domain_id) : "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
@@ -101,48 +116,30 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         } else {
           setSelectedStudents([]);
         }
-        prevInstitutionIdRef.current = String(activeBatch.institution_id || "");
       } else {
         setForm({
           name: "",
           institution_id: "",
           tutor_id: "",
-          course_key: "java-dev",
+          course_id: "",
+          domain_id: "",
           start_date: "",
           end_date: "",
-          status: "active",
+          status: "",
         });
         setSelectedStudents([]);
-        prevInstitutionIdRef.current = "";
       }
       setStudentSearch("");
-      setInstructorSearch("");
       setDropdownOpen(false);
-      setInstructorDropdownOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
 
-  // Clear selected students if institution changes after initial load
-  useEffect(() => {
-    if (open && form.institution_id !== prevInstitutionIdRef.current) {
-      setSelectedStudents([]);
-      prevInstitutionIdRef.current = form.institution_id;
-    }
-  }, [form.institution_id, open]);
-
   // Filter students based on search input
   const filteredStudents = allStudents.filter(
     (s: any) =>
-      s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.email.toLowerCase().includes(studentSearch.toLowerCase())
-  );
-
-  // Filter tutors based on search input
-  const filteredTutors = tutors.filter(
-    (t: any) =>
-      t.name.toLowerCase().includes(instructorSearch.toLowerCase()) ||
-      (t.email && t.email.toLowerCase().includes(instructorSearch.toLowerCase()))
+      (s.name || "").toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (s.email || "").toLowerCase().includes(studentSearch.toLowerCase())
   );
 
   const validate = () => {
@@ -155,15 +152,22 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       newErrors.name = "Batch Name must be at least 3 characters long";
     }
 
-    // Emoji regex checking
     const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
     if (emojiRegex.test(nameStr)) {
       newErrors.name = "Batch Name cannot contain emojis";
     }
 
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
-    if (!form.course_key) newErrors.course_key = "Course is required";
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
+    
+    if (!form.course_id && !form.domain_id) {
+      newErrors.course_id = "You must select either a Course or a Domain";
+      newErrors.domain_id = "You must select either a Course or a Domain";
+    } else if (form.course_id && form.domain_id) {
+      newErrors.course_id = "You cannot select both a Course and a Domain";
+      newErrors.domain_id = "You cannot select both a Course and a Domain";
+    }
+
     if (selectedStudents.length === 0) {
       newErrors.enroll_students = "Enroll Students is required";
     }
@@ -184,7 +188,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: null,
+      course_id: form.course_id ? Number(form.course_id) : null,
+      domain_id: form.domain_id ? Number(form.domain_id) : null,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
@@ -206,7 +211,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
   };
 
-  const selectedTutor = tutors.find((t: any) => String(t.id) === form.tutor_id);
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -218,7 +222,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     >
       <div className="space-y-4 mt-1">
         
-        {/* BATCH NAME & SELECT INSTITUTION */}
+        {/* ROW 1: BATCH NAME & SELECT INSTITUTION */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -227,7 +231,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Computer Science - 2024 - Section A"
+              placeholder="e.g. CS - 2024 - Sec A"
               className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.name ? "border-red-500" : "border-gray-200"}`}
             />
             {errors.name && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.name}</p>}
@@ -236,38 +240,63 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT INSTITUTION <span className="text-red-500">*</span>
             </label>
-            <Select value={form.institution_id} onValueChange={(val) => setForm({...form, institution_id: val})}>
-              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.institution_id ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-                <SelectValue placeholder="Select Institution" />
-              </SelectTrigger>
-              <SelectContent>
-                {(institutions || []).map((inst: any) => (
-                  <SelectItem key={inst.id} value={String(inst.id)}>
-                    {inst.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <BatchInstitutionSelect
+              value={form.institution_id}
+              onChange={(val) => {
+                setForm({ ...form, institution_id: val, tutor_id: "" });
+                setSelectedStudents([]); // Reset selected students when institution changes!
+                setStudentSearch("");
+                setDropdownOpen(false);
+              }}
+              initialName={mode === "edit" ? (fullBatch || batch)?.institution : undefined}
+              error={!!errors.institution_id}
+            />
             {errors.institution_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.institution_id}</p>}
           </div>
         </div>
 
-        {/* SELECT COURSE & STATUS */}
+        {/* ROW 2: SELECT COURSE & SELECT DOMAINS */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT COURSE <span className="text-red-500">*</span>
+              SELECT COURSE
             </label>
-            <Select value={form.course_key} onValueChange={(val) => setForm({...form, course_key: val})}>
-              <SelectTrigger className="w-full h-[42px] px-4 rounded-xl border border-gray-200 bg-gray-50/50 text-slate-700 text-sm">
-                <SelectValue placeholder="Select Course" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="java-dev">Java Development</SelectItem>
-                <SelectItem value="web-dev">Web Development</SelectItem>
-                <SelectItem value="data-science">Data Science</SelectItem>
-              </SelectContent>
-            </Select>
+            <CourseSelect
+              value={form.course_id}
+              onChange={(val) => setForm({ ...form, course_id: val })}
+              initialName={mode === "edit" ? (fullBatch || batch)?.course : undefined}
+              error={!!errors.course_id}
+            />
+            {errors.course_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.course_id}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              SELECT DOMAINS
+            </label>
+            <DomainSelect
+              value={form.domain_id}
+              onChange={(val) => setForm({ ...form, domain_id: val })}
+              initialName={mode === "edit" ? (fullBatch || batch)?.domain : undefined}
+              error={!!errors.domain_id}
+            />
+            {errors.domain_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.domain_id}</p>}
+          </div>
+        </div>
+
+        {/* ROW 3: INSTRUCTOR & STATUS */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              INSTRUCTOR <span className="text-red-500">*</span>
+            </label>
+            <TutorSelect
+              value={form.tutor_id}
+              onChange={(val) => setForm({ ...form, tutor_id: val })}
+              initialName={mode === "edit" ? (fullBatch || batch)?.instructor : undefined}
+              error={!!errors.tutor_id}
+              institutionId={form.institution_id}
+            />
+            {errors.tutor_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tutor_id}</p>}
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
@@ -286,118 +315,151 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* INSTRUCTOR & ENROLL STUDENTS */}
+        {/* ROW 4: START DATE & END DATE */}
         <div className="grid grid-cols-2 gap-4">
-          
-          {/* Instructor search-select */}
-          <div ref={tutorDropdownRef} className="relative">
+          <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              INSTRUCTOR <span className="text-red-500">*</span>
+              START DATE <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                value={instructorSearch || (selectedTutor ? selectedTutor.name : "")}
-                onChange={(e) => {
-                  setInstructorSearch(e.target.value);
-                  setInstructorDropdownOpen(true);
-                }}
-                onFocus={() => {
-                  setInstructorSearch("");
-                  setInstructorDropdownOpen(true);
-                }}
-                placeholder="Search and select instructor..."
-                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.tutor_id ? "border-red-500" : "border-gray-200"}`}
-              />
-              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-            </div>
-            {errors.tutor_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tutor_id}</p>}
-
-            {/* Instructor Dropdown */}
-            {instructorDropdownOpen && (
-              <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
-                {filteredTutors.length === 0 ? (
-                  <div className="p-3 text-sm text-gray-500 text-center">No instructors found</div>
-                ) : (
-                  filteredTutors.map((tutor: any) => (
-                    <div
-                      key={tutor.id}
-                      onClick={() => {
-                        setForm({ ...form, tutor_id: String(tutor.id) });
-                        setInstructorSearch(tutor.name);
-                        setInstructorDropdownOpen(false);
-                      }}
-                      className="px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 text-slate-800 transition-colors"
-                    >
-                      {tutor.name}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`w-full flex items-center justify-between border bg-white dark:bg-card rounded-xl px-4 h-[42px] text-sm cursor-pointer text-left ${
+                    errors.start_date ? "border-red-500" : "border-gray-200"
+                  } bg-gray-50/50 text-slate-700 transition-colors`}
+                >
+                  <span className={form.start_date ? "text-slate-800" : "text-gray-400"}>
+                    {form.start_date ? format(parseDateString(form.start_date)!, "PPP") : "Select Start Date"}
+                  </span>
+                  <CalendarIcon className="h-4 w-4 text-gray-400" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateString(form.start_date)}
+                  onSelect={(date) => setForm({ ...form, start_date: formatDateString(date) })}
+                  className="rounded-lg border"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.start_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.start_date}</p>}
           </div>
-
-          {/* Enroll Students search-select */}
-          <div ref={studentDropdownRef} className="relative">
+          <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              ENROLL STUDENTS <span className="text-red-500">*</span>
+              END DATE <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                value={studentSearch}
-                onChange={(e) => {
-                  setStudentSearch(e.target.value);
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={`w-full flex items-center justify-between border bg-white dark:bg-card rounded-xl px-4 h-[42px] text-sm cursor-pointer text-left ${
+                    errors.end_date ? "border-red-500" : "border-gray-200"
+                  } bg-gray-50/50 text-slate-700 transition-colors`}
+                >
+                  <span className={form.end_date ? "text-slate-800" : "text-gray-400"}>
+                    {form.end_date ? format(parseDateString(form.end_date)!, "PPP") : "Select End Date"}
+                  </span>
+                  <CalendarIcon className="h-4 w-4 text-gray-400" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={parseDateString(form.end_date)}
+                  onSelect={(date) => setForm({ ...form, end_date: formatDateString(date) })}
+                  className="rounded-lg border"
+                  captionLayout="dropdown"
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.end_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.end_date}</p>}
+          </div>
+        </div>
+
+        {/* ROW 5: ENROLL STUDENTS (full-width) */}
+        <div ref={studentDropdownRef} className="relative">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            ENROLL STUDENTS <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              value={studentSearch}
+              onChange={(e) => {
+                setStudentSearch(e.target.value);
+                setDropdownOpen(true);
+              }}
+              onFocus={() => {
+                if (form.institution_id) {
                   setDropdownOpen(true);
+                } else {
+                  toast.error("Please select an institution first.");
+                }
+              }}
+              readOnly={!form.institution_id}
+              placeholder={form.institution_id ? "Search students by name or email..." : "Please select an institution first..."}
+              className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.enroll_students ? "border-red-500" : "border-gray-200"} ${!form.institution_id ? "cursor-pointer" : ""}`}
+            />
+            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            
+            {!form.institution_id && (
+              <div 
+                className="absolute inset-0 cursor-pointer z-10" 
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toast.error("Please select an institution first.");
                 }}
-                onFocus={() => setDropdownOpen(true)}
-                disabled={!form.institution_id}
-                placeholder={form.institution_id ? "Search by name or ID..." : "Select institution first..."}
-                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${!form.institution_id ? "cursor-not-allowed opacity-60" : ""} ${errors.enroll_students ? "border-red-500" : "border-gray-200"}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               />
-              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-            </div>
-            {errors.enroll_students && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.enroll_students}</p>}
-
-            {/* Students Dropdown */}
-            {dropdownOpen && (
-              <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
-                {!form.institution_id ? (
-                  <div className="p-3 text-sm text-gray-500 text-center font-medium">Please select an institution first</div>
-                ) : filteredStudents.length === 0 ? (
-                  <div className="p-3 text-sm text-gray-500 text-center">No students found</div>
-                ) : (
-                  filteredStudents.map((student: any) => {
-                    const isSelected = selectedStudents.some(s => s.id === Number(student.id));
-                    return (
-                      <div
-                        key={student.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedStudents(selectedStudents.filter(s => s.id !== Number(student.id)));
-                          } else {
-                            setSelectedStudents([...selectedStudents, { id: Number(student.id), name: student.name }]);
-                          }
-                        }}
-                        className={`flex items-center justify-between px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 transition-colors ${isSelected ? "bg-blue-50/40" : ""}`}
-                      >
-                        <div>
-                          <p className="font-semibold text-slate-800">{student.name}</p>
-                          <p className="text-xs text-slate-400">{student.email}</p>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          readOnly
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
-                        />
-                      </div>
-                    );
-                  })
-                )}
-              </div>
             )}
           </div>
+          {errors.enroll_students && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.enroll_students}</p>}
+
+          {/* Students Dropdown */}
+          {dropdownOpen && form.institution_id && (
+            <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
+              {isStudentsLoading ? (
+                <div className="p-3 text-sm text-gray-500 text-center">Loading students...</div>
+              ) : filteredStudents.length === 0 ? (
+                <div className="p-3 text-sm text-gray-500 text-center">No students found</div>
+              ) : (
+                filteredStudents.map((student: any) => {
+                  const isSelected = selectedStudents.some(s => s.id === Number(student.id));
+                  return (
+                    <div
+                      key={student.id}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedStudents(selectedStudents.filter(s => s.id !== Number(student.id)));
+                        } else {
+                          setSelectedStudents([...selectedStudents, { id: Number(student.id), name: student.name }]);
+                        }
+                      }}
+                      className={`flex items-center justify-between px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 transition-colors ${isSelected ? "bg-blue-50/40" : ""}`}
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-800">{student.name}</p>
+                        <p className="text-xs text-slate-400">{student.email}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        readOnly
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+                      />
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </div>
 
         {/* Selected Student Badges */}
@@ -421,33 +483,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         )}
 
-        {/* START DATE & END DATE */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              START DATE <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-slate-700 transition-colors ${errors.start_date ? "border-red-500" : "border-gray-200"}`}
-            />
-            {errors.start_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.start_date}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              END DATE <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              className={`w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 text-slate-700 transition-colors ${errors.end_date ? "border-red-500" : "border-gray-200"}`}
-            />
-            {errors.end_date && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.end_date}</p>}
-          </div>
-        </div>
 
         {/* Footer actions */}
         <div className="flex justify-end items-center gap-4 pt-4 border-t border-gray-100">
@@ -472,6 +507,14 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </button>
         </div>
       </div>
+
+      {mode === "edit" && batch?.id && (
+        <BulkUploadModal
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          batchId={batch?.id}
+        />
+      )}
     </Modal>
   );
 }
