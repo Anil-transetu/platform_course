@@ -17,7 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Layers, CheckCircle, XCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
+import { Layers, CheckCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
 
 function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
@@ -165,8 +165,8 @@ function BatchesPageContent() {
 
   const totalBatches = Number(statsData?.totalBatches ?? statsData?.total_batches ?? 0);
   const activeBatches = Number(statsData?.activeBatches ?? statsData?.active_batches ?? 0);
-  const inactiveBatches = Number(statsData?.inactiveBatches ?? statsData?.inactive_batches ?? Math.max(0, totalBatches - activeBatches));
-  const totalStudents = Number(statsData?.totalStudents ?? statsData?.total_students ?? 0);
+  const averageStudents = Number(statsData?.averageStudentsPerBatch ?? statsData?.average_students_per_batch ?? 0);
+  const averageStudentsVal = averageStudents % 1 === 0 ? averageStudents : Number(averageStudents.toFixed(1));
 
   const extraHeaderActions = (
     <button
@@ -210,20 +210,12 @@ function BatchesPageContent() {
             tooltip="Currently active batches"
           />
           <StatsCard
-            title="Inactive Batches"
-            value={inactiveBatches >= 0 ? inactiveBatches : 0}
-            icon={<XCircle className="w-5 h-5" />}
-            iconBgClass="bg-red-50"
-            iconColorClass="text-red-600"
-            tooltip="Batches that are currently inactive"
-          />
-          <StatsCard
-            title="Total Students"
-            value={totalStudents}
+            title="Average Students per Batch"
+            value={averageStudentsVal}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
-            tooltip="Total students enrolled across all batches"
+            tooltip="Average number of students enrolled per batch"
           />
         </StatsGrid>
 
