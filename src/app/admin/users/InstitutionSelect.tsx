@@ -20,7 +20,7 @@ export default function InstitutionSelect({ value, onChange, initialName, error 
   const [selectedName, setSelectedName] = useState(initialName || "");
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const { data: institutions, isLoading } = useInstitutionsLookup(debouncedSearch);
+  const { data: institutions, isLoading } = useInstitutionsLookup(debouncedSearch, { enabled: isOpen });
 
   // Close dropdown on outside click
   useEffect(() => {
