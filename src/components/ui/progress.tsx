@@ -1,32 +1,61 @@
-"use client"
-
 import * as React from "react"
-import { Progress as ProgressPrimitive } from "radix-ui"
-
 import { cn } from "@/lib/utils"
+import { Field, FieldLabel } from "@/components/ui/field"
 
-function Progress({
+interface ProgressProps extends React.ComponentProps<"div"> {
+  value?: number
+  indicatorClassName?: string
+}
+
+export function Progress({
   className,
-  value,
+  value = 0,
   indicatorClassName,
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root> & { indicatorClassName?: string }) {
+}: ProgressProps) {
   return (
-    <ProgressPrimitive.Root
+    <div
       data-slot="progress"
       className={cn(
-        "relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted",
+        "relative h-1.5 w-full overflow-hidden rounded-full bg-slate-100",
         className
       )}
       {...props}
     >
-      <ProgressPrimitive.Indicator
-        data-slot="progress-indicator"
-        className={cn("size-full flex-1 bg-primary transition-all", indicatorClassName)}
-        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+      <div
+        className={cn("h-full w-full transition-all rounded-full bg-primary", indicatorClassName)}
+        style={{ width: `${value || 0}%` }}
       />
-    </ProgressPrimitive.Root>
+    </div>
   )
 }
 
-export { Progress }
+interface ProgressWithLabelProps {
+  value: number
+  label?: string
+  id?: string
+  className?: string
+  indicatorClassName?: string
+  labelClassName?: string
+  valueClassName?: string
+}
+
+export function ProgressWithLabel({
+  value = 66,
+  label = "Upload progress",
+  id = "progress-upload",
+  className,
+  indicatorClassName,
+  labelClassName,
+  valueClassName,
+}: ProgressWithLabelProps) {
+  return (
+    <Field className={cn("w-full max-w-sm", className)}>
+      <FieldLabel htmlFor={id} className={labelClassName}>
+        <span>{label}</span>
+        <span className={cn("ml-auto text-blue-600", valueClassName)}>{value}%</span>
+      </FieldLabel>
+      <Progress value={value} id={id} indicatorClassName={indicatorClassName} />
+    </Field>
+  )
+}

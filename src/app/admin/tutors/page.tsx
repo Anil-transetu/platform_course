@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Users,
   CheckCircle,
@@ -10,7 +11,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable from "@/components/reusable/DataTable";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
@@ -81,7 +82,11 @@ const PREDEFINED_DOMAINS = [
   "THREE.JS"
 ];
 
-export default function TutorsPage() {
+import { Suspense } from "react";
+
+function TutorsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("All");
   const [statusFilter, setStatusFilter] = useState<string>("All");
@@ -98,6 +103,13 @@ export default function TutorsPage() {
     mode: "add",
     tutor: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", tutor: null });
+      router.replace("/admin/tutors");
+    }
+  }, [searchParams, router]);
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -217,11 +229,11 @@ export default function TutorsPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="flex flex-col gap-6 p-6 overflow-hidden h-full">
+      <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
         <Toaster position="top-right" />
         
         {/* STATS CARDS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="Total Tutors"
             value={isStatsLoading ? "..." : (tutorStats?.total || totalCount || 0)}
@@ -254,7 +266,7 @@ export default function TutorsPage() {
             iconColorClass="text-purple-600"
             tooltip="Tutors onboarded recently"
           />
-        </div>
+        </StatsGrid>
 
         {/* DATA TABLE */}
         <div className="flex-1 overflow-hidden min-h-0">
@@ -304,5 +316,13 @@ export default function TutorsPage() {
         onConfirm={handleDeleteTutor}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function TutorsPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <TutorsPageContent />
+    </Suspense>
   );
 }

@@ -6,9 +6,10 @@ import { buildStudentColumns } from "./columns";
 import StudentFormModal from "./StudentFormModal";
 import BulkUploadModal from "./BulkUploadModal";
 import StudentDeleteDialog from "./StudentDeleteDialog";
-import StatsCard from "@/components/ui/StatsCard";
+import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
+import { useRouter, useSearchParams } from "next/navigation";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import {
   DropdownMenu,
@@ -56,7 +57,11 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
   );
 }
 
-export default function StudentsPage() {
+import { Suspense } from "react";
+
+function StudentsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   // Modal state
   const [formModal, setFormModal] = useState<{
     open: boolean;
@@ -75,6 +80,13 @@ export default function StudentsPage() {
     open: false,
     student: null,
   });
+
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setFormModal({ open: true, mode: "add", student: null });
+      router.replace("/admin/students");
+    }
+  }, [searchParams, router]);
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
@@ -169,10 +181,10 @@ export default function StudentsPage() {
       {isLoading ? (
         <UserPageSkeleton />
       ) : (
-      <div className="p-6 space-y-6 flex flex-col h-full overflow-hidden">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
         <Toaster position="top-right" />
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 flex-shrink-0">
+        <StatsGrid>
           <StatsCard
             title="TOTAL STUDENTS"
             value={stats?.total_students ?? "..."}
@@ -197,7 +209,7 @@ export default function StudentsPage() {
             iconColorClass="text-purple-600"
             tooltip="Average number of courses per student"
           />
-        </div>
+        </StatsGrid>
 
         <DataTable<Student>
           columns={buildStudentColumns()}
@@ -241,5 +253,13 @@ export default function StudentsPage() {
         onClose={() => setDeleteDialog({ open: false, student: null })}
       />
     </ListingScreenTemplate>
+  );
+}
+
+export default function StudentsPage() {
+  return (
+    <Suspense fallback={<UserPageSkeleton />}>
+      <StudentsPageContent />
+    </Suspense>
   );
 }

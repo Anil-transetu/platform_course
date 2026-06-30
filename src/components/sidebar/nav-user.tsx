@@ -76,9 +76,7 @@ export default function NavUser() {
               className="rounded-xl border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-3 py-3 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => {
                 logout();
-                document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                window.location.href = "/login";
+                window.location.replace("/login");
               }}
             >
               <LogOut className="w-5 h-5 shrink-0" />
