@@ -89,11 +89,12 @@ export function useDeleteInstitution() {
 /**
  * Fetch institutions for lookup (e.g. dropdowns)
  */
-export function useInstitutionsLookup(search?: string) {
+export function useInstitutionsLookup(search?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["institutionsLookup", search],
     queryFn: () => fetchInstitutionsLookup(search),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled !== false,
   });
 }
