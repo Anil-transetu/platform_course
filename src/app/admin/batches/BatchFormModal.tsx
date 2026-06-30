@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Batch } from "@/types/batch";
 import { Modal } from "@/components/ui/modal";
 import { FileText, Download, Search, ChevronDown, Info, X, Calendar as CalendarIcon, Upload } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
 import BatchInstitutionSelect from "./BatchInstitutionSelect";
@@ -65,7 +65,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   // API hooks
   const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
     form.institution_id ? Number(form.institution_id) : "",
-    { enabled: !!form.institution_id && dropdownOpen }
+    { enabled: !!form.institution_id }
   );
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
@@ -241,6 +241,8 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
               onChange={(val) => {
                 setForm({ ...form, institution_id: val, tutor_id: "" });
                 setSelectedStudents([]); // Reset selected students when institution changes!
+                setStudentSearch("");
+                setDropdownOpen(false);
               }}
               initialName={mode === "edit" ? (fullBatch || batch)?.institution : undefined}
               error={!!errors.institution_id}
@@ -390,14 +392,29 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
                 if (form.institution_id) {
                   setDropdownOpen(true);
                 } else {
-                  toast.error("Please select an institution first");
+                  toast.error("Please select an institution first.");
                 }
               }}
-              disabled={!form.institution_id}
+              readOnly={!form.institution_id}
               placeholder={form.institution_id ? "Search students by name or email..." : "Please select an institution first..."}
-              className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.enroll_students ? "border-red-500" : "border-gray-200"}`}
+              className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.enroll_students ? "border-red-500" : "border-gray-200"} ${!form.institution_id ? "cursor-pointer" : ""}`}
             />
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            
+            {!form.institution_id && (
+              <div 
+                className="absolute inset-0 cursor-pointer z-10" 
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toast.error("Please select an institution first.");
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              />
+            )}
           </div>
           {errors.enroll_students && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.enroll_students}</p>}
 
