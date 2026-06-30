@@ -425,13 +425,22 @@ export async function fetchDomainsLookup(search?: string): Promise<any[]> {
 /**
  * Fetch students for lookup dropdown
  */
-export async function fetchStudentLookup(institutionId?: string | number): Promise<any[]> {
+export async function fetchStudentLookup(institutionId?: string | number, search?: string): Promise<any[]> {
   let url = `${API_HOST}/api/v1/students/lookup`;
+  const query = new URLSearchParams();
+  
   if (institutionId) {
-    const query = new URLSearchParams();
     query.append("institution_id", String(institutionId));
+  }
+  if (search) {
+    query.append("search", search);
+  }
+  query.append("limit", "50");
+
+  if (query.toString()) {
     url += `?${query.toString()}`;
   }
+  
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),

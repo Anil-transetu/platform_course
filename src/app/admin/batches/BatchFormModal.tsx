@@ -6,6 +6,7 @@ import { FileText, Download, Search, ChevronDown, Info, X, Calendar as CalendarI
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
+import { useDebounce } from "@/hooks/use-debounce";
 import BatchInstitutionSelect from "./BatchInstitutionSelect";
 import CourseSelect from "./CourseSelect";
 import DomainSelect from "./DomainSelect";
@@ -62,10 +63,13 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
 
+  const debouncedSearch = useDebounce(studentSearch, 300);
+
   // API hooks
   const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
     form.institution_id ? Number(form.institution_id) : "",
-    { enabled: !!form.institution_id }
+    debouncedSearch,
+    { enabled: !!form.institution_id && dropdownOpen }
   );
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");

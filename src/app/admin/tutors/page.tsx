@@ -265,14 +265,6 @@ function TutorsPageContent() {
             tooltip="Tutors currently active"
           />
           <StatsCard
-            title="Inactive Tutors"
-            value={isStatsLoading ? "..." : (tutorStats?.inactive || tutorsList.filter(t => t.status?.toLowerCase() !== 'active').length || 0)}
-            icon={<Star className="w-5 h-5" />}
-            iconBgClass="bg-yellow-50"
-            iconColorClass="text-yellow-600"
-            tooltip="Tutors currently inactive"
-          />
-          <StatsCard
             title="New Tutors (Month)"
             value={isStatsLoading ? "..." : (tutorStats?.newTutors || 0)}
             icon={<UserPlus className="w-5 h-5" />}
