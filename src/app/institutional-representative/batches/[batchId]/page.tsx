@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepBatchOverview,
   useRepBatchStudents,
@@ -62,14 +63,16 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const debouncedSearch = useDebounce(search, 500);
 
   // Fetch API hooks
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useRepBatchOverview(batchId);
-  const { data: studentsData, isLoading: studentsLoading, error: studentsError } = useRepBatchStudents(
+  const { data: studentsData, isLoading: studentsLoading, isFetching: studentsFetching, error: studentsError } = useRepBatchStudents(
     batchId,
     page,
     rowsPerPage,
-    search,
+    debouncedSearch,
     selectedStatus
   );
 
@@ -289,21 +292,20 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
       headerText={`${currentBatchName}: ${currentCourseName}`}
       subHeaderText={
         overviewLoading ? (
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-2">
             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-            <span className="text-xs text-muted-foreground">Loading overview stats...</span>
+            <span className="text-sm text-muted-foreground">Loading overview stats...</span>
           </div>
         ) : (
-          <div className="flex items-center gap-4 text-xs sm:text-sm text-muted-foreground mt-1">
-            <span className="flex items-center gap-1">
-              <Users size={14} />
-              Tutor: <span className="font-semibold text-foreground">{overview?.tutor || "N/A"}</span>
-            </span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <UserCheck size={14} />
-              {overview?.total_active_students || 0} Active Students
-            </span>
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-medium border border-slate-200 shadow-sm">
+              <Users size={15} />
+              Tutor: <span className="font-semibold text-slate-900">{overview?.tutor || "N/A"}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-100 shadow-sm">
+              <UserCheck size={15} />
+              <span className="font-bold">{overview?.total_active_students || 0}</span> Active Students
+            </div>
           </div>
         )
       }
@@ -364,7 +366,7 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-full"
-                loading={studentsLoading}
+                loading={studentsLoading || studentsFetching}
                 actions={(student) => (
                   <button
                     onClick={() => router.push(`/institutional-representative/batches/${batchId}/${student.student_id}`)}
