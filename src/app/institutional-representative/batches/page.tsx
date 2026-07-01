@@ -229,7 +229,7 @@ export default function BatchesListingPage() {
         <StatsGrid>
           <StatsCard
             title="Total Batches"
-            value={stats.totalBatches}
+            value={statsLoading ? "..." : stats.totalBatches}
             icon={<Layers className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -237,7 +237,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="Active Students"
-            value={stats.activeStudents}
+            value={statsLoading ? "..." : stats.activeStudents}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -245,7 +245,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="Avg Progress"
-            value={`${stats.avgProgress}%`}
+            value={statsLoading ? "..." : `${stats.avgProgress}%`}
             icon={<TrendingUp className="w-5 h-5" />}
             iconBgClass="bg-yellow-50"
             iconColorClass="text-yellow-600"
@@ -253,7 +253,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="At-Risk Students"
-            value={stats.atRiskStudents}
+            value={statsLoading ? "..." : stats.atRiskStudents}
             icon={<AlertTriangle className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
@@ -287,7 +287,7 @@ export default function BatchesListingPage() {
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-full"
-                loading={isLoading}
+                loading={isLoading || isFetching}
                 actions={(batch) => (
                   <button
                     onClick={() => router.push(`/institutional-representative/batches/${batch.id}`)}
