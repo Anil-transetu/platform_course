@@ -16,6 +16,7 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepStudentStats,
   useRepStudentAcademicPerformance
@@ -48,6 +49,8 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
   const [selectedType, setSelectedType] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const debouncedSearch = useDebounce(search, 500);
 
   // Debounce search: reset page and update debounced value together so React
   // batches both into ONE re-render (and ONE API call) instead of two.
