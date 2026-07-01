@@ -9,7 +9,8 @@ import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useRepBatches, getDownloadBatchListUrl, BatchItem, downloadAuthenticatedFile } from "@/features/institutional-representative/api/batches-api";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useRepBatches, useRepBatchStats, getDownloadBatchListUrl, BatchItem, downloadAuthenticatedFile } from "@/features/institutional-representative/api/batches-api";
 
 const avatarColors = [
   "bg-blue-100 text-blue-600",
@@ -43,14 +44,18 @@ export default function BatchesListingPage() {
   // Otherwise, we query with status=active filter field/value.
   const filterField = selectedDept !== "All" ? "department" : "status";
   const filterValue = selectedDept !== "All" ? selectedDept : "active";
+  
+  const debouncedSearch = useDebounce(search, 500);
 
-  const { data, isLoading, error } = useRepBatches(
+  const { data, isLoading, isFetching, error } = useRepBatches(
     page,
     rowsPerPage,
-    search,
+    debouncedSearch,
     filterField,
     filterValue
   );
+
+  const { data: statsData, isLoading: statsLoading } = useRepBatchStats();
 
   const batches = data?.batches || [];
   const totalCount = data?.pagination?.total || 0;
@@ -72,8 +77,18 @@ export default function BatchesListingPage() {
     }));
   }, [data]);
 
-  // Summary statistics calculated from the response or list
+  // Summary statistics from stats API with fallback calculation
   const stats = useMemo(() => {
+    if (statsData) {
+      return {
+        totalBatches: statsData.total_batches || 0,
+        activeStudents: statsData.active_students || 0,
+        avgProgress: statsData.avg_progress_percent || 0,
+        atRiskStudents: statsData.at_risk_students || 0,
+      };
+    }
+    
+    // Fallback if stats API fails or is loading initially and we have batches
     const total = totalCount || batches.length;
     const activeStudents = batches.reduce((acc, b) => acc + (b.total_students || 0), 0);
     const avgProgress = batches.length > 0 
@@ -88,7 +103,7 @@ export default function BatchesListingPage() {
       avgProgress,
       atRiskStudents: atRiskCount || 0,
     };
-  }, [batches, totalCount]);
+  }, [batches, totalCount, statsData]);
 
   // Columns Configuration
   const columns: Column<BatchItem>[] = useMemo(() => [
@@ -249,7 +264,7 @@ export default function BatchesListingPage() {
         <StatsGrid>
           <StatsCard
             title="Total Batches"
-            value={stats.totalBatches}
+            value={statsLoading ? "..." : stats.totalBatches}
             icon={<Layers className="w-5 h-5" />}
             iconBgClass="bg-blue-50"
             iconColorClass="text-blue-600"
@@ -257,7 +272,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="Active Students"
-            value={stats.activeStudents}
+            value={statsLoading ? "..." : stats.activeStudents}
             icon={<Users className="w-5 h-5" />}
             iconBgClass="bg-green-50"
             iconColorClass="text-green-600"
@@ -265,7 +280,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="Avg Progress"
-            value={`${stats.avgProgress}%`}
+            value={statsLoading ? "..." : `${stats.avgProgress}%`}
             icon={<TrendingUp className="w-5 h-5" />}
             iconBgClass="bg-yellow-50"
             iconColorClass="text-yellow-600"
@@ -273,7 +288,7 @@ export default function BatchesListingPage() {
           />
           <StatsCard
             title="At-Risk Students"
-            value={stats.atRiskStudents}
+            value={statsLoading ? "..." : stats.atRiskStudents}
             icon={<AlertTriangle className="w-5 h-5" />}
             iconBgClass="bg-purple-50"
             iconColorClass="text-purple-600"
@@ -307,7 +322,7 @@ export default function BatchesListingPage() {
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-full"
-                loading={isLoading}
+                loading={isLoading || isFetching}
                 actions={(batch) => (
                   <button
                     onClick={() => router.push(`/institutional-representative/batches/${batch.id}`)}
