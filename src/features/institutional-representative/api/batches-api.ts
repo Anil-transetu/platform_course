@@ -68,6 +68,13 @@ export interface BatchListResponse {
   };
 }
 
+export interface BatchStats {
+  total_batches: number;
+  active_students: number;
+  avg_progress_percent: number;
+  at_risk_students: number;
+}
+
 export interface BatchOverview {
   batch_id: string;
   batch_name: string;
@@ -200,6 +207,18 @@ export async function fetchRepBatches(
   url += `?${query.toString()}`;
 
   const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result;
+}
+
+/**
+ * 1.5 Fetch Batch Stats
+ */
+export async function fetchRepBatchStats(): Promise<BatchStats> {
+  const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -348,6 +367,16 @@ export function useRepBatches(
     queryFn: () => fetchRepBatches(page, limit, search, filterField, filterValue),
     staleTime: 1 * 60 * 1000,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
+}
+
+export function useRepBatchStats() {
+  return useQuery({
+    queryKey: ["repBatchStats"],
+    queryFn: () => fetchRepBatchStats(),
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -357,6 +386,7 @@ export function useRepBatchOverview(batchId: string | number) {
     queryFn: () => fetchRepBatchOverview(batchId),
     staleTime: 2 * 60 * 1000,
     enabled: !!batchId,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -373,6 +403,7 @@ export function useRepBatchStudents(
     staleTime: 1 * 60 * 1000,
     enabled: !!batchId,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -382,6 +413,7 @@ export function useRepStudentStats(batchId: string | number, studentId: string |
     queryFn: () => fetchRepStudentStats(batchId, studentId),
     staleTime: 2 * 60 * 1000,
     enabled: !!batchId && !!studentId,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -399,6 +431,7 @@ export function useRepStudentAcademicPerformance(
     staleTime: 1 * 60 * 1000,
     enabled: !!batchId && !!studentId,
     placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -412,6 +445,7 @@ export function useRepAttendanceCalendar(
     queryFn: () => fetchRepAttendanceCalendar(batchId, studentId, month),
     staleTime: 1 * 60 * 1000,
     enabled: !!batchId && !!studentId,
+    refetchOnWindowFocus: false,
   });
 }
 

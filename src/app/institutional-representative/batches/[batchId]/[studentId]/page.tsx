@@ -16,6 +16,7 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepStudentStats,
   useRepStudentAcademicPerformance,
@@ -57,16 +58,18 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
   const [selectedType, setSelectedType] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const debouncedSearch = useDebounce(search, 500);
 
   // Fetch backend data
   const { data: statsData, isLoading: statsLoading, error: statsError } = useRepStudentStats(batchId, studentId);
-  const { data: performanceData, isLoading: performanceLoading, error: performanceError } = useRepStudentAcademicPerformance(
+  const { data: performanceData, isLoading: performanceLoading, isFetching: performanceFetching, error: performanceError } = useRepStudentAcademicPerformance(
     batchId,
     studentId,
     page,
     rowsPerPage,
     selectedType === "All" ? "all" : selectedType,
-    search
+    debouncedSearch
   );
 
   const submissions = performanceData?.submissions || [];
@@ -368,7 +371,7 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
                 search={searchConfig}
                 filters={filterConfig}
                 bodyHeight="h-52"
-                loading={performanceLoading}
+                loading={performanceLoading || performanceFetching}
               />
             </div>
           )}
