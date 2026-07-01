@@ -40,6 +40,8 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const debouncedSearch = useDebounce(search, 500);
 
   // Debounce search: reset page and update debounced value together so React
   // batches both into ONE re-render (and ONE API call) instead of two.
