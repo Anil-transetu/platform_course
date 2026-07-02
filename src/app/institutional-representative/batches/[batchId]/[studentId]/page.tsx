@@ -16,7 +16,6 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepStudentStats,
   useRepStudentAcademicPerformance
