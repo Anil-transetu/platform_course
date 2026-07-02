@@ -9,6 +9,8 @@ export interface User extends Record<string, unknown> {
   joinedDate?: string;
   created_at?: string;
   avatar?: string;
+  avatar_url?: string;
+  profile_image?: string;
   password?: string;
 }
 

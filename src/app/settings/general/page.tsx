@@ -14,9 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile, useUpdateProfile } from "@/features/profile/api/profile-api";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
+import { supabase } from "@/lib/supabase";
 
 // Fields to completely ignore (not even read-only)
-const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id"];
+const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id", "attendance"];
 
 // Fields that should be displayed but not editable
 const READ_ONLY_FIELDS = ["role", "created_date", "created_at", "updated_at", "allocated_batches", "allocated_batches_count"];
@@ -124,20 +125,7 @@ export default function GeneralSettingsPage() {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  const dataURLtoFile = (dataurl: string, filename: string) => {
-    const arr = dataurl.split(',');
-    const mimeMatch = arr[0].match(/:(.*?);/);
-    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8arr = new Uint8Array(n);
-    while (n--) {
-      u8arr[n] = bstr.charCodeAt(n);
-    }
-    return new File([u8arr], filename, { type: mime });
-  };
-
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     const processedData = { ...formData };
     
     // Strip out fields that the backend doesn't allow updating via this endpoint
@@ -150,18 +138,48 @@ export default function GeneralSettingsPage() {
       delete processedData[field];
     });
 
-    const payload = new FormData();
-    Object.entries(processedData).forEach(([key, value]) => {
-      if (key === "profile_image" && typeof value === "string" && value.startsWith("data:image")) {
-        // Convert base64 to File object
-        const file = dataURLtoFile(value, "profile.jpg");
-        payload.append(key, file);
-      } else if (value !== null && value !== undefined && value !== "") {
-        payload.append(key, value as string);
+    for (const [key, value] of Object.entries(processedData)) {
+      if (key === "profile_image") {
+        if (typeof value === "string" && value.startsWith("data:image")) {
+          toast.loading("Uploading image to storage...", { id: "upload-toast" });
+          try {
+            // Robust base64 to File conversion
+            const res = await fetch(value);
+            const blob = await res.blob();
+            const ext = blob.type.split('/')[1] || 'jpg';
+            const fileName = `profile_${Date.now()}.${ext}`;
+            const file = new File([blob], fileName, { type: blob.type });
+
+            // Direct Supabase Upload
+            const { data, error } = await supabase.storage
+              .from('profiles')
+              .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: true
+              });
+
+            if (error) {
+              throw error;
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+              .from('profiles')
+              .getPublicUrl(fileName);
+
+            // Set the final string payload for the backend API
+            processedData.profile_image = publicUrl;
+            toast.success("Image uploaded", { id: "upload-toast" });
+          } catch (error: any) {
+            toast.error("Image upload failed", { id: "upload-toast", description: error.message });
+            // Do not proceed with backend API call if image upload fails
+            return; 
+          }
+        }
       }
-    });
-    
-    updateProfile(payload, {
+    }
+
+    updateProfile(processedData, {
       onSuccess: () => {
         toast.success("Profile updated", {
           description: "Your profile has been updated successfully.",
@@ -296,6 +314,7 @@ export default function GeneralSettingsPage() {
               fill
               className="object-cover"
               unoptimized
+              priority
             />
             {/* Dark overlay specifically for image hover to ensure visibility of camera icon regardless of theme */}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">

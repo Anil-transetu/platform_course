@@ -47,6 +47,7 @@ function mapStudent(s: Record<string, unknown>): Student {
     course_name: (s.course_name as string) || (s.course as Record<string, unknown>)?.name as string || "",
     email: (s.email as string) || "",
     status: s.status ? ((s.status as string).charAt(0).toUpperCase() + (s.status as string).slice(1).toLowerCase()) : "Active",
+    profile_image: (s.profile_image as string) || undefined,
   };
 }
 
