@@ -54,6 +54,12 @@ export default function GeneralSettingsPage() {
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
   
   const profileData = profileResponse?.data || profileResponse || {};
+  
+  const isAdmin = profileData.role?.toLowerCase() === "admin" || profileData.role === "Admin";
+  const currentIgnoredFields = [...IGNORED_FIELDS];
+  if (isAdmin) {
+    currentIgnoredFields.push("mobile_number", "phone_number", "phone", "mobile");
+  }
 
   useEffect(() => {
     if (!isLoadingProfile && Object.keys(profileData).length > 0) {
@@ -62,7 +68,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           // Flatten simple string arrays, ignore object arrays here
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
@@ -130,7 +136,7 @@ export default function GeneralSettingsPage() {
     
     // Strip out fields that the backend doesn't allow updating via this endpoint
     const disallowedFields = [
-      "email", "status", "role", "created_date", "created_at", 
+      "email", "role", "created_date", "created_at", 
       "updated_at", "allocated_batches", "allocated_batches_count",
       "avatar"
     ];
@@ -200,7 +206,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
                initialData[key] = profileData[key].join(", ");
@@ -342,10 +348,10 @@ export default function GeneralSettingsPage() {
 
         {/* Dynamic Form Fields (Editable) */}
         <h3 className="text-lg font-medium mb-4 border-b pb-2">Personal Information</h3>
-        {Object.keys(formData).filter(k => !IGNORED_FIELDS.includes(k)).length > 0 ? (
+        {Object.keys(formData).filter(k => !currentIgnoredFields.includes(k)).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-10">
             {Object.entries(formData)
-              .filter(([key]) => !IGNORED_FIELDS.includes(key) && key !== "status")
+              .filter(([key]) => !currentIgnoredFields.includes(key) && key !== "status")
               .map(([key, value]) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className="font-medium">{formatLabel(key)}</Label>
