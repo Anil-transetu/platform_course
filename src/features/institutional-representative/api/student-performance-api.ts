@@ -113,7 +113,7 @@ export async function fetchTopStudents(
   page: number = 1,
   limit: number = 10,
   search?: string,
-  batchId?: string
+  batchName?: string
 ): Promise<TopStudentsResponse> {
   let url = `${BASE_URL}/top-students`;
   const query = new URLSearchParams();
@@ -125,8 +125,8 @@ export async function fetchTopStudents(
     query.append("search", search);
   }
 
-  if (batchId && batchId !== "All") {
-    query.append("batch_id", batchId);
+  if (batchName && batchName !== "All") {
+    query.append("batch_name", batchName);
   }
 
   url += `?${query.toString()}`;
@@ -154,11 +154,11 @@ export function useTopStudents(
   page: number = 1,
   limit: number = 10,
   search?: string,
-  batchId?: string
+  batchName?: string
 ) {
   return useQuery({
-    queryKey: ["topStudents", { page, limit, search, batchId }],
-    queryFn: () => fetchTopStudents(page, limit, search, batchId),
+    queryKey: ["topStudents", { page, limit, search, batchName }],
+    queryFn: () => fetchTopStudents(page, limit, search, batchName),
     staleTime: 1 * 60 * 1000, // 1 minute
     placeholderData: keepPreviousData,
   });
