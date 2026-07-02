@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Layers, Users, AlertTriangle, TrendingUp, ChevronRight, Download, Loader2 } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
@@ -9,43 +9,39 @@ import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
 import { useRepBatches, useRepBatchStats, getDownloadBatchListUrl, BatchItem, downloadAuthenticatedFile } from "@/features/institutional-representative/api/batches-api";
+import { getAvatarColorClass } from "@/lib/avatar";
 
-const avatarColors = [
-  "bg-blue-100 text-blue-600",
-  "bg-orange-200 text-orange-600",
-  "bg-purple-100 text-purple-600",
-  "bg-pink-100 text-pink-600",
-  "bg-green-100 text-green-600",
-];
-
-const getAvatarColorClass = (id: string | number) => {
-  if (typeof id === "number") {
-    return avatarColors[id % avatarColors.length];
-  }
-  const str = String(id);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % avatarColors.length;
-  return avatarColors[index];
-};
+// Static fallback department options used when the backend returns none.
+// Defined outside the component so the reference is stable across renders.
+const FALLBACK_DEPARTMENTS = ["Design", "Computer Science", "Data Science", "Software Engineering"];
 
 export default function BatchesListingPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDept, setSelectedDept] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Debounce search: reset page and update debounced value together so React
+  // batches both into ONE re-render (and ONE API call) instead of two.
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // No separate useEffect needed for filter page-reset.
+  // setPage(1) is called directly inside the filter onChange handler below,
+  // which React 18 batches with the filter state update into one render.
 
   // By default, if department is selected, we filter by department.
   // Otherwise, we query with status=active filter field/value.
   const filterField = selectedDept !== "All" ? "department" : "status";
   const filterValue = selectedDept !== "All" ? selectedDept : "active";
-  
-  const debouncedSearch = useDebounce(search, 500);
 
   const { data, isLoading, isFetching, error } = useRepBatches(
     page,
@@ -61,21 +57,16 @@ export default function BatchesListingPage() {
   const totalCount = data?.pagination?.total || 0;
   const totalPages = data?.pagination?.totalPages || 1;
 
-  // Department choices from pagination or static fallback
+  // Department choices: backend values merged with static fallbacks.
+  // Depends only on the filters slice so it stays stable across page/search changes.
   const departmentOptions = useMemo(() => {
     const backendDepts = data?.filters?.departments || [];
-    const deptsSet = new Set(["All", ...backendDepts]);
-    // Ensure standard fallbacks exist
-    deptsSet.add("Design");
-    deptsSet.add("Computer Science");
-    deptsSet.add("Data Science");
-    deptsSet.add("Software Engineering");
-    
+    const deptsSet = new Set(["All", ...backendDepts, ...FALLBACK_DEPARTMENTS]);
     return Array.from(deptsSet).map((dept) => ({
       value: dept,
       label: dept === "All" ? "All Departments" : dept,
     }));
-  }, [data]);
+  }, [data?.filters?.departments]);
 
   // Summary statistics from stats API with fallback calculation
   const stats = useMemo(() => {
@@ -180,7 +171,6 @@ export default function BatchesListingPage() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
     },
   };
 
@@ -192,6 +182,7 @@ export default function BatchesListingPage() {
       value: selectedDept,
       options: departmentOptions,
       onChange: (val: string | string[]) => {
+        // Reset page here; React 18 batches this with setSelectedDept into one render.
         setSelectedDept(Array.isArray(val) ? val[0] : val);
         setPage(1);
       },

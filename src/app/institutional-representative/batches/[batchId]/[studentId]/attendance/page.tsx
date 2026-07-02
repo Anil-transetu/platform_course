@@ -82,8 +82,13 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
   const batchId = decodeURIComponent(resolvedParams.batchId);
   const studentId = decodeURIComponent(resolvedParams.studentId);
 
-  // Initialize with current year and month (e.g. "2026-06" as current month based on metadata)
-  const [currentMonthStr, setCurrentMonthStr] = useState("2026-06");
+  // Initialize with the actual current year and month dynamically
+  const [currentMonthStr, setCurrentMonthStr] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    return `${year}-${month}`;
+  });
 
   // Fetch Attendance Calendar from backend
   const { data, isLoading, error } = useRepAttendanceCalendar(batchId, studentId, currentMonthStr);
