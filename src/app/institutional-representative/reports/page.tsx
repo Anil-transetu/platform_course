@@ -40,9 +40,18 @@ export default function ReportsPage() {
   }, [search, selectedCategory]);
 
   // Fetch recent reports list
-  const { data: reportsData, isLoading: isReportsLoading, isFetching: isReportsFetching } = useRecentReports();
+  const { data: reportsData, isLoading: isReportsLoading, isFetching: isReportsFetching } = useRecentReports(
+    page,
+    rowsPerPage,
+    search,
+    selectedCategory
+  );
 
   const reports = reportsData?.reports || [];
+  
+  const apiTotal = (reportsData as any)?.pagination?.total;
+  const apiTotalPages = (reportsData as any)?.pagination?.totalPages;
+  const isServerPaginated = apiTotal !== undefined && apiTotalPages !== undefined;
 
   // Calculate dynamic report counts by category for the cards
   const counts = useMemo(() => {
@@ -62,8 +71,12 @@ export default function ReportsPage() {
     return { attendance, performance, progress, critical };
   }, [reports]);
 
-  // Client-side filtering and search
+  // Client-side filtering and search (fallback if backend doesn't support server-side pagination)
   const filteredReports = useMemo(() => {
+    if (isServerPaginated) {
+      return reports;
+    }
+
     let list = [...reports];
     
     if (search.trim() !== "") {
@@ -80,14 +93,17 @@ export default function ReportsPage() {
     }
     
     return list;
-  }, [reports, search, selectedCategory]);
+  }, [reports, search, selectedCategory, isServerPaginated]);
 
-  const totalCount = filteredReports.length;
-  const totalPages = Math.ceil(totalCount / rowsPerPage) || 1;
+  const totalCount = isServerPaginated ? apiTotal : filteredReports.length;
+  const totalPages = isServerPaginated ? apiTotalPages : (Math.ceil(totalCount / rowsPerPage) || 1);
   const startIndex = (page - 1) * rowsPerPage;
   const paginatedReports = useMemo(() => {
+    if (isServerPaginated) {
+      return reports;
+    }
     return filteredReports.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredReports, startIndex, rowsPerPage]);
+  }, [filteredReports, startIndex, rowsPerPage, isServerPaginated]);
 
   // Handle download reports
   const handleDownload = async (type: string, title: string) => {

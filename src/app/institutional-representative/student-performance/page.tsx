@@ -13,7 +13,6 @@ import {
   useTopStudents,
   TopStudent,
 } from "@/features/institutional-representative/api/student-performance-api";
-import { useRepBatches } from "@/features/institutional-representative/api/batches-api";
 
 // Circular color list for student avatars
 const avatarColors = [
@@ -44,106 +43,107 @@ export default function StudentPerformancePage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isLocalFiltering, setIsLocalFiltering] = useState(false);
 
-  // Trigger loading effect when search or selectedBatch changes
+  // Trigger loading effect when search, selectedBatch, page, or rowsPerPage changes
   useEffect(() => {
     setIsLocalFiltering(true);
     const timer = setTimeout(() => {
       setIsLocalFiltering(false);
     }, 450);
     return () => clearTimeout(timer);
-  }, [search, selectedBatch]);
+  }, [search, selectedBatch, page, rowsPerPage]);
 
   // API query integrations
   const { data: summaryData, isLoading: isSummaryLoading } = useStudentPerformanceSummary();
-  
-  // FIX: Pass page and rowsPerPage to API for server-side pagination
+
+  // Fetch top students based on page, rowsPerPage (limit), search, and selectedBatch to trigger API calls on actions.
   const { 
     data: topStudentsData, 
     isLoading: isTopStudentsLoading, 
     isFetching: isTopStudentsFetching 
-  } = useTopStudents(
-    page,
-    rowsPerPage,
-    search,
-    selectedBatch
-  );
-  
-  // Fetch batches for filter
-  const { data: batchesData } = useRepBatches(1, 100);
+  } = useTopStudents(page, rowsPerPage, search, selectedBatch);
 
   const kpis = summaryData?.kpi;
   const tiers = summaryData?.distribution_tiers || [];
   const students = topStudentsData?.students || [];
-  
+
+  const apiTotal = (topStudentsData as any)?.pagination?.total;
+  const apiTotalPages = (topStudentsData as any)?.pagination?.totalPages;
+  const isServerPaginated = apiTotal !== undefined && apiTotalPages !== undefined;
+
   // Consolidate duplicate students who are in multiple batches
-  const displayStudents = useMemo(() => {
+  const allDisplayStudents = useMemo(() => {
     const map = new Map<number, TopStudent>();
     for (const student of students) {
       const existing = map.get(student.student_id);
-      const batchInfo = {
-        id: student.batch_id,
-        name: student.batch_name,
-      };
-      
+      const batchInfo = { id: student.batch_id, name: student.batch_name };
       if (existing) {
         if (!existing.all_batches) {
-          existing.all_batches = [{
-            id: existing.batch_id,
-            name: existing.batch_name,
-          }];
+          existing.all_batches = [{ id: existing.batch_id, name: existing.batch_name }];
         }
-        if (!existing.all_batches.some((b: any) => b.id === student.batch_id)) {
+        if (!existing.all_batches.some((b: any) => b.name === student.batch_name)) {
           existing.all_batches.push(batchInfo);
         }
       } else {
-        map.set(student.student_id, {
-          ...student,
-          all_batches: [batchInfo]
-        });
+        map.set(student.student_id, { ...student, all_batches: [batchInfo] });
       }
     }
     return Array.from(map.values());
   }, [students]);
 
-  // FIX: Determine if API supports server-side pagination
-  // If API returns pagination info, use it. Otherwise, do client-side pagination.
-  const apiTotal = topStudentsData?.pagination?.total;
-  const apiTotalPages = topStudentsData?.pagination?.totalPages;
-  
-  // If API returns all data (no proper pagination), we do client-side slicing
-  const isServerPaginated = apiTotal !== undefined && apiTotalPages !== undefined;
-  
-  // Total count: use API's total if available, otherwise count all students
-  const totalCount = isServerPaginated ? apiTotal : displayStudents.length;
-  
-  // Total pages: use API's totalPages if available, otherwise calculate
-  const totalPages = isServerPaginated 
-    ? apiTotalPages 
-    : Math.max(1, Math.ceil(displayStudents.length / rowsPerPage));
-  
-  const startIndex = (page - 1) * rowsPerPage;
-
-  // FIX: If API doesn't paginate server-side, slice data client-side
-  const paginatedDisplayStudents = useMemo(() => {
-    if (isServerPaginated) {
-      // API already returned correct page data, just use it
-      return displayStudents;
-    }
-    // Client-side pagination: slice the full dataset
-    return displayStudents.slice(startIndex, startIndex + rowsPerPage);
-  }, [displayStudents, isServerPaginated, startIndex, rowsPerPage]);
-
-  // Build batch filter options
+  // Derive unique batch names from ALL students (not filtered) for dropdown
   const batchOptions = useMemo(() => {
-    if (!batchesData?.batches) return [{ value: "All", label: "All Batches" }];
+    const batchNames = new Set<string>();
+    allDisplayStudents.forEach((student) => {
+      if (student.batch_name) batchNames.add(student.batch_name);
+      if (student.all_batches) {
+        student.all_batches.forEach((b: any) => { if (b.name) batchNames.add(b.name); });
+      }
+    });
     return [
       { value: "All", label: "All Batches" },
-      ...batchesData.batches.map((b) => ({
-        value: String(b.id || b.batch_id),
-        label: b.batch_name,
-      })),
+      ...Array.from(batchNames).map((name) => ({ value: name, label: name })),
     ];
-  }, [batchesData]);
+  }, [allDisplayStudents]);
+
+  // Client-side filtering: apply search and batch filter (fallback if not server paginated)
+  const filteredStudents = useMemo(() => {
+    if (isServerPaginated) {
+      return allDisplayStudents;
+    }
+
+    let result = allDisplayStudents;
+
+    // Filter by search term (case-insensitive match on student name)
+    if (search.trim()) {
+      const term = search.trim().toLowerCase();
+      result = result.filter((s) =>
+        s.student_name?.toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by batch name
+    if (selectedBatch && selectedBatch !== "All") {
+      result = result.filter((s) => {
+        const batches = s.all_batches || [{ name: s.batch_name }];
+        return batches.some((b: any) => b.name === selectedBatch);
+      });
+    }
+
+    return result;
+  }, [allDisplayStudents, search, selectedBatch, isServerPaginated]);
+
+  // Client-side pagination on filtered results (fallback if not server paginated)
+  const totalCount = isServerPaginated ? apiTotal : filteredStudents.length;
+  const totalPages = isServerPaginated ? apiTotalPages : Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const startIndex = (page - 1) * rowsPerPage;
+  const paginatedDisplayStudents = useMemo(() => {
+    if (isServerPaginated) {
+      return filteredStudents;
+    }
+    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredStudents, startIndex, rowsPerPage, isServerPaginated]);
+
+
 
   // Columns Configuration for top students
   const columns: Column<TopStudent>[] = useMemo(() => [
@@ -403,11 +403,11 @@ export default function StudentPerformancePage() {
                 </span> as any
               ) : (
                 <span className="flex items-baseline gap-2">
-                  <span className="text-2xl md:text-3xl font-bold text-foreground">
-                    +15%
+                  <span className="text-2xl md:text-3xl font-bold text-muted-foreground">
+                    N/A
                   </span>
                   <span className="text-sm font-normal text-muted-foreground">
-                    Emily Watson
+                    No data available
                   </span>
                 </span> as any
               )
@@ -426,7 +426,7 @@ export default function StudentPerformancePage() {
           <h2 className="text-lg font-bold text-slate-800 dark:text-foreground">Student Distribution Tiers</h2>
           <p className="text-sm text-muted-foreground">Global overview of population performance categories</p>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-center justify-center py-4">
           {tiers.map((tier) => (
             <CircleChart
