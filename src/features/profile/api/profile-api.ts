@@ -29,11 +29,18 @@ export async function fetchProfile() {
 /**
  * Update unified user profile
  */
-export async function updateProfile(data: Record<string, any>) {
+export async function updateProfile(data: Record<string, any> | FormData) {
+  const headers = getAuthHeaders();
+  const isFormData = data instanceof FormData;
+  
+  if (isFormData) {
+    delete headers["Content-Type"];
+  }
+
   const response = await fetch(`${BASE_URL}/profile`, {
     method: "PUT",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data),
+    headers,
+    body: isFormData ? data : JSON.stringify(data),
   });
   return handleResponse(response);
 }

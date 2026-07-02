@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LogOut, Settings, Bell, User as UserIcon, ChevronUp, ChevronDown } from "lucide-react";
+import { LogOut, Settings, Bell, User as UserIcon, ChevronUp, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,13 +16,6 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUserDetails } from "@/features/profile/api/profile-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface NavUserProps {
-  unreadCount?: number;
-  notifications?: any[];
-  onDropdownOpen?: () => Promise<void>;
-  onNotificationsClick?: () => Promise<void>;
-}
-
 export default function NavUser({
   unreadCount = 0,
   notifications = [],
@@ -31,13 +25,6 @@ export default function NavUser({
   const [isOpen, setIsOpen] = useState(false);
   const { logout, role: storeRole } = useAuthStore();
   const { data: userDetails, isLoading } = useUserDetails();
-
-  const handleOpenChange = async (open: boolean) => {
-    setIsOpen(open);
-    if (open && onDropdownOpen) {
-      await onDropdownOpen();
-    }
-  };
 
   const data = userDetails?.data || userDetails; 
   const displayName = data?.name || data?.full_name || data?.email?.split('@')[0] || "User";
@@ -61,26 +48,30 @@ export default function NavUser({
                   </>
                 ) : (
                   <>
-                    <div className="relative shrink-0">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
-                        <Image 
-                          src={avatarUrl} 
-                          alt={displayName} 
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      </div>
-                      {unreadCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#111827] z-10" />
-                      )}
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
+                      <Image 
+                        src={avatarUrl} 
+                        alt={displayName} 
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
                     </div>
 
                     <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
                       <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
                       <p className="text-[10px] text-gray-400 truncate">{displaySubtitle?.toLowerCase()}</p>
                     </div>
+                    <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
+                      <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{displaySubtitle?.toLowerCase()}</p>
+                    </div>
 
+                    <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
+                      {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                    </div>
+                  </>
+                )}
                     <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
                       {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                     </div>
@@ -97,6 +88,7 @@ export default function NavUser({
           >
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
               <Link href="/settings/general" className="flex items-center gap-3 w-full">
+                <UserIcon className="w-5 h-5 shrink-0" />
                 <UserIcon className="w-5 h-5 shrink-0" />
                 <span>User Details</span>
               </Link>

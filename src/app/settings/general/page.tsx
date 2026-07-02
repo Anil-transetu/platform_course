@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { ExternalLink, Loader2, Camera } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
 import { ExternalLink, Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -14,10 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useProfile, useUpdateProfile } from "@/features/profile/api/profile-api";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
-import { supabase } from "@/lib/supabase";
 
 // Fields to completely ignore (not even read-only)
-const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id", "attendance"];
+const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id"];
 
 // Fields that should be displayed but not editable
 const READ_ONLY_FIELDS = ["role", "created_date", "created_at", "updated_at", "allocated_batches", "allocated_batches_count"];
@@ -46,6 +49,10 @@ export default function GeneralSettingsPage() {
   const { data: profileResponse, isLoading: isLoadingProfile } = useProfile();
   const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
   
+  
+  const { data: profileResponse, isLoading: isLoadingProfile } = useProfile();
+  const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
+  
   const [profileImage, setProfileImage] = useState(defaultAvatar);
   const [formData, setFormData] = useState<Record<string, any>>({});
   
@@ -54,12 +61,6 @@ export default function GeneralSettingsPage() {
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
   
   const profileData = profileResponse?.data || profileResponse || {};
-  
-  const isAdmin = profileData.role?.toLowerCase() === "admin" || profileData.role === "Admin";
-  const currentIgnoredFields = [...IGNORED_FIELDS];
-  if (isAdmin) {
-    currentIgnoredFields.push("mobile_number", "phone_number", "phone", "mobile");
-  }
 
   useEffect(() => {
     if (!isLoadingProfile && Object.keys(profileData).length > 0) {
@@ -68,7 +69,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           // Flatten simple string arrays, ignore object arrays here
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
@@ -92,6 +93,7 @@ export default function GeneralSettingsPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Create an object URL for the cropper instead of reading immediately
     // Create an object URL for the cropper instead of reading immediately
     const imageUrl = URL.createObjectURL(file);
     setSelectedImageForCrop(imageUrl);
@@ -117,16 +119,39 @@ export default function GeneralSettingsPage() {
     handleCropperClose();
   };
 
+  const handleRemoveImage = () => {
+    const nameForAvatar = profileData.name || profileData.full_name || profileData.first_name || "User";
+    const fallback = `https://ui-avatars.com/api/?name=${nameForAvatar.replace(/\s+/g, '+')}&background=random`;
+    setProfileImage(fallback);
+    setFormData(prev => ({ ...prev, profile_image: "" }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleInputChange = (key: string, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveChanges = async () => {
+  const dataURLtoFile = (dataurl: string, filename: string) => {
+    const arr = dataurl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  const handleSaveChanges = () => {
     const processedData = { ...formData };
     
     // Strip out fields that the backend doesn't allow updating via this endpoint
     const disallowedFields = [
-      "email", "role", "created_date", "created_at", 
+      "email", "status", "role", "created_date", "created_at", 
       "updated_at", "allocated_batches", "allocated_batches_count",
       "avatar"
     ];
@@ -134,48 +159,18 @@ export default function GeneralSettingsPage() {
       delete processedData[field];
     });
 
-    for (const [key, value] of Object.entries(processedData)) {
-      if (key === "profile_image") {
-        if (typeof value === "string" && value.startsWith("data:image")) {
-          toast.loading("Uploading image to storage...", { id: "upload-toast" });
-          try {
-            // Robust base64 to File conversion
-            const res = await fetch(value);
-            const blob = await res.blob();
-            const ext = blob.type.split('/')[1] || 'jpg';
-            const fileName = `profile_${Date.now()}.${ext}`;
-            const file = new File([blob], fileName, { type: blob.type });
-
-            // Direct Supabase Upload
-            const { data, error } = await supabase.storage
-              .from('profiles')
-              .upload(fileName, file, {
-                cacheControl: '3600',
-                upsert: true
-              });
-
-            if (error) {
-              throw error;
-            }
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-              .from('profiles')
-              .getPublicUrl(fileName);
-
-            // Set the final string payload for the backend API
-            processedData.profile_image = publicUrl;
-            toast.success("Image uploaded", { id: "upload-toast" });
-          } catch (error: any) {
-            toast.error("Image upload failed", { id: "upload-toast", description: error.message });
-            // Do not proceed with backend API call if image upload fails
-            return; 
-          }
-        }
+    const payload = new FormData();
+    Object.entries(processedData).forEach(([key, value]) => {
+      if (key === "profile_image" && typeof value === "string" && value.startsWith("data:image")) {
+        // Convert base64 to File object
+        const file = dataURLtoFile(value, "profile.jpg");
+        payload.append(key, file);
+      } else if (value !== null && value !== undefined && value !== "") {
+        payload.append(key, value as string);
       }
-    }
-
-    updateProfile(processedData, {
+    });
+    
+    updateProfile(payload, {
       onSuccess: () => {
         toast.success("Profile updated", {
           description: "Your profile has been updated successfully.",
@@ -196,7 +191,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
                initialData[key] = profileData[key].join(", ");
@@ -283,7 +278,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="bg-card text-card-foreground border rounded-xl overflow-hidden flex flex-col">
-      <div className="p-4 md:p-8 md:pb-6">
+      <div className="p-8 pb-6">
         <h2 className="text-2xl font-bold mb-2">Public Profile</h2>
         
         <p className="text-sm text-muted-foreground mb-8">
@@ -299,7 +294,7 @@ export default function GeneralSettingsPage() {
         />
 
         {/* Improved Profile Picture Upload Section */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 sm:mb-10 text-center sm:text-left">
+        <div className="flex items-center gap-6 mb-10">
           <div 
             className="group relative w-24 h-24 rounded-full overflow-hidden border-2 bg-muted shrink-0 cursor-pointer transition-transform hover:scale-105"
             onClick={handleUploadClick}
@@ -309,9 +304,16 @@ export default function GeneralSettingsPage() {
               alt="Profile Picture"
               fill
               className="object-cover"
+              fill
+              className="object-cover"
               unoptimized
               priority
             />
+            {/* Dark overlay specifically for image hover to ensure visibility of camera icon regardless of theme */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera className="w-6 h-6 text-white mb-1" />
+              <span className="text-[10px] font-medium text-white uppercase tracking-wider">Change</span>
+            </div>
             {/* Dark overlay specifically for image hover to ensure visibility of camera icon regardless of theme */}
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
               <Camera className="w-6 h-6 text-white mb-1" />
@@ -323,10 +325,13 @@ export default function GeneralSettingsPage() {
             <h3 className="text-base font-semibold mb-1">Profile Picture</h3>
             <p className="text-xs text-muted-foreground mb-4">
               JPG, GIF or PNG. 1MB max. Click the avatar to upload.
+            <h3 className="text-base font-semibold mb-1">Profile Picture</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              JPG, GIF or PNG. 1MB max. Click the avatar to upload.
             </p>
 
-            <div className="flex items-center justify-center sm:justify-start gap-3">
-              <Button variant="outline" size="sm" onClick={handleUploadClick} className="w-full sm:w-auto">
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" onClick={handleUploadClick}>
                 Upload new
               </Button>
             </div>
@@ -335,10 +340,10 @@ export default function GeneralSettingsPage() {
 
         {/* Dynamic Form Fields (Editable) */}
         <h3 className="text-lg font-medium mb-4 border-b pb-2">Personal Information</h3>
-        {Object.keys(formData).filter(k => !currentIgnoredFields.includes(k)).length > 0 ? (
+        {Object.keys(formData).filter(k => !IGNORED_FIELDS.includes(k)).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-10">
             {Object.entries(formData)
-              .filter(([key]) => !currentIgnoredFields.includes(key) && key !== "status")
+              .filter(([key]) => !IGNORED_FIELDS.includes(key) && key !== "status")
               .map(([key, value]) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className="font-medium">{formatLabel(key)}</Label>
@@ -371,7 +376,23 @@ export default function GeneralSettingsPage() {
         ) : (
           <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl mb-10 bg-muted/20">
             No editable profile fields found.
+        ) : (
+          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl mb-10 bg-muted/20">
+            No editable profile fields found.
           </div>
+        )}
+
+        {/* Read-Only Fields */}
+        {readOnlyEntries.length > 0 && (
+          <>
+            <h3 className="text-lg font-medium mb-4 border-b pb-2">System Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
+              {readOnlyEntries.map(([key, value]) => (
+                <div key={key} className="space-y-2">
+                  <Label className="text-muted-foreground font-medium block">{formatLabel(key)}</Label>
+                  {renderReadOnlyField(key, value)}
+                </div>
+              ))}
         )}
 
         {/* Read-Only Fields */}
@@ -388,16 +409,26 @@ export default function GeneralSettingsPage() {
             </div>
           </>
         )}
+          </>
+        )}
       </div>
 
-      <div className="p-4 md:p-6 border-t bg-muted/50 flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 mt-auto">
-        <Button className="w-full sm:w-auto" variant="ghost" onClick={handleDiscard} disabled={isUpdating}>
+      <div className="p-6 border-t bg-muted/50 flex items-center justify-end gap-4 mt-auto">
+        <Button variant="ghost" onClick={handleDiscard} disabled={isUpdating}>
           Discard
         </Button>
-        <Button className="w-full sm:w-auto" onClick={handleSaveChanges} disabled={isUpdating}>
+        <Button onClick={handleSaveChanges} disabled={isUpdating}>
           {isUpdating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}
         </Button>
       </div>
+
+      {/* Profile Image Cropper Modal */}
+      <ImageCropperModal
+        isOpen={isCropperOpen}
+        imageSrc={selectedImageForCrop}
+        onClose={handleCropperClose}
+        onCropComplete={handleCropComplete}
+      />
 
       {/* Profile Image Cropper Modal */}
       <ImageCropperModal
