@@ -8,8 +8,6 @@ import {
   AlertTriangle, 
   FileText, 
   Download, 
-  Search,
-  Loader2
 } from "lucide-react";
 import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,28 +22,44 @@ import {
 
 export default function ReportsPage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
-  const [isLocalFiltering, setIsLocalFiltering] = useState(false);
 
-  // Trigger loading effect when search or selectedCategory changes
+  // Debounce search — 300ms delay matching the Admin module pattern
   useEffect(() => {
-    setIsLocalFiltering(true);
     const timer = setTimeout(() => {
-      setIsLocalFiltering(false);
-    }, 450);
+      setDebouncedSearch(search);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [search, selectedCategory]);
+  }, [search]);
 
-  // Fetch recent reports list
-  const { data: reportsData, isLoading: isReportsLoading, isFetching: isReportsFetching } = useRecentReports(
+  // Reset to page 1 only when the debounced value actually changes (not every keystroke)
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  // Fetch recent reports list — uses debouncedSearch so the API is only called after the user stops typing
+  const {
+    data: reportsData,
+    isLoading: isReportsLoading,
+    isFetching: isReportsFetching,
+    error: reportsError,
+  } = useRecentReports(
     page,
     rowsPerPage,
-    search,
+    debouncedSearch || undefined,
     selectedCategory
   );
+
+  // Surface API errors via toast — avoids silent failures
+  useEffect(() => {
+    if (reportsError) {
+      toast.error((reportsError as Error).message || "Failed to load reports.");
+    }
+  }, [reportsError]);
 
   const reports = reportsData?.reports || [];
   
@@ -79,8 +93,8 @@ export default function ReportsPage() {
 
     let list = [...reports];
     
-    if (search.trim() !== "") {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim() !== "") {
+      const q = debouncedSearch.toLowerCase();
       list = list.filter((r) =>
         r.title.toLowerCase().includes(q) ||
         r.category.toLowerCase().includes(q) ||
@@ -93,7 +107,7 @@ export default function ReportsPage() {
     }
     
     return list;
-  }, [reports, search, selectedCategory, isServerPaginated]);
+  }, [reports, debouncedSearch, selectedCategory, isServerPaginated]);
 
   const totalCount = isServerPaginated ? apiTotal : filteredReports.length;
   const totalPages = isServerPaginated ? apiTotalPages : (Math.ceil(totalCount / rowsPerPage) || 1);
@@ -254,7 +268,7 @@ export default function ReportsPage() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
+      // Page reset is handled by the debouncedSearch useEffect above.
     },
   };
 
@@ -359,7 +373,7 @@ export default function ReportsPage() {
               search={searchConfig}
               filters={filterConfig}
               bodyHeight="h-full"
-              loading={isReportsFetching || isLocalFiltering}
+              loading={isReportsFetching}
             />
           </div>
         </div>

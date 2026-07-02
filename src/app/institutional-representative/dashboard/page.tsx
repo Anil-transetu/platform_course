@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Users,
   CheckCircle,
@@ -18,6 +18,7 @@ import {
   useRepMonitoringList,
   MonitoringStudent,
 } from "@/features/institutional-representative/api/rep-api";
+import { toast } from "react-hot-toast";
 
 // Circular color list for student avatars - matches tutor management exactly
 const avatarColors = [
@@ -43,17 +44,45 @@ const getAvatarColorClass = (id: string | number) => {
 
 export default function InstitutionalDashboard() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  // Debounce search — 300ms delay matching the Admin module pattern
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset to page 1 only when the debounced value actually changes (not every keystroke)
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
   // API query integrations
-  const { data: stats, isLoading: isStatsLoading } = useRepDashboardStats();
+  const { data: stats, isLoading: isStatsLoading, error: statsError } = useRepDashboardStats();
   const { 
     data: listData, 
     isLoading: isListLoading, 
-    isFetching: isListFetching 
-  } = useRepMonitoringList(page, rowsPerPage, search, selectedBatch);
+    isFetching: isListFetching,
+    error: listError,
+  } = useRepMonitoringList(page, rowsPerPage, debouncedSearch || undefined, selectedBatch);
+
+  // Surface API errors via toast — avoids silent failures
+  useEffect(() => {
+    if (statsError) {
+      toast.error((statsError as Error).message || "Failed to load dashboard stats.");
+    }
+  }, [statsError]);
+
+  useEffect(() => {
+    if (listError) {
+      toast.error((listError as Error).message || "Failed to load student monitoring list.");
+    }
+  }, [listError]);
 
   const students = listData?.students || [];
 
@@ -223,9 +252,10 @@ export default function InstitutionalDashboard() {
     enabled: true,
     placeholder: "Search students by name...",
     value: search,
+    // Match Admin pattern: only update raw search state here.
+    // Page reset is handled by the debouncedSearch useEffect above.
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
     },
   };
 
