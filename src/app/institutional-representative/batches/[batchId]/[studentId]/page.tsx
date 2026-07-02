@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, use } from "react";
+import React, { useState, useMemo, use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -16,37 +16,16 @@ import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepStudentStats,
   useRepStudentAcademicPerformance,
   Submission
 } from "@/features/institutional-representative/api/batches-api";
+import { getAvatarColorClass } from "@/lib/avatar";
 
 interface StudentProfilePageProps {
   params: Promise<{ batchId: string; studentId: string }>;
 }
-
-const avatarColors = [
-  "bg-blue-100 text-blue-600",
-  "bg-orange-200 text-orange-600",
-  "bg-purple-100 text-purple-600",
-  "bg-pink-100 text-pink-600",
-  "bg-green-100 text-green-600",
-];
-
-const getAvatarColorClass = (id: string | number) => {
-  if (typeof id === "number") {
-    return avatarColors[id % avatarColors.length];
-  }
-  const str = String(id);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % avatarColors.length;
-  return avatarColors[index];
-};
 
 export default function StudentProfilePage({ params }: StudentProfilePageProps) {
   const router = useRouter();
@@ -55,11 +34,24 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
   const studentId = decodeURIComponent(resolvedParams.studentId);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedType, setSelectedType] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
-  const debouncedSearch = useDebounce(search, 500);
+
+  // Debounce search: reset page and update debounced value together so React
+  // batches both into ONE re-render (and ONE API call) instead of two.
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // No separate useEffect needed for filter page-reset.
+  // setPage(1) is called directly inside the filter onChange handler below,
+  // which React 18 batches with the filter state update into one render.
 
   // Fetch backend data
   const { data: statsData, isLoading: statsLoading, error: statsError } = useRepStudentStats(batchId, studentId);
@@ -161,7 +153,6 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
     },
   };
 
@@ -177,6 +168,7 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
         { value: "Assignment", label: "Assignments" },
       ],
       onChange: (val: string | string[]) => {
+        // Reset page here; React 18 batches this with setSelectedType into one render.
         setSelectedType(Array.isArray(val) ? val[0] : val);
         setPage(1);
       },

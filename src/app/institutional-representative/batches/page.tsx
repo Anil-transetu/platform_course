@@ -46,6 +46,20 @@ export default function BatchesListingPage() {
   // setPage(1) is called directly inside the filter onChange handler below,
   // which React 18 batches with the filter state update into one render.
 
+  // Debounce search: reset page and update debounced value together so React
+  // batches both into ONE re-render (and ONE API call) instead of two.
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPage(1);
+      setDebouncedSearch(search);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // No separate useEffect needed for filter page-reset.
+  // setPage(1) is called directly inside the filter onChange handler below,
+  // which React 18 batches with the filter state update into one render.
+
   // Filter by course/domain when selected, otherwise no extra filter.
   const filterField = selectedCourse !== "All" ? "course" : undefined;
   const filterValue = selectedCourse !== "All" ? selectedCourse : undefined;
