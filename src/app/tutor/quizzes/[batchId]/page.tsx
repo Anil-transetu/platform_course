@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
 import { FileText, CheckCircle, Percent } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
-import { useBatchQuizStats, useBatchQuizzes } from "@/features/tutor/api/batch-quiz-api";
+import { useBatch, useBatchQuizStats, useBatchQuizzes } from "@/features/tutor/api/batch-quiz-api";
 import { buildQuizSubmissionColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 
@@ -15,6 +15,11 @@ export default function BatchQuizStatsPage() {
     // Dynamic batchId from URL
     const params = useParams();
     const batchId = params.batchId as string;
+
+    //heading but using UseParam 
+    const searchParams = useSearchParams();
+    const batchName = searchParams.get("batch_name") || "";
+
 
     //State
     const {
@@ -30,11 +35,17 @@ export default function BatchQuizStatsPage() {
         }
     }, [isError, error]);
 
-    // Debugging (remove later)
+    // Start Debugging (remove later)
     useEffect(() => {
         console.log("Batch ID:", batchId);
-        console.log("Quiz Stats Response:", statsData);
+        //console.log("Quiz Stats Response:", statsData);
     }, [batchId, statsData]);
+
+    useEffect(() => {
+        console.log("Quiz Stats Response-------------:", statsData);
+    }, [statsData]);
+    // End Debugging (remove later)   
+
 
     const stats = statsData || {};
 
@@ -60,7 +71,10 @@ export default function BatchQuizStatsPage() {
     }, [debouncedSearch]);
 
     // Fetch batch quizzes with pagination and search
-    const { data, isFetching } = useBatchQuizzes(batchId, page, rowsPerPage, debouncedSearch);
+    const { data, isFetching } = useBatchQuizzes(batchId, page, rowsPerPage, debouncedSearch, status);
+
+    // Specific batch heading - Need to check again
+    const { data: batchData } = useBatch(batchId);
 
     const filterConfig = [
         {
@@ -87,7 +101,8 @@ export default function BatchQuizStatsPage() {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                    Quiz Statistics
+                    Quiz Submissions : {batchName}
+                    {/* Quiz Submissions :{batchData?.name} */}
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
                     View quiz statistics for this batch.

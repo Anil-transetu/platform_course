@@ -106,68 +106,12 @@ export function useBatchQuizStats(batchId: string | number) {
     });
 }
 
-
-
-//TABLE DATA
-// export async function fetchBatchQuizzes(
-//     batchId: number | string,
-//     page: number = 1,
-//     limit: number = 5,
-//     search?: string
-// ) {
-//     let url = `${STUDENT_BATCH_QUIZZES_URL}/${batchId}/quizzes`;
-//     console.log(url, 'url');
-
-//     const query = new URLSearchParams();
-
-//     query.append("page", page.toString());
-//     query.append("limit", limit.toString());
-
-//     if (search) {
-//         query.append("search", search);
-//     }
-
-//     if (query.toString()) {
-//         url += `?${query.toString()}`;
-//     }
-
-//     const response = await fetch(url, {
-//         method: "GET",
-//         headers: getAuthHeaders(),
-//     });
-
-//     const result = await handleResponse(response);
-//     //Check API response in browser console
-//     console.log("Batch Quizzes API Response:", result);
-
-//     // Normalize response
-//     const data = result?.data?.data || result?.data || [];
-//     const total = result?.data?.total || result?.total || data.length;
-
-//     // Map API response to frontend table structure
-//     const mappedData = Array.isArray(data)
-//         ? data.map((quiz: any) => ({
-//             id: quiz.id || 0,
-//             quiz_name: quiz.quiz_name || quiz.name || "N/A",
-//             total_questions: quiz.total_questions || 0,
-//             submissions: quiz.submissions || 0,
-//             average_score: quiz.average_score || 0,
-//             created_at: quiz.created_at || "",
-//         }))
-//         : [];
-
-//     return {
-//         data: mappedData,
-//         total,
-//     };
-// }
-
-
 export async function fetchBatchQuizzes(
     batchId: number | string,
     page: number = 1,
     limit: number = 5,
-    search?: string
+    search?: string,
+    statusFilter?: string
 ) {
     let url = `${STUDENT_BATCH_QUIZZES_URL}/${batchId}/quizzes`;
 
@@ -178,6 +122,10 @@ export async function fetchBatchQuizzes(
 
     if (search?.trim()) {
         query.append("search", search);
+    }
+
+    if (statusFilter && statusFilter !== "All") {
+        query.append("status", statusFilter.toLowerCase());
     }
 
     url += `?${query.toString()}`;
@@ -215,13 +163,34 @@ export function useBatchQuizzes(
     batchId: number | string,
     page: number = 1,
     limit: number = 5,
-    search?: string
+    search?: string,
+    statusFilter?: string
 ) {
     return useQuery({
-        queryKey: ["batchQuizzes", batchId, { page, limit, search }],
-        queryFn: () => fetchBatchQuizzes(batchId, page, limit, search),
+        queryKey: ["batchQuizzes", batchId, { page, limit, search, statusFilter }],
+        queryFn: () => fetchBatchQuizzes(batchId, page, limit, search, statusFilter),
         enabled: !!batchId,
         staleTime: 5 * 60 * 1000,
         placeholderData: keepPreviousData,
+    });
+}
+
+
+
+//Specific batch heading - Need to check again
+export async function fetchBatch(batchId: string) {
+    const response = await fetch(`${BASE_URL}/${batchId}`, {
+        headers: getAuthHeaders(),
+    });
+
+    const result = await handleResponse(response);
+    return result.data;
+}
+
+export function useBatch(batchId: string) {
+    return useQuery({
+        queryKey: ["batch", batchId],
+        queryFn: () => fetchBatch(batchId),
+        enabled: !!batchId,
     });
 }

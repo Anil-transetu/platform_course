@@ -115,7 +115,7 @@ export function useTutorQuizManagementStats() {
 
 export function useTutorQuizManagementBatches(page: number = 1, limit: number = 5, search?: string) {
     return useQuery({
-        queryKey: ["tutorDashboardBatches", { page, limit, search }],
+        queryKey: ["tutorQuizManagementBatches", { page, limit, search }],
         queryFn: () => fetchTutorBatches(page, limit, search),
         staleTime: 5 * 60 * 1000,
         placeholderData: keepPreviousData,

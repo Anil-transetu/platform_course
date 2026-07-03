@@ -113,9 +113,13 @@ export function buildQuizColumns(): Column<QuizOverview>[] {
                     className="rounded-lg border-blue-200 text-blue-600 hover:bg-blue-50"
                     asChild
                 >
-                    <Link href={`/tutor/quizzes/${row.batch_id}`}>
+                    <Link href={`/tutor/quizzes/${row.batch_id || row.id}?batch_name=${encodeURIComponent(row.batch_name || "N/A")}`}>
                         View All Quizzes
                     </Link>
+
+                    {/* <Link href={`/tutor/quizzes/${row.batch_id || row.id}`}>
+                        View All Quizzes
+                    </Link> */}
                 </Button>
             ),
         },
