@@ -117,16 +117,6 @@ export default function GeneralSettingsPage() {
     handleCropperClose();
   };
 
-  const handleRemoveImage = () => {
-    const nameForAvatar = profileData.name || profileData.full_name || profileData.first_name || "User";
-    const fallback = `https://ui-avatars.com/api/?name=${nameForAvatar.replace(/\s+/g, '+')}&background=random`;
-    setProfileImage(fallback);
-    setFormData(prev => ({ ...prev, profile_image: "" }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleInputChange = (key: string, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
@@ -338,9 +328,6 @@ export default function GeneralSettingsPage() {
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={handleUploadClick}>
                 Upload new
-              </Button>
-              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={handleRemoveImage}>
-                Remove
               </Button>
             </div>
           </div>
