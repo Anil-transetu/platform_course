@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Layers, Users, AlertTriangle, TrendingUp, ChevronRight, Download, Loader2 } from "lucide-react";
+import { Layers, Users, AlertTriangle, TrendingUp, ChevronRight, Download } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
@@ -12,15 +12,13 @@ import { cn } from "@/lib/utils";
 import { useRepBatches, useRepBatchStats, getDownloadBatchListUrl, BatchItem, downloadAuthenticatedFile } from "@/features/institutional-representative/api/batches-api";
 import { getAvatarColorClass } from "@/lib/avatar";
 
-// Static fallback department options used when the backend returns none.
-// Defined outside the component so the reference is stable across renders.
-const FALLBACK_DEPARTMENTS = ["Design", "Computer Science", "Data Science", "Software Engineering"];
+
 
 export default function BatchesListingPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedDept, setSelectedDept] = useState<string>("All");
+  const [selectedCourse, setSelectedCourse] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -38,10 +36,9 @@ export default function BatchesListingPage() {
   // setPage(1) is called directly inside the filter onChange handler below,
   // which React 18 batches with the filter state update into one render.
 
-  // By default, if department is selected, we filter by department.
-  // Otherwise, we query with status=active filter field/value.
-  const filterField = selectedDept !== "All" ? "department" : "status";
-  const filterValue = selectedDept !== "All" ? selectedDept : "active";
+  // Filter by course/domain when selected, otherwise no extra filter.
+  const filterField = selectedCourse !== "All" ? "course" : undefined;
+  const filterValue = selectedCourse !== "All" ? selectedCourse : undefined;
 
   const { data, isLoading, isFetching, error } = useRepBatches(
     page,
@@ -57,16 +54,43 @@ export default function BatchesListingPage() {
   const totalCount = data?.pagination?.total || 0;
   const totalPages = data?.pagination?.totalPages || 1;
 
-  // Department choices: backend values merged with static fallbacks.
-  // Depends only on the filters slice so it stays stable across page/search changes.
-  const departmentOptions = useMemo(() => {
-    const backendDepts = data?.filters?.departments || [];
-    const deptsSet = new Set(["All", ...backendDepts, ...FALLBACK_DEPARTMENTS]);
-    return Array.from(deptsSet).map((dept) => ({
-      value: dept,
-      label: dept === "All" ? "All Departments" : dept,
+  // ============================================
+  // CLIENT-SIDE FILTERING (Fallback when API filter doesn't work)
+  // ============================================
+  const filteredBatches = useMemo(() => {
+    if (selectedCourse === "All") return batches;
+    return batches.filter(
+      (b) => b.course && b.course.trim() === selectedCourse.trim()
+    );
+  }, [batches, selectedCourse]);
+
+  // Recalculate pagination based on client-side filtered results
+  const filteredTotalCount = filteredBatches.length;
+  const filteredTotalPages = Math.max(
+    1,
+    Math.ceil(filteredTotalCount / rowsPerPage)
+  );
+  const currentFilteredPage = Math.min(page, filteredTotalPages);
+
+  // Slice for current page display
+  const paginatedBatches = useMemo(() => {
+    const start = (currentFilteredPage - 1) * rowsPerPage;
+    return filteredBatches.slice(start, start + rowsPerPage);
+  }, [filteredBatches, currentFilteredPage, rowsPerPage]);
+
+  // Build course/domain options dynamically from the fetched batches.
+  const courseOptions = useMemo(() => {
+    const coursesSet = new Set<string>(["All"]);
+    batches.forEach((b) => {
+      if (b.course && b.course.trim() !== "") {
+        coursesSet.add(b.course.trim());
+      }
+    });
+    return Array.from(coursesSet).map((course) => ({
+      value: course,
+      label: course === "All" ? "All Courses / Domains" : course,
     }));
-  }, [data?.filters?.departments]);
+  }, [batches]);
 
   // Summary statistics from stats API with fallback calculation
   const stats = useMemo(() => {
@@ -128,13 +152,7 @@ export default function BatchesListingPage() {
         </div>
       ),
     },
-    {
-      key: "department",
-      label: "Department",
-      render: (value, row) => (
-        <span className="text-slate-600 font-medium text-sm">{row.department}</span>
-      ),
-    },
+
     {
       key: "tutor",
       label: "Assigned Tutor",
@@ -174,23 +192,29 @@ export default function BatchesListingPage() {
     },
   };
 
+  // Filter by course / domain
   const filterConfig: FilterConfig[] = [
     {
-      id: "department",
-      label: "All Departments",
+      id: "course",
+      label: "All Courses / Domains",
       type: "select",
-      value: selectedDept,
-      options: departmentOptions,
+      value: selectedCourse,
+      options: courseOptions,
       onChange: (val: string | string[]) => {
-        // Reset page here; React 18 batches this with setSelectedDept into one render.
-        setSelectedDept(Array.isArray(val) ? val[0] : val);
+        const newValue = Array.isArray(val) ? val[0] : val;
+        setSelectedCourse(newValue);
         setPage(1);
       },
     },
   ];
 
-  const paginationInfo = totalCount > 0
-    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+  // Use client-side filtered counts for pagination display
+  const displayTotalCount = selectedCourse !== "All" ? filteredTotalCount : totalCount;
+  const displayTotalPages = selectedCourse !== "All" ? filteredTotalPages : totalPages;
+  const displayPage = selectedCourse !== "All" ? currentFilteredPage : page;
+
+  const paginationInfo = displayTotalCount > 0
+    ? `${(displayPage - 1) * rowsPerPage + 1}-${Math.min(displayPage * rowsPerPage, displayTotalCount)} of ${displayTotalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
@@ -297,11 +321,11 @@ export default function BatchesListingPage() {
           ) : (
             <div className="flex-1 overflow-hidden min-h-0">
               <DataTable<any>
-                data={batches}
+                data={paginatedBatches}
                 columns={columns as any}
                 rowKey={(row) => row.id}
-                currentPage={page}
-                totalPages={totalPages}
+                currentPage={displayPage}
+                totalPages={displayTotalPages}
                 onPageChange={setPage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={(rows) => {
