@@ -120,16 +120,6 @@ export default function GeneralSettingsPage() {
     handleCropperClose();
   };
 
-  const handleRemoveImage = () => {
-    const nameForAvatar = profileData.name || profileData.full_name || profileData.first_name || "User";
-    const fallback = `https://ui-avatars.com/api/?name=${nameForAvatar.replace(/\s+/g, '+')}&background=random`;
-    setProfileImage(fallback);
-    setFormData(prev => ({ ...prev, profile_image: "" }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
   const handleInputChange = (key: string, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
