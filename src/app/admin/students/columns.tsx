@@ -38,12 +38,20 @@ export function buildStudentColumns(): Column<Student>[] {
       label: "Student Name",
       render: (value, row) => (
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold",
-            getAvatarColor(row.id)
-          )}>
-            {getInitials(row.first_name, row.last_name)}
-          </div>
+          {row.profile_image ? (
+            <img 
+              src={row.profile_image} 
+              alt={row.first_name || "Student Avatar"} 
+              className="h-9 w-9 rounded-lg object-cover shrink-0" 
+            />
+          ) : (
+            <div className={cn(
+              "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
+              getAvatarColor(row.id)
+            )}>
+              {getInitials(row.first_name, row.last_name)}
+            </div>
+          )}
           <span className="font-semibold text-slate-900 text-sm">
             {row.first_name} {row.last_name}
           </span>

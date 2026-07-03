@@ -56,6 +56,7 @@ function mapUser(u: Record<string, unknown>): User {
     institution_id: instId,
     joinedDate: u.created_at ? new Date(u.created_at as string).toLocaleDateString() : "N/A",
     avatar: `https://i.pravatar.cc/150?u=${cleanId}`,
+    avatar_url: (u.avatar_url as string) || undefined,
     status: status,
   };
 }
