@@ -2,6 +2,32 @@
 import React from "react";
 import { Column } from "@/components/reusable/DataTable";
 import { Tutor } from "@/types/tutor";
+import { cn } from "@/lib/utils";
+
+const getInitials = (name?: string) => {
+  if (!name) return "T";
+  const parts = name.trim().split(" ");
+  if (parts.length > 1) {
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
+};
+
+const avatarColors = [
+  "bg-blue-100 text-blue-600",
+  "bg-orange-200 text-orange-600",
+  "bg-purple-100 text-purple-600",
+  "bg-pink-100 text-pink-600",
+  "bg-green-100 text-green-600",
+];
+
+const getAvatarColor = (id: string | number) => {
+  const index =
+    typeof id === "number"
+      ? id % avatarColors.length
+      : String(id).length % avatarColors.length;
+  return avatarColors[index];
+};
 
 export function buildTutorColumns(): Column<Tutor>[] {
   return [
@@ -11,11 +37,22 @@ export function buildTutorColumns(): Column<Tutor>[] {
       width: "w-1/5",
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-blue-600">
-              {row.name.charAt(0)}
-            </span>
-          </div>
+          {row.avatar ? (
+            <img
+              src={row.avatar}
+              alt={row.name || "Tutor Avatar"}
+              className="h-10 w-10 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                getAvatarColor(row.id)
+              )}
+            >
+              {getInitials(row.name)}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="font-semibold text-foreground text-sm truncate">
               {row.name}
