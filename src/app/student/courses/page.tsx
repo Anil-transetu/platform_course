@@ -247,7 +247,7 @@ export default function StudentCourses() {
               <DataTable<any>
                 data={visibleData}
                 columns={buildCourseColumns()}
-                rowKey={(row) => String(row.id)}
+                rowKey={(row, index) => String(row.id || row.course_id || index)}
                 search={searchConfig}
                 rowsPerPage={rowsPerPage}
                 currentPage={page}
