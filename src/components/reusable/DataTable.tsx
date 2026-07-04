@@ -361,27 +361,28 @@ export default function DataTable<T extends Record<string, unknown>>({
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start order-1 sm:order-1 w-full sm:w-auto">
             {/* ROWS PER PAGE (Desktop/Tablet) */}
             <div className="hidden sm:flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Rows per page:</span>
               <Select
                 value={String(rowsPerPage)}
                 onValueChange={(val) => onRowsPerPageChange(Number(val))}
               >
-                <SelectTrigger className="w-[95px] bg-card border-border h-9 text-xs sm:text-sm">
+                <SelectTrigger className="w-[70px] bg-card border-border h-9 text-xs sm:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="5">Rows: 5</SelectItem>
-                  <SelectItem value="10">Rows: 10</SelectItem>
-                  <SelectItem value="15">Rows: 15</SelectItem>
-                  <SelectItem value="20">Rows: 20</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {paginationInfo ? (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 {paginationInfo}
               </span>
             ) : (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 Page {currentPage} of {totalPages}
               </span>
             )}
