@@ -10,7 +10,7 @@ import {
   Award,
   CalendarCheck
 } from "lucide-react";
-import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +18,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useRepStudentStats,
-  useRepStudentAcademicPerformance,
-  Submission
+  useRepStudentAcademicPerformance
 } from "@/features/institutional-representative/api/batches-api";
 import { getAvatarColorClass } from "@/lib/avatar";
+import { useStudentProfile, enrichSingleStudent } from "@/features/institutional-representative/hooks/use-student-profiles";
+import { buildSubmissionColumns } from "./columns";
+
+const getInitials = (name?: string) => {
+  if (!name) return "S";
+  const parts = name.trim().split(" ");
+  if (parts.length > 1) {
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
+};
 
 interface StudentProfilePageProps {
   params: Promise<{ batchId: string; studentId: string }>;
@@ -64,88 +74,17 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     debouncedSearch
   );
 
+  const { data: freshProfile } = useStudentProfile(studentId);
+  const studentInfo = useMemo(() => {
+    return enrichSingleStudent(statsData?.student_info, freshProfile);
+  }, [statsData?.student_info, freshProfile]);
+
   const submissions = performanceData?.submissions || [];
   const totalCount = performanceData?.pagination?.total || 0;
   const totalPages = performanceData?.pagination?.totalPages || 0;
 
   // Columns Configuration
-  const columns: Column<Submission>[] = useMemo(() => [
-    {
-      key: "title",
-      label: "Title",
-      width: "w-2/5",
-      render: (value, row) => {
-        const moduleName = row.moduleName || row.module_name;
-        return (
-          <div className="min-w-0">
-            <span className="font-semibold text-foreground text-sm truncate block">
-              {row.title}
-            </span>
-            {moduleName && (
-              <span className="text-xs text-muted-foreground truncate block mt-0.5">
-                {moduleName}
-              </span>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      key: "type",
-      label: "Type",
-      width: "w-[12%]",
-      render: (value, row) => {
-        const isQuiz = String(row.type).toLowerCase() === "quiz";
-        return (
-          <Badge className={cn(
-            "px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase border-none",
-            isQuiz 
-              ? "bg-purple-50 text-purple-700 hover:bg-purple-100" 
-              : "bg-blue-50 text-blue-700 hover:bg-blue-100"
-          )}>
-            {row.type}
-          </Badge>
-        );
-      },
-    },
-    {
-      key: "submissionDate",
-      label: "Submission Date",
-      width: "w-1/4",
-      render: (value, row) => {
-        const dateStr = row.submissionDate || row.submission_date || "N/A";
-        // Format if it's ISO date
-        let formattedDate = dateStr;
-        if (dateStr.includes("T")) {
-          formattedDate = new Date(dateStr).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric"
-          });
-        }
-        return (
-          <span className="text-slate-600 font-medium text-sm">
-            {formattedDate}
-          </span>
-        );
-      },
-    },
-    {
-      key: "score",
-      label: "Score / Marks",
-      width: "w-1/5",
-      render: (value, row) => {
-        const score = row.score || 0;
-        const maxScore = row.maxScore ?? row.max_score ?? 100;
-        const percent = row.percentage ?? (maxScore > 0 ? Math.round((score / maxScore) * 100) : 0);
-        return (
-          <span className="font-bold text-slate-800 text-sm">
-            {score}/{maxScore} <span className="text-xs text-muted-foreground font-normal">({percent}%)</span>
-          </span>
-        );
-      },
-    },
-  ], []);
+  const columns = useMemo(() => buildSubmissionColumns(), []);
 
   const searchConfig = {
     enabled: true,
@@ -262,7 +201,6 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
     );
   }
 
-  const studentInfo = statsData?.student_info;
   const attendance = statsData?.attendance;
   const assessments = statsData?.assessments;
   const quizzes = statsData?.quizzes;
@@ -281,12 +219,20 @@ export default function StudentProfilePage({ params }: StudentProfilePageProps) 
         
         {/* Student Details Banner */}
         <div className="bg-card rounded-xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-6 bg-white">
-          <div className={cn(
-            "w-16 h-16 sm:w-20 sm:h-20 rounded-full font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm",
-            getAvatarColorClass(studentId)
-          )}>
-            {currentStudentName.charAt(0).toUpperCase()}
-          </div>
+          {studentInfo?.avatar_url ? (
+            <img
+              src={studentInfo.avatar_url}
+              alt={currentStudentName}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover shrink-0 shadow-sm"
+            />
+          ) : (
+            <div className={cn(
+              "w-16 h-16 sm:w-20 sm:h-20 rounded-full font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm",
+              getAvatarColorClass(studentId)
+            )}>
+              {getInitials(currentStudentName)}
+            </div>
+          )}
           <div className="flex-1 text-center sm:text-left min-w-0">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
               <h2 className="text-xl sm:text-2xl font-bold text-foreground truncate">{currentStudentName}</h2>

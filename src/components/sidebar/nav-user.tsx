@@ -3,7 +3,6 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LogOut, Settings, Bell, User as UserIcon, ChevronUp, ChevronDown } from "lucide-react";
-import { LogOut, Settings, Bell, User as UserIcon, ChevronUp, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,12 +15,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUserDetails } from "@/features/profile/api/profile-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function NavUser({
-  unreadCount = 0,
-  notifications = [],
-  onDropdownOpen,
-  onNotificationsClick
-}: NavUserProps) {
+export default function NavUser() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout, role: storeRole } = useAuthStore();
   const { data: userDetails, isLoading } = useUserDetails();
@@ -34,7 +28,7 @@ export default function NavUser({
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="h-16 border-t border-[#2a374a] rounded-none hover:bg-card/5 transition-colors group-data-[collapsible=icon]:!border-t-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
               <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
@@ -62,16 +56,7 @@ export default function NavUser({
                       <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
                       <p className="text-[10px] text-gray-400 truncate">{displaySubtitle?.toLowerCase()}</p>
                     </div>
-                    <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
-                      <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{displaySubtitle?.toLowerCase()}</p>
-                    </div>
 
-                    <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
-                      {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-                    </div>
-                  </>
-                )}
                     <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
                       {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                     </div>
@@ -89,27 +74,13 @@ export default function NavUser({
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
               <Link href="/settings/general" className="flex items-center gap-3 w-full">
                 <UserIcon className="w-5 h-5 shrink-0" />
-                <UserIcon className="w-5 h-5 shrink-0" />
                 <span>User Details</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
-              <Link 
-                href="/settings/notifications" 
-                className="flex items-center justify-between w-full"
-                onClick={() => {
-                  if (onNotificationsClick) {
-                    onNotificationsClick();
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 shrink-0" />
-                  <span>Notifications</span>
-                </div>
-                {unreadCount > 0 && (
-                  <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0 mr-1" />
-                )}
+              <Link href="/settings/notifications" className="flex items-center gap-3 w-full">
+                <Bell className="w-5 h-5 shrink-0" />
+                <span>Notifications</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
@@ -135,4 +106,3 @@ export default function NavUser({
     </SidebarMenu>
   );
 }
-

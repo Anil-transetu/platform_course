@@ -6,46 +6,58 @@ import {
   TrendingUp, 
   LineChart, 
   AlertTriangle, 
-  FileText, 
-  Download, 
-  Search,
-  Loader2
 } from "lucide-react";
-import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import { toast } from "react-hot-toast";
-import { cn } from "@/lib/utils";
 import {
   useRecentReports,
   downloadReportPdf,
   ReportItem,
 } from "@/features/institutional-representative/api/reports-api";
+import { buildReportColumns } from "./columns";
 
 export default function ReportsPage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
-  const [isLocalFiltering, setIsLocalFiltering] = useState(false);
 
-  // Trigger loading effect when search or selectedCategory changes
+  // Debounce search — 300ms delay matching the Admin module pattern
   useEffect(() => {
-    setIsLocalFiltering(true);
     const timer = setTimeout(() => {
-      setIsLocalFiltering(false);
-    }, 450);
+      setDebouncedSearch(search);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [search, selectedCategory]);
+  }, [search]);
 
-  // Fetch recent reports list
-  const { data: reportsData, isLoading: isReportsLoading, isFetching: isReportsFetching } = useRecentReports(
+  // Reset to page 1 only when the debounced value actually changes (not every keystroke)
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  // Fetch recent reports list — uses debouncedSearch so the API is only called after the user stops typing
+  const {
+    data: reportsData,
+    isLoading: isReportsLoading,
+    isFetching: isReportsFetching,
+    error: reportsError,
+  } = useRecentReports(
     page,
     rowsPerPage,
-    search,
+    debouncedSearch || undefined,
     selectedCategory
   );
+
+  // Surface API errors via toast — avoids silent failures
+  useEffect(() => {
+    if (reportsError) {
+      toast.error((reportsError as Error).message || "Failed to load reports.");
+    }
+  }, [reportsError]);
 
   const reports = reportsData?.reports || [];
   
@@ -79,8 +91,8 @@ export default function ReportsPage() {
 
     let list = [...reports];
     
-    if (search.trim() !== "") {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim() !== "") {
+      const q = debouncedSearch.toLowerCase();
       list = list.filter((r) =>
         r.title.toLowerCase().includes(q) ||
         r.category.toLowerCase().includes(q) ||
@@ -93,7 +105,7 @@ export default function ReportsPage() {
     }
     
     return list;
-  }, [reports, search, selectedCategory, isServerPaginated]);
+  }, [reports, debouncedSearch, selectedCategory, isServerPaginated]);
 
   const totalCount = isServerPaginated ? apiTotal : filteredReports.length;
   const totalPages = isServerPaginated ? apiTotalPages : (Math.ceil(totalCount / rowsPerPage) || 1);
@@ -177,72 +189,7 @@ export default function ReportsPage() {
   }, [reports]);
 
   // Columns Configuration for reports table
-  const columns: Column<ReportItem>[] = useMemo(() => [
-    {
-      key: "title",
-      label: "Report Title",
-      render: (value) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-muted flex items-center justify-center text-slate-500 shrink-0">
-            <FileText size={16} />
-          </div>
-          <span className="font-semibold text-slate-800 dark:text-foreground text-sm truncate">
-            {String(value)}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: "category",
-      label: "Category",
-      render: (value) => {
-        const category = String(value || "").toUpperCase();
-        let badgeStyles = "";
-        if (category === "ATTENDANCE") {
-          badgeStyles = "bg-[#EFF6FF] text-[#1D4ED8]";
-        } else if (category === "PERFORMANCE") {
-          badgeStyles = "bg-[#ECFDF5] text-[#047857]";
-        } else if (category === "PROGRESS") {
-          badgeStyles = "bg-[#F5F3FF] text-[#6D28D9]";
-        } else if (category === "CRITICAL" || category === "AT_RISK") {
-          badgeStyles = "bg-[#FEE2E2] text-[#991B1B]";
-        } else {
-          badgeStyles = "bg-slate-100 text-slate-700";
-        }
-        return (
-          <span className={cn(
-            "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest inline-flex items-center justify-center min-w-[120px] text-center",
-            badgeStyles
-          )}>
-            {category}
-          </span>
-        );
-      }
-    },
-    {
-      key: "date_generated",
-      label: "Date Generated",
-      render: (value) => (
-        <span className="text-slate-500 dark:text-muted-foreground text-sm">
-          {String(value)}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      label: "Action",
-      render: (_, row) => (
-        <button
-          onClick={() => handleDownload(row.report_type, row.title)}
-          disabled={downloadingType !== null}
-          className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-bold text-sm bg-transparent border-none p-0 cursor-pointer disabled:opacity-50"
-        >
-          <Download size={14} />
-          <span>Download</span>
-        </button>
-      ),
-    }
-  ], [downloadingType]);
+  const columns = useMemo(() => buildReportColumns({ downloadingType, onDownload: handleDownload }), [downloadingType]);
 
   const paginationInfo = totalCount > 0
     ? `${startIndex + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
@@ -254,7 +201,7 @@ export default function ReportsPage() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      setPage(1);
+      // Page reset is handled by the debouncedSearch useEffect above.
     },
   };
 
@@ -359,7 +306,7 @@ export default function ReportsPage() {
               search={searchConfig}
               filters={filterConfig}
               bodyHeight="h-full"
-              loading={isReportsFetching || isLocalFiltering}
+              loading={isReportsFetching}
             />
           </div>
         </div>

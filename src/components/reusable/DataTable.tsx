@@ -2,7 +2,6 @@
 
 import React, { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -39,7 +38,6 @@ export interface FilterConfig {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   clearable?: boolean;
-  className?: string;
   className?: string;
 }
 
@@ -125,11 +123,7 @@ export default function DataTable<T extends Record<string, unknown>>({
       {(search?.enabled || (filters && filters.length > 0) || showPagination) && (
         <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card flex-shrink-0">
           {/* SEARCH INPUT — grows to fill all remaining space on desktop */}
-      {(search?.enabled || (filters && filters.length > 0) || showPagination) && (
-        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card flex-shrink-0">
-          {/* SEARCH INPUT — grows to fill all remaining space on desktop */}
           {search?.enabled && (
-            <div className="flex-1 w-full md:w-auto min-w-0">
             <div className="flex-1 w-full md:w-auto min-w-0">
               <div className="relative group">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -264,17 +258,11 @@ export default function DataTable<T extends Record<string, unknown>>({
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <Table className="border-collapse w-full min-w-[600px]">
-      <div 
-        className={`overflow-x-auto overflow-y-auto ${bodyHeight} w-full`} 
-        style={{ WebkitOverflowScrolling: 'touch' }}
-      >
-        <Table className="border-collapse w-full min-w-[600px]">
           <TableHeader className="sticky top-0 bg-muted border-b border-border">
             <TableRow className="border-b border-border hover:bg-transparent">
               {columns.map((column) => (
                 <TableHead
                   key={String(column.key)}
-                  className={`font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3 ${
                   className={`font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3 ${
                     column.width || ""
                   } ${column.sortable ? "cursor-pointer hover:bg-accent" : ""}`}
@@ -291,7 +279,6 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </TableHead>
               ))}
               {actions && (
-                <TableHead className="text-center font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3">
                 <TableHead className="text-center font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3">
                   Actions
                 </TableHead>
@@ -387,18 +374,15 @@ export default function DataTable<T extends Record<string, unknown>>({
           </div>
 
           <div className="flex gap-2 sm:gap-4 items-center justify-between w-full sm:w-auto order-2 sm:order-2">
-          <div className="flex gap-2 sm:gap-4 items-center justify-between w-full sm:w-auto order-2 sm:order-2">
             <button
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`text-xs sm:text-sm p-2 -ml-2 sm:ml-0 font-medium ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               className={`text-xs sm:text-sm p-2 -ml-2 sm:ml-0 font-medium ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               aria-label="Previous page"
             >
               Previous
             </button>
 
-            <nav aria-label="Pagination" className="flex items-center gap-1 sm:gap-2">
             <nav aria-label="Pagination" className="flex items-center gap-1 sm:gap-2">
               {Array.from({ length: totalPages }).map((_, i) => {
                 const p = i + 1;
@@ -416,10 +400,8 @@ export default function DataTable<T extends Record<string, unknown>>({
                       onClick={() => onPageChange(p)}
                       aria-current={isActive ? "page" : undefined}
                       className={`inline-flex items-center justify-center min-w-[32px] sm:min-w-[36px] h-8 sm:h-9 text-xs sm:text-sm font-medium transition-colors ${
-                      className={`inline-flex items-center justify-center min-w-[32px] sm:min-w-[36px] h-8 sm:h-9 text-xs sm:text-sm font-medium transition-colors ${
                         isActive
                           ? "bg-blue-600 text-white rounded-md shadow"
-                          : "text-card-foreground hover:bg-muted rounded-md"
                           : "text-card-foreground hover:bg-muted rounded-md"
                       }`}
                     >
@@ -430,7 +412,6 @@ export default function DataTable<T extends Record<string, unknown>>({
 
                 if (p === currentPage - 2 || p === currentPage + 2) {
                   return (
-                    <span key={`e-${p}`} className="px-1 sm:px-2 text-muted-foreground">
                     <span key={`e-${p}`} className="px-1 sm:px-2 text-muted-foreground">
                       …
                     </span>
@@ -444,7 +425,6 @@ export default function DataTable<T extends Record<string, unknown>>({
             <button
               onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`text-xs sm:text-sm p-2 -mr-2 sm:mr-0 font-medium ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               className={`text-xs sm:text-sm p-2 -mr-2 sm:mr-0 font-medium ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               aria-label="Next page"
             >

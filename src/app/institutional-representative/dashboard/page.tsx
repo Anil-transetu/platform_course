@@ -8,38 +8,18 @@ import {
   UserPlus,
 } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
-import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   useRepDashboardStats,
   useRepMonitoringList,
   MonitoringStudent,
 } from "@/features/institutional-representative/api/rep-api";
-
-// Circular color list for student avatars - matches tutor management exactly
-const avatarColors = [
-  "bg-blue-100 text-blue-600",
-  "bg-orange-200 text-orange-600",
-  "bg-purple-100 text-purple-600",
-  "bg-pink-100 text-pink-600",
-  "bg-green-100 text-green-600",
-];
-
-const getAvatarColorClass = (id: string | number) => {
-  if (typeof id === "number") {
-    return avatarColors[id % avatarColors.length];
-  }
-  const str = String(id);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % avatarColors.length;
-  return avatarColors[index];
-};
+import { toast } from "react-hot-toast";
+import { buildMonitoringStudentColumns } from "./columns";
+import { useStudentProfiles, enrichStudentData } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 export default function InstitutionalDashboard() {
   const [search, setSearch] = useState("");
@@ -93,127 +73,19 @@ export default function InstitutionalDashboard() {
     return Array.from(map.values());
   }, [students]);
 
+  const studentIds = useMemo(() => displayStudents.map((s) => s.student_id), [displayStudents]);
+  const { data: freshProfiles } = useStudentProfiles(studentIds);
+
+  const enrichedDisplayStudents = useMemo(() => {
+    return enrichStudentData(displayStudents, freshProfiles);
+  }, [displayStudents, freshProfiles]);
+
   const totalCount = listData?.pagination?.total || 0;
   const totalPages = listData?.pagination?.totalPages || 1;
   const startIndex = (page - 1) * rowsPerPage;
 
   // Columns Configuration
-  const columns: Column<MonitoringStudent>[] = useMemo(() => [
-    {
-      key: "student_name",
-      label: "Student Name",
-      render: (value, row) => {
-        const sId = row.student_id;
-        const sName = row.student_name || "Unknown";
-        return (
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm transition-transform hover:scale-105",
-              getAvatarColorClass(sId)
-            )}>
-              {sName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <span className="font-semibold text-foreground text-sm truncate block">
-                {sName}
-              </span>
-              <span className="text-xs text-muted-foreground truncate block">
-                ID: #{String(sId).padStart(4, "0")}
-              </span>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: "batch_name",
-      label: "Batch",
-      render: (value, row) => {
-        const allBatches = row.all_batches || [{ id: row.batch_id, name: row.batch_name, status: row.status }];
-        
-        // Filter to only include critical facing batches
-        const criticalBatches = allBatches.filter((b: any) => b.status?.toLowerCase() === "critical");
-        
-        // Fallback to all batches if none are critical
-        const displayBatches = criticalBatches.length > 0 ? criticalBatches : allBatches;
-        
-        const maxVisible = 3;
-        const visibleBatches = displayBatches.slice(0, maxVisible);
-        const extraCount = displayBatches.length - maxVisible;
-        
-        return (
-          <div className="flex gap-1.5 flex-wrap items-center max-w-[360px]">
-            {visibleBatches.map((b: any, index: number) => (
-              <span
-                key={b.id || index}
-                className="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block max-w-[180px]"
-              >
-                {b.name || "N/A"}
-              </span>
-            ))}
-            {extraCount > 0 && (
-              <span
-                title={displayBatches.slice(maxVisible).map((b: any) => b.name).join(", ")}
-                className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap cursor-help font-semibold"
-              >
-                +{extraCount}
-              </span>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      key: "avg_quiz_score",
-      label: "Avg Quiz Score",
-      render: (value, row) => {
-        const score = typeof row.avg_quiz_score === "number" ? row.avg_quiz_score : 0;
-        return (
-          <span className="font-semibold text-foreground text-sm">
-            {score}%
-          </span>
-        );
-      }
-    },
-    {
-      key: "attendance_percent",
-      label: "Attendance %",
-      render: (value, row) => {
-        const att = typeof row.attendance_percent === "number" ? row.attendance_percent : 0;
-        return (
-          <span className="font-semibold text-foreground text-sm">
-            {att}%
-          </span>
-        );
-      }
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (value, row) => {
-        const status = row.status || "Normal";
-        const statusLower = status.toLowerCase();
-        
-        let statusStyles = "";
-        if (statusLower === "critical") {
-          statusStyles = "bg-[#FEE2E2] text-[#991B1B]";
-        } else if (statusLower === "warning") {
-          statusStyles = "bg-[#FFEDD5] text-[#9A3412]";
-        } else {
-          statusStyles = "bg-[#DCFCE7] text-[#166534]";
-        }
-        
-        return (
-          <span className={cn(
-            "px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest inline-flex items-center justify-center min-w-[90px] text-center",
-            statusStyles
-          )}>
-            {status}
-          </span>
-        );
-      }
-    }
-  ], []);
+  const columns = useMemo(() => buildMonitoringStudentColumns(), []);
 
   const paginationInfo = totalCount > 0
     ? `${startIndex + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
@@ -311,7 +183,7 @@ export default function InstitutionalDashboard() {
             <h2 className="text-lg font-semibold text-foreground">Student Monitoring List</h2>
             <div className="flex-1 overflow-hidden min-h-0">
               <DataTable<MonitoringStudent>
-                data={displayStudents}
+                data={enrichedDisplayStudents}
                 columns={columns}
                 rowKey={(row) => String(row.student_id || row.id || row._id || Math.random())}
                 currentPage={page}

@@ -18,6 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRepAttendanceCalendar, CalendarDay } from "@/features/institutional-representative/api/batches-api";
+import { useStudentProfile } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 interface AttendanceCalendarPageProps {
   params: Promise<{ batchId: string; studentId: string }>;
@@ -93,7 +94,15 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
   // Fetch Attendance Calendar from backend
   const { data, isLoading, error } = useRepAttendanceCalendar(batchId, studentId, currentMonthStr);
 
-  const studentName = data?.student_name || "Student Profile";
+  const { data: freshProfile } = useStudentProfile(studentId);
+
+  const studentName = useMemo(() => {
+    if (freshProfile) {
+      return `${freshProfile.first_name || ""} ${freshProfile.last_name || ""}`.trim();
+    }
+    return data?.student_name || "Student Profile";
+  }, [data?.student_name, freshProfile]);
+
   const displayStudentId = data?.student_id || `#${studentId}`;
   const batchName = data?.batch_name || `Batch #${batchId}`;
   const calendarDays = data?.calendar_days || [];
@@ -216,9 +225,17 @@ export default function AttendanceCalendarPage({ params }: AttendanceCalendarPag
         
         {/* Profile Card Header */}
         <div className="flex items-center gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="w-14 h-14 rounded-full font-bold text-lg flex items-center justify-center shrink-0 shadow-sm bg-blue-100 text-blue-600">
-            {studentName.charAt(0).toUpperCase()}
-          </div>
+          {freshProfile?.profile_image ? (
+            <img
+              src={freshProfile.profile_image}
+              alt={studentName}
+              className="w-14 h-14 rounded-full object-cover shrink-0 shadow-sm"
+            />
+          ) : (
+            <div className="w-14 h-14 rounded-full font-bold text-lg flex items-center justify-center shrink-0 shadow-sm bg-blue-100 text-blue-600">
+              {studentName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">{studentName}</h2>
             <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-2">

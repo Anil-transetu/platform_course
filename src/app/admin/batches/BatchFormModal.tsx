@@ -135,7 +135,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         } else {
           setSelectedStudents([]);
         }
-        prevInstitutionIdRef.current = String(activeBatch.institution_id || "");
       } else {
         setForm({
           name: "",
@@ -150,25 +149,14 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         });
         setSelectedCourseName("");
         setSelectedStudents([]);
-        prevInstitutionIdRef.current = "";
       }
       setStudentSearch("");
       setInstructorSearch("");
       setCourseSearch("");
       setDropdownOpen(false);
-      setStartDateOpen(false);
-      setEndDateOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
-
-  // Clear selected students if institution changes after initial load
-  useEffect(() => {
-    if (open && form.institution_id !== prevInstitutionIdRef.current) {
-      setSelectedStudents([]);
-      prevInstitutionIdRef.current = form.institution_id;
-    }
-  }, [form.institution_id, open]);
 
   // Filter students based on search input
   const filteredStudents = allStudents.filter(
