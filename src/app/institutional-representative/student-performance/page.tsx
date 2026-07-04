@@ -4,9 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Trophy, FileText, TrendingUp, ArrowUpRight, Search } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import CircleChart from "@/components/reusable/CircleChart";
-import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 import {
@@ -14,28 +13,8 @@ import {
   useTopStudents,
   TopStudent,
 } from "@/features/institutional-representative/api/student-performance-api";
-
-// Circular color list for student avatars
-const avatarColors = [
-  "bg-blue-100 text-blue-600",
-  "bg-orange-200 text-orange-600",
-  "bg-purple-100 text-purple-600",
-  "bg-pink-100 text-pink-600",
-  "bg-green-100 text-green-600",
-];
-
-const getAvatarColorClass = (id: string | number) => {
-  if (typeof id === "number") {
-    return avatarColors[id % avatarColors.length];
-  }
-  const str = String(id);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % avatarColors.length;
-  return avatarColors[index];
-};
+import { buildTopStudentColumns } from "./columns";
+import { useStudentProfiles, useStudentProfile, enrichStudentData } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 export default function StudentPerformancePage() {
   const [search, setSearch] = useState("");
@@ -90,7 +69,7 @@ export default function StudentPerformancePage() {
   const isServerPaginated = apiTotal !== undefined && apiTotalPages !== undefined;
 
   // Consolidate duplicate students who are in multiple batches
-  const allDisplayStudents = useMemo(() => {
+  const rawDisplayStudents = useMemo(() => {
     const map = new Map<number, TopStudent>();
     for (const student of students) {
       const existing = map.get(student.student_id);
@@ -108,6 +87,30 @@ export default function StudentPerformancePage() {
     }
     return Array.from(map.values());
   }, [students]);
+
+  const studentIds = useMemo(() => rawDisplayStudents.map((s) => s.student_id), [rawDisplayStudents]);
+  const { data: freshProfiles } = useStudentProfiles(studentIds);
+
+  const allDisplayStudents = useMemo(() => {
+    return enrichStudentData(rawDisplayStudents, freshProfiles);
+  }, [rawDisplayStudents, freshProfiles]);
+
+  const { data: highestPerformerProfile } = useStudentProfile(kpis?.highest_performer?.student_id || "");
+  const { data: mostImprovedProfile } = useStudentProfile(kpis?.most_improved?.student_id || "");
+
+  const highestPerformerName = useMemo(() => {
+    if (highestPerformerProfile) {
+      return `${highestPerformerProfile.first_name || ""} ${highestPerformerProfile.last_name || ""}`.trim();
+    }
+    return kpis?.highest_performer?.student_name || "Unknown";
+  }, [kpis?.highest_performer?.student_name, highestPerformerProfile]);
+
+  const mostImprovedName = useMemo(() => {
+    if (mostImprovedProfile) {
+      return `${mostImprovedProfile.first_name || ""} ${mostImprovedProfile.last_name || ""}`.trim();
+    }
+    return kpis?.most_improved?.student_name || "Unknown";
+  }, [kpis?.most_improved?.student_name, mostImprovedProfile]);
 
   // Derive unique batch names from ALL students (not filtered) for dropdown
   const batchOptions = useMemo(() => {
@@ -162,110 +165,8 @@ export default function StudentPerformancePage() {
     return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredStudents, startIndex, rowsPerPage, isServerPaginated]);
 
-
-
   // Columns Configuration for top students
-  const columns: Column<TopStudent>[] = useMemo(() => [
-    {
-      key: "student_name",
-      label: "Student Name",
-      render: (value, row) => {
-        const sId = row.student_id;
-        const sName = row.student_name || "Unknown";
-        return (
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm transition-transform hover:scale-105",
-              getAvatarColorClass(sId)
-            )}>
-              {sName.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <span className="font-semibold text-foreground text-sm truncate block">
-                {sName}
-              </span>
-              <span className="text-xs text-muted-foreground truncate block">
-                ID: #{String(sId).padStart(4, "0")}
-              </span>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: "batch_name",
-      label: "Batch",
-      render: (value, row) => {
-        const allBatches = row.all_batches || [{ id: row.batch_id, name: row.batch_name || value }];
-        return (
-          <div className="flex gap-1.5 flex-wrap items-center max-w-[220px]">
-            {allBatches.map((b: any, index: number) => {
-              // Generate consistent color for each batch
-              const batchColorIndex = (b.id || index) % avatarColors.length;
-              const batchColor = avatarColors[batchColorIndex];
-              return (
-                <span
-                  key={b.id || index}
-                  className={cn(
-                    "text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block",
-                    batchColor
-                  )}
-                >
-                  {b.name || "N/A"}
-                </span>
-              );
-            })}
-          </div>
-        );
-      }
-    },
-    {
-      key: "avg_quiz_score",
-      label: "Avg. Quiz Score",
-      render: (value) => {
-        const score = typeof value === "number" ? value : 0;
-        return (
-          <span className="font-semibold text-foreground text-sm">
-            {score}%
-          </span>
-        );
-      }
-    },
-    {
-      key: "assignments_completed",
-      label: "Assignments Completed",
-      render: (value, row) => (
-        <span className="font-medium text-slate-600 text-sm">
-          {row.assignments_completed}/{row.assignments_total}
-        </span>
-      ),
-    },
-    {
-      key: "overall_grade",
-      label: "Overall Grade",
-      render: (value) => {
-        const grade = String(value || "F");
-        let badgeStyles = "bg-red-50 text-red-600 border-red-100";
-        if (grade.startsWith("A")) {
-          badgeStyles = "bg-emerald-50 text-emerald-600 border-emerald-100";
-        } else if (grade.startsWith("B")) {
-          badgeStyles = "bg-blue-50 text-blue-600 border-blue-100";
-        } else if (grade.startsWith("C")) {
-          badgeStyles = "bg-amber-50 text-amber-600 border-amber-100";
-        } else if (grade.startsWith("D")) {
-          badgeStyles = "bg-orange-50 text-orange-600 border-orange-100";
-        }
-        return (
-          <span className={cn(
-            "px-2.5 py-1 rounded-full text-xs font-bold border",
-            badgeStyles
-          )}>
-            {grade}
-          </span>
-        );
-      }
-    }
-  ], []);
+  const columns = useMemo(() => buildTopStudentColumns(), []);
 
   // FIX: Pagination info shows correct range
   const paginationInfo = totalCount > 0
@@ -382,7 +283,7 @@ export default function StudentPerformancePage() {
                   {kpis?.highest_performer?.score_percent ?? 0}%
                 </span>
                 <span className="text-sm font-normal text-muted-foreground">
-                  {kpis?.highest_performer?.student_name || "Unknown"}
+                  {highestPerformerName}
                 </span>
               </span> as any
             }
@@ -417,7 +318,7 @@ export default function StudentPerformancePage() {
                     +{kpis.most_improved.improvement_percent}%
                   </span>
                   <span className="text-sm font-normal text-muted-foreground">
-                    {kpis.most_improved.student_name}
+                    {mostImprovedName}
                   </span>
                 </span> as any
               ) : (

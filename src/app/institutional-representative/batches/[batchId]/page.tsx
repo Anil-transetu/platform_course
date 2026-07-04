@@ -14,26 +14,21 @@ import {
   Loader2
 } from "lucide-react";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
-import DataTable, { Column, FilterConfig } from "@/components/reusable/DataTable";
+import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/use-debounce";
 import {
   useRepBatchOverview,
   useRepBatchStudents,
   getExportBatchReportUrl,
-  BatchStudent,
   downloadAuthenticatedFile
 } from "@/features/institutional-representative/api/batches-api";
-import { getAvatarColorClass } from "@/lib/avatar";
+import { buildBatchStudentColumns } from "./columns";
+import { useStudentProfiles, enrichStudentData } from "@/features/institutional-representative/hooks/use-student-profiles";
 
 interface BatchDetailsPageProps {
   params: Promise<{ batchId: string }>;
 }
-
 
 export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const router = useRouter();
@@ -45,8 +40,6 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  
-  const debouncedSearch = useDebounce(search, 500);
 
   // Debounce search: reset page and update debounced value together so React
   // batches both into ONE re-render (and ONE API call) instead of two.
@@ -57,10 +50,6 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
     }, 500);
     return () => clearTimeout(handler);
   }, [search]);
-
-  // No separate useEffect needed for filter page-reset.
-  // setPage(1) is called directly inside the filter onChange handler below,
-  // which React 18 batches with the filter state update into one render.
 
   // Fetch API hooks
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useRepBatchOverview(batchId);
@@ -73,98 +62,18 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
   );
 
   const students = studentsData?.students || [];
+
+  const studentIds = useMemo(() => students.map((s) => s.student_id), [students]);
+  const { data: freshProfiles } = useStudentProfiles(studentIds);
+
+  const enrichedStudents = useMemo(() => {
+    return enrichStudentData(students, freshProfiles);
+  }, [students, freshProfiles]);
+
   const totalCount = studentsData?.pagination?.total || 0;
   const totalPages = studentsData?.pagination?.totalPages || 1;
 
-  // Columns Configuration
-  const columns: Column<BatchStudent>[] = useMemo(() => [
-    {
-      key: "student_name",
-      label: "Student Name",
-      width: "w-1/4",
-      render: (value, row) => (
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 shadow-sm transition-transform hover:scale-105",
-            getAvatarColorClass(row.student_id)
-          )}>
-            {row.student_name.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <span className="font-semibold text-foreground text-sm truncate block">
-              {row.student_name}
-            </span>
-            <span className="text-xs text-muted-foreground truncate block">
-              ID: #{row.student_id}
-            </span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "attendance_percent",
-      label: "Attendance %",
-      width: "w-[180px]",
-      render: (value, row) => {
-        const attendance = row.attendance_percent || 0;
-        let barColor = "bg-green-500";
-        if (attendance < 70) {
-          barColor = "bg-rose-500";
-        } else if (attendance < 90) {
-          barColor = "bg-blue-600";
-        }
-
-        return (
-          <div className="flex flex-col gap-1 w-full max-w-[150px]">
-            <div className="flex justify-between items-center text-[10px] font-semibold text-muted-foreground">
-              <span>Attendance</span>
-              <span className="text-foreground">{attendance}%</span>
-            </div>
-            <Progress value={attendance} className="h-1.5" indicatorClassName={barColor} />
-          </div>
-        );
-      },
-    },
-    {
-      key: "quiz_avg",
-      label: "Quiz Average",
-      render: (value, row) => (
-        <span className="font-bold text-slate-800 text-sm">
-          {(row.quiz_avg || 0).toFixed(1)}%
-        </span>
-      ),
-    },
-    {
-      key: "assignments",
-      label: "Assignments",
-      render: (value, row) => (
-        <span className="text-slate-600 font-semibold text-sm">
-          {row.assignments_completed || 0} / {row.assignments_total || 0}
-        </span>
-      ),
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (value, row) => {
-        const status = row.status || "active";
-        const statusLower = status.toLowerCase();
-
-        let badgeStyles = "bg-blue-50 text-blue-700 hover:bg-blue-100 border-none";
-        if (statusLower === "at_risk" || statusLower === "at risk") {
-          badgeStyles = "bg-red-50 text-red-700 hover:bg-red-100 border-none";
-        } else if (statusLower === "excellent") {
-          badgeStyles = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-none";
-        }
-
-        return (
-          <Badge className={cn("px-3 py-1 text-[10px] font-bold tracking-wider uppercase", badgeStyles)}>
-            {status.replace("_", " ")}
-          </Badge>
-        );
-      },
-    },
-  ], []);
+  const columns = useMemo(() => buildBatchStudentColumns(), []);
 
   const searchConfig = {
     enabled: true,
@@ -346,7 +255,7 @@ export default function BatchDetailsPage({ params }: BatchDetailsPageProps) {
           ) : (
             <div className="flex-1 overflow-hidden min-h-0">
               <DataTable<any>
-                data={students}
+                data={enrichedStudents}
                 columns={columns as any}
                 rowKey={(row) => row.student_id}
                 currentPage={page}
