@@ -34,14 +34,6 @@ export interface Course {
   status: string;
 }
 
-export interface Domain {
-  id: number;
-  name: string;
-  category: string;
-  courses: number;
-  updated: string;
-  status: string;
-}
 
 export const buildCourseColumns = (): Column<Course>[] => [
   {
