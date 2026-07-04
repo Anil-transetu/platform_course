@@ -125,12 +125,12 @@ export default function RolesSidebar({ role }: RolesSidebarProps) {
         className="
           h-10 w-10
           rounded-xl
-          bg-slate-900
-          border border-white/10
-          text-white/90
-          shadow-lg
-          hover:bg-slate-800
-          hover:border-white/20
+          bg-white/80 dark:bg-slate-900/80
+          backdrop-blur-md
+          border border-slate-200 dark:border-slate-800
+          text-slate-900 dark:text-slate-100
+          shadow-sm
+          hover:bg-slate-100 dark:hover:bg-slate-800
           hover:scale-105
           active:scale-95
           flex items-center justify-center
