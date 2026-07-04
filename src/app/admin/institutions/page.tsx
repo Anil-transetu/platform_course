@@ -59,7 +59,7 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
 const renderExpandedRow = (row: Institution) => {
   const contacts = row.contacts || [];
   if (contacts.length === 0) {
-    return <div className="p-4 text-center text-slate-500">No point of contacts available.</div>;
+    return <div className="p-4 text-center text-slate-500 dark:text-muted-foreground">No point of contacts available.</div>;
   }
 
   const getTitle = (index: number) => {
@@ -68,26 +68,26 @@ const renderExpandedRow = (row: Institution) => {
   };
 
   return (
-    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50/50">
+    <div className="p-4 sm:p-6 flex flex-nowrap overflow-x-auto gap-4 sm:gap-6 bg-slate-50/50 dark:bg-muted/20 pb-6">
       {contacts.map((contact: any, idx: number) => (
-        <div key={idx}>
-          <h4 className="text-sm font-bold text-slate-800 mb-3">{getTitle(idx)}</h4>
-          <div className="bg-white dark:bg-card rounded-xl p-4 border border-slate-100 shadow-sm space-y-4">
+        <div key={idx} className="w-[280px] sm:w-[320px] lg:w-1/3 shrink-0 flex flex-col">
+          <h4 className="text-sm font-bold text-slate-800 dark:text-foreground mb-3">{getTitle(idx)}</h4>
+          <div className="bg-white dark:bg-card rounded-xl p-4 border border-slate-100 dark:border-border/50 shadow-sm space-y-4 flex-1">
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">NAME</div>
-              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.name || "-"}</div>
+              <div className="text-[10px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider mb-1">NAME</div>
+              <div className="bg-slate-50 dark:bg-muted/50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 dark:text-foreground break-words">{contact.name || "-"}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">ROLE</div>
-              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.role || contact.designation || "-"}</div>
+              <div className="text-[10px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider mb-1">ROLE</div>
+              <div className="bg-slate-50 dark:bg-muted/50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 dark:text-foreground break-words">{contact.role || contact.designation || "-"}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">EMAIL</div>
-              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.email || "-"}</div>
+              <div className="text-[10px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider mb-1">EMAIL</div>
+              <div className="bg-slate-50 dark:bg-muted/50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 dark:text-foreground break-all">{contact.email || "-"}</div>
             </div>
             <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">PHONE NUMBER</div>
-              <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800">{contact.phone || "-"}</div>
+              <div className="text-[10px] font-bold text-slate-400 dark:text-muted-foreground uppercase tracking-wider mb-1">PHONE NUMBER</div>
+              <div className="bg-slate-50 dark:bg-muted/50 rounded-lg px-3 py-2 text-sm font-semibold text-slate-800 dark:text-foreground break-words">{contact.phone || "-"}</div>
             </div>
           </div>
         </div>
@@ -111,7 +111,7 @@ function InstitutionsPageContent() {
     mode: "add",
     institution: null,
   });
-  
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     institution: Institution | null;
@@ -213,64 +213,64 @@ function InstitutionsPageContent() {
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex flex-col h-full overflow-hidden">
           <Toaster position="top-right" />
           <StatsGrid>
-            <StatsCard 
-              title="Total Institutions" 
-              value={stats?.total_institutions ?? totalCount} 
-              icon={<Landmark size={20} />} 
-              iconBgClass="bg-blue-50" 
-              iconColorClass="text-blue-600" 
-              tooltip="Total number of registered institutions on the platform" 
+            <StatsCard
+              title="Total Institutions"
+              value={stats?.total_institutions ?? totalCount}
+              icon={<Landmark size={20} />}
+              iconBgClass="bg-blue-50"
+              iconColorClass="text-blue-600"
+              tooltip="Total number of registered institutions on the platform"
             />
-            <StatsCard 
-              title="Active Institutions" 
-              value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length} 
-              icon={<CheckCircle size={20} />} 
-              iconBgClass="bg-green-50" 
-              iconColorClass="text-green-600" 
-              tooltip="Institutions currently active and operational" 
+            <StatsCard
+              title="Active Institutions"
+              value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length}
+              icon={<CheckCircle size={20} />}
+              iconBgClass="bg-green-50"
+              iconColorClass="text-green-600"
+              tooltip="Institutions currently active and operational"
             />
-            <StatsCard 
-              title="Avg. Courses / Inst." 
-              value={stats?.avgCoursesPerInstitution?.toFixed(1) ?? "0"} 
-              icon={<BookOpen size={20} />} 
-              iconBgClass="bg-purple-50" 
-              iconColorClass="text-purple-600" 
-              tooltip="Average number of courses offered per institution" 
+            <StatsCard
+              title="Avg. Courses / Inst."
+              value={stats?.avgCoursesPerInstitution?.toFixed(1) ?? "0"}
+              icon={<BookOpen size={20} />}
+              iconBgClass="bg-purple-50"
+              iconColorClass="text-purple-600"
+              tooltip="Average number of courses offered per institution"
             />
-            <StatsCard 
-              title="Pending Registrations" 
-              value={stats?.pendingRegistrations ?? 0} 
-              icon={<Clock size={20} />} 
-              iconBgClass="bg-orange-50" 
-              iconColorClass="text-orange-600" 
-              tooltip="Institutions awaiting approval or registration completion" 
+            <StatsCard
+              title="Pending Registrations"
+              value={stats?.pendingRegistrations ?? 0}
+              icon={<Clock size={20} />}
+              iconBgClass="bg-orange-50"
+              iconColorClass="text-orange-600"
+              tooltip="Institutions awaiting approval or registration completion"
             />
           </StatsGrid>
 
-        <DataTable<Institution>
-          columns={buildInstitutionColumns()}
-          data={visibleData}
-          loading={isLoading || isFetching}
-          search={searchConfig}
-          filters={filterConfig}
-          actions={(institution) => (
-            <div className="flex justify-center">
-              <ActionMenu 
-                onEdit={() => setFormModal({ open: true, mode: "edit", institution })}
-                onDelete={() => setDeleteDialog({ open: true, institution })}
-              />
-            </div>
-          )}
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={setPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={setRowsPerPage}
-          paginationInfo={paginationInfo}
-          showPagination={true}
-          renderExpandedRow={renderExpandedRow}
-        />
-      </div>
+          <DataTable<Institution>
+            columns={buildInstitutionColumns()}
+            data={visibleData}
+            loading={isLoading || isFetching}
+            search={searchConfig}
+            filters={filterConfig}
+            actions={(institution) => (
+              <div className="flex justify-center">
+                <ActionMenu
+                  onEdit={() => setFormModal({ open: true, mode: "edit", institution })}
+                  onDelete={() => setDeleteDialog({ open: true, institution })}
+                />
+              </div>
+            )}
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={setRowsPerPage}
+            paginationInfo={paginationInfo}
+            showPagination={true}
+            renderExpandedRow={renderExpandedRow}
+          />
+        </div>
       )}
 
       {/* Modals */}
@@ -280,7 +280,7 @@ function InstitutionsPageContent() {
         institution={formModal.institution}
         onClose={() => setFormModal({ open: false, mode: "add", institution: null })}
       />
-      
+
       <InstitutionDeleteDialog
         open={deleteDialog.open}
         institution={deleteDialog.institution}
