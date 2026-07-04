@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
   // eslint: {
   //   ignoreDuringBuilds: true,
   // },
+  allowedDevOrigins: ['10.74.220.246'],
   async headers() {
     return [
       {
