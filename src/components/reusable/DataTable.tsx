@@ -374,11 +374,11 @@ export default function DataTable<T extends Record<string, unknown>>({
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start order-1 sm:order-1 w-full sm:w-auto">
             {/* ROWS PER PAGE (Moved to top filter bar) */}
             {paginationInfo ? (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 {paginationInfo}
               </span>
             ) : (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 Page {currentPage} of {totalPages}
               </span>
             )}
