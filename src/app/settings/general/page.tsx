@@ -286,7 +286,7 @@ export default function GeneralSettingsPage() {
 
   return (
     <div className="bg-card text-card-foreground border rounded-xl overflow-hidden flex flex-col">
-      <div className="p-8 pb-6">
+      <div className="p-4 md:p-8 md:pb-6">
         <h2 className="text-2xl font-bold mb-2">Public Profile</h2>
         
         <p className="text-sm text-muted-foreground mb-8">
@@ -302,7 +302,7 @@ export default function GeneralSettingsPage() {
         />
 
         {/* Improved Profile Picture Upload Section */}
-        <div className="flex items-center gap-6 mb-10">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 sm:mb-10 text-center sm:text-left">
           <div 
             className="group relative w-24 h-24 rounded-full overflow-hidden border-2 bg-muted shrink-0 cursor-pointer transition-transform hover:scale-105"
             onClick={handleUploadClick}
@@ -338,8 +338,8 @@ export default function GeneralSettingsPage() {
               JPG, GIF or PNG. 1MB max. Click the avatar to upload.
             </p>
 
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleUploadClick}>
+            <div className="flex items-center justify-center sm:justify-start gap-3">
+              <Button variant="outline" size="sm" onClick={handleUploadClick} className="w-full sm:w-auto">
                 Upload new
               </Button>
             </div>
@@ -421,11 +421,11 @@ export default function GeneralSettingsPage() {
         )}
       </div>
 
-      <div className="p-6 border-t bg-muted/50 flex items-center justify-end gap-4 mt-auto">
-        <Button variant="ghost" onClick={handleDiscard} disabled={isUpdating}>
+      <div className="p-4 md:p-6 border-t bg-muted/50 flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 mt-auto">
+        <Button className="w-full sm:w-auto" variant="ghost" onClick={handleDiscard} disabled={isUpdating}>
           Discard
         </Button>
-        <Button onClick={handleSaveChanges} disabled={isUpdating}>
+        <Button className="w-full sm:w-auto" onClick={handleSaveChanges} disabled={isUpdating}>
           {isUpdating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}
         </Button>
       </div>
