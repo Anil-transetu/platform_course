@@ -25,13 +25,15 @@ const getAvatarColor = (id: string | number) => {
   return avatarColors[index];
 };
 
-export interface Course {
+export interface Course extends Record<string, unknown> {
   id: number;
   name: string;
   category: string;
-  modules: number;
+  modules: number | unknown[];
   updated: string;
   status: string;
+  description?: string;
+  no_of_modules?: number;
 }
 
 

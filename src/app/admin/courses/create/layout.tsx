@@ -4,9 +4,22 @@ import React, { useState, useEffect, useRef } from "react";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCourseStore } from "@/store/useCourseStore";
+import { useCourseStore, Quiz as StoreQuiz, Assignment as StoreAssignment, Module as StoreModule, Lesson as StoreLesson, Topic as StoreTopic } from "@/store/useCourseStore";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface QuizLookupItem {
+  id: string | number;
+  quiz_title?: string;
+  title?: string;
+}
+
+interface AssignmentLookupItem {
+  id?: string | number;
+  assignment_id?: string | number;
+  title?: string;
+  assignment_name?: string;
+}
 
 export default function CourseCreationLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -16,24 +29,15 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   const id = searchParams.get("id");
   
   const lastSavedPayloadsRef = useRef<Map<string, string>>(new Map());
-  const quizzesCacheRef = useRef<any[] | null>(null);
-  const assignmentsCacheRef = useRef<any[] | null>(null);
+  const quizzesCacheRef = useRef<QuizLookupItem[] | null>(null);
+  const assignmentsCacheRef = useRef<AssignmentLookupItem[] | null>(null);
   const previousIdRef = useRef<string | null>(null);
+  const lastSavedCourseJsonRef = useRef<string | null>(null);
+  const isComponentMountedRef = useRef(true);
+  const isSavingRef = useRef(false);
   
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  
-  // Reset caches when course ID changes
-  useEffect(() => {
-    if (id !== previousIdRef.current) {
-      lastSavedPayloadsRef.current.clear();
-      quizzesCacheRef.current = null;
-      assignmentsCacheRef.current = null;
-      previousIdRef.current = id;
-    }
-  }, [id]);
+  const [isSaving, setIsSaving] = useState(false);
   
   const { 
     course, 
@@ -48,7 +52,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   const activeLesson = activeLessonId && activeModule ? activeModule.lessons.find(l => String(l.id) === String(activeLessonId)) : undefined;
   const activeTopic = activeTopicId && activeLesson ? activeLesson.topics.find(t => String(t.id) === String(activeTopicId)) : undefined;
 
-  let activeQuiz: any = undefined;
+  let activeQuiz: StoreQuiz | undefined = undefined;
   if (activeQuizId) {
     if (activeLesson) {
       activeQuiz = activeLesson.quizzes?.find(q => String(q.id) === String(activeQuizId));
@@ -59,7 +63,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     }
   }
 
-  let activeAssignment: any = undefined;
+  let activeAssignment: StoreAssignment | undefined = undefined;
   if (activeAssignmentId) {
     if (activeLesson) {
       activeAssignment = activeLesson.assignments?.find(a => String(a.id) === String(activeAssignmentId));
@@ -70,12 +74,15 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     }
   }
 
-  const cleanPayload = (obj: any) => {
-    const clean: any = {};
+  const cleanPayload = (obj: Record<string, unknown>) => {
+    const clean: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
       const val = obj[key];
-      // Only skip null/undefined, keep empty arrays (like quizzes: [], assignments: [])
       if (val === null || val === undefined) {
+        continue;
+      }
+      // Omit empty arrays for optional fields
+      if (Array.isArray(val) && val.length === 0) {
         continue;
       }
       clean[key] = val;
@@ -83,11 +90,62 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     return clean;
   };
 
+  const hasUnsavedChanges = () => {
+    const { course, deletedModules, deletedLessons, deletedTopics } = useCourseStore.getState();
+    if (deletedModules.length > 0 || deletedLessons.length > 0 || deletedTopics.length > 0) {
+      return true;
+    }
+    if (!lastSavedCourseJsonRef.current) {
+      return !!course.title;
+    }
+    const currentJson = JSON.stringify(course);
+    return currentJson !== lastSavedCourseJsonRef.current;
+  };
+
   const handleSave = async (status: "draft" | "published", isSilent = false) => {
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
+    if (isComponentMountedRef.current) {
+      setIsSaving(true);
+    }
+
     const currentCourse = useCourseStore.getState().course;
     if (!currentCourse.title) {
       if (!isSilent) {
         alert("Please enter a course title first.");
+      }
+      isSavingRef.current = false;
+      if (isComponentMountedRef.current) {
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    // Session validation before attempting API save
+    let tokenExists = false;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(/(^| )token=([^;]+)/);
+      if (match && match[2]) {
+        headers["Authorization"] = `Bearer ${match[2]}`;
+        tokenExists = true;
+      }
+    }
+
+    if (!tokenExists) {
+      if (!isSilent) {
+        toast.error("Your session has expired. Redirecting to login...");
+        if (typeof window !== "undefined") {
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+        }
+      }
+      isSavingRef.current = false;
+      if (isComponentMountedRef.current) {
+        setIsSaving(false);
       }
       return;
     }
@@ -164,30 +222,29 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
       }
       for (const lId of deletedLessons) {
         if (!lId.startsWith('temp-')) {
-          // UI Lesson maps to Backend Topic
-          await secureFetch(`/api/v1/topics/${lId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI lesson', e));
+          await secureFetch(`/api/v1/lessons/${lId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI lesson', e));
         }
       }
       for (const tId of deletedTopics) {
         if (!tId.startsWith('temp-')) {
-          // UI Topic maps to Backend Lesson
-          await secureFetch(`/api/v1/lessons/${tId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI topic', e));
+          await secureFetch(`/api/v1/topics/${tId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI topic', e));
         }
       }
       
       clearDeletedItems();
 
       // Fetch all quizzes and assignments to build title-to-ID lookup maps
-      let quizzesList: any[] | null = quizzesCacheRef.current;
+      let quizzesList: QuizLookupItem[] | null = quizzesCacheRef.current;
       if (!quizzesList) {
         try {
           const quizzesRes = await secureFetch("/api/v1/quizzes");
           const quizzesJson = await quizzesRes.json();
           quizzesList = quizzesJson.data || quizzesJson || [];
           quizzesCacheRef.current = quizzesList;
-        } catch (err: any) {
-          if (err.message === "Token expired") throw err;
-          console.warn("Failed to fetch quizzes list, fallback to empty", err);
+        } catch (err) {
+          const error = err as Error;
+          if (error.message === "Token expired") throw error;
+          console.warn("Failed to fetch quizzes list, fallback to empty", error);
           quizzesList = [];
         }
       }
@@ -202,16 +259,17 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         }
       }
 
-      let assignmentsList: any[] | null = assignmentsCacheRef.current;
+      let assignmentsList: AssignmentLookupItem[] | null = assignmentsCacheRef.current;
       if (!assignmentsList) {
         try {
           const assignmentsRes = await secureFetch("/api/v1/assignments");
           const assignmentsJson = await assignmentsRes.json();
           assignmentsList = assignmentsJson.data || assignmentsJson || [];
           assignmentsCacheRef.current = assignmentsList;
-        } catch (err: any) {
-          if (err.message === "Token expired") throw err;
-          console.warn("Failed to fetch assignments list, fallback to empty", err);
+        } catch (err) {
+          const error = err as Error;
+          if (error.message === "Token expired") throw error;
+          console.warn("Failed to fetch assignments list, fallback to empty", error);
           assignmentsList = [];
         }
       }
@@ -227,13 +285,13 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         }
       }
 
-      const getQuizId = (quiz: any) => {
+      const getQuizId = (quiz: { id: string | number; title?: string }) => {
         if (!isNaN(Number(quiz.id))) return Number(quiz.id);
         const titleKey = (quiz.title || "").trim().toLowerCase();
         return quizTitleToIdMap.get(titleKey) || null;
       };
 
-      const getAssignmentId = (assignment: any) => {
+      const getAssignmentId = (assignment: { id: string | number; title?: string }) => {
         if (!isNaN(Number(assignment.id))) return Number(assignment.id);
         const titleKey = (assignment.title || "").trim().toLowerCase();
         return assignmentTitleToIdMap.get(titleKey) || null;
@@ -246,12 +304,16 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         .map(getAssignmentId)
         .filter((id): id is number => id !== null);
 
+      let isNewCourse = !courseId || String(courseId).startsWith("temp-");
+
       const backendStatus = status === "published" ? "active" : "draft";
 
       const updatedCourse = JSON.parse(JSON.stringify(currentCourse));
       let newActiveModuleId = useCourseStore.getState().activeModuleId;
       let newActiveLessonId = useCourseStore.getState().activeLessonId;
       let newActiveTopicId = useCourseStore.getState().activeTopicId;
+
+
 
       // 1. Create or Update Course
       if (!courseId || String(courseId).startsWith("temp-")) {
@@ -269,14 +331,37 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         const json = await res.json();
         courseId = json.data?.id || json.id;
         updatedCourse.id = courseId;
+        isNewCourse = false;
+
+        // Immediately update store ID to prevent concurrent triggers from seeing a temp ID
+        useCourseStore.setState((state) => ({
+          course: {
+            ...state.course,
+            id: courseId,
+          }
+        }));
+        // Reset baseline reference to prevent exit cleanup autosave duplicates
+        lastSavedCourseJsonRef.current = JSON.stringify(useCourseStore.getState().course);
         lastSavedPayloadsRef.current.set(`course-${courseId}`, payloadStr);
 
-        // Update search parameter in window URL
-        if (typeof window !== "undefined" && courseId) {
+        // After creating the course, link each selected assignment by updating its course_id.
+        // This mirrors how courseModule.service and topic.service link assignments:
+        // Assignment.update({ course_id }, { where: { id: assignments } })
+        if (courseId && courseAssignments.length > 0) {
+          for (const aId of courseAssignments) {
+            await secureFetch(`/api/v1/assignments/${aId}`, {
+              method: "PUT",
+              body: JSON.stringify({ course_id: Number(courseId) }),
+            }).catch(e => console.warn(`Failed to link assignment ${aId} to course`, e));
+          }
+        }
+
+        // Update search parameter in window URL using Next.js router
+        if (courseId) {
           const url = new URL(window.location.href);
           if (url.searchParams.get("id") !== String(courseId)) {
             url.searchParams.set("id", String(courseId));
-            window.history.replaceState(null, "", url.pathname + url.search);
+            router.replace(url.pathname + url.search, { scroll: false });
           }
         }
 
@@ -324,33 +409,46 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           .filter((id): id is number => id !== null);
 
         if (isNewModule) {
-          const payloadStr = JSON.stringify(cleanPayload({
+          const payload = cleanPayload({
             name: m.title || `Module ${mIdx + 1}`,
             description: m.description || "",
             order_num: mIdx + 1,
             quizzes: mQuizzes,
             assignments: mAssignments,
-          }));
+          });
+          const payloadStr = JSON.stringify(payload);
+          
+
+          
           const res = await secureFetch(`/api/v1/courses/${courseId}/modules`, {
             method: "POST",
             body: payloadStr,
           });
           const json = await res.json();
           moduleId = String(json.data?.id || json.id);
-          updatedCourse.modules[mIdx].id = moduleId;
+          
+          const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
+          if (targetModule) {
+            targetModule.id = moduleId;
+          }
+          
           lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
           if (m.id === newActiveModuleId) {
             newActiveModuleId = moduleId;
           }
         } else {
-          const payloadStr = JSON.stringify(cleanPayload({
+          const payload = cleanPayload({
             name: m.title || `Module ${mIdx + 1}`,
             description: m.description || "",
             order_num: mIdx + 1,
             quizzes: mQuizzes,
             assignments: mAssignments,
-          }));
+          });
+          const payloadStr = JSON.stringify(payload);
+          
           if (lastSavedPayloadsRef.current.get(`module-${moduleId}`) !== payloadStr) {
+
+            
             await secureFetch(`/api/v1/modules/${moduleId}`, {
               method: "PUT",
               body: payloadStr,
@@ -358,12 +456,11 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
           }
         }
-
-        // 3. Topics (UI Lessons) Loop
+               // 3. Lessons (UI Lessons) Loop
         for (let lIdx = 0; lIdx < m.lessons.length; lIdx++) {
           const l = m.lessons[lIdx];
-          const isNewTopic = String(l.id).startsWith("temp-");
-          let topicId = l.id;
+          const isNewLesson = String(l.id).startsWith("temp-");
+          let lessonId = l.id;
 
           const order = l.order || [];
           const quizOrderMap = new Map(order.filter(o => o.type === 'quiz').map((o, idx) => [o.id, idx]));
@@ -389,97 +486,121 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             return idxA - idxB;
           });
 
-          if (isNewTopic) {
-            const payloadStr = JSON.stringify(cleanPayload({
+          if (isNewLesson) {
+            const payload = cleanPayload({
+              module_id: Number(moduleId),
               name: l.title || `Lesson ${lIdx + 1}`,
+              type: "text",
               content_text: l.content || "",
               text: l.content || "",
               order_num: lIdx + 1,
               quizzes: lQuizzes,
               assignments: lAssignments,
-            }));
-            const res = await secureFetch(`/api/v1/modules/${moduleId}/topics`, {
+            });
+            const payloadStr = JSON.stringify(payload);
+            
+            const res = await secureFetch("/api/v1/lessons", {
               method: "POST",
               body: payloadStr,
             });
             const json = await res.json();
-            topicId = String(json.data?.id || json.id);
-            updatedCourse.modules[mIdx].lessons[lIdx].id = topicId;
-            lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
-            if (l.id === newActiveLessonId) {
-              newActiveLessonId = topicId;
+            lessonId = String(json.data?.id || json.id);
+            
+            const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
+            if (targetModule) {
+              const targetLesson = targetModule.lessons.find((les: StoreLesson) => String(les.id) === String(l.id));
+              if (targetLesson) targetLesson.id = lessonId;
+              if (targetModule.order) {
+                targetModule.order = targetModule.order.map((o: { type: string; id: string | number }) => 
+                  o.id === l.id ? { ...o, id: lessonId } : o
+                );
+              }
             }
-            // Update order array inside module
-            if (updatedCourse.modules[mIdx].order) {
-              updatedCourse.modules[mIdx].order = updatedCourse.modules[mIdx].order.map((o: any) => 
-                o.id === l.id ? { ...o, id: topicId } : o
-              );
-            }
+            
+            lastSavedPayloadsRef.current.set(`lesson-${lessonId}`, payloadStr);
+            if (l.id === newActiveLessonId) newActiveLessonId = lessonId;
           } else {
-            const payloadStr = JSON.stringify(cleanPayload({
+            const payload = cleanPayload({
               name: l.title || `Lesson ${lIdx + 1}`,
+              type: "text",
               content_text: l.content || "",
               text: l.content || "",
               order_num: lIdx + 1,
               quizzes: lQuizzes,
               assignments: lAssignments,
-            }));
-            if (lastSavedPayloadsRef.current.get(`topic-${topicId}`) !== payloadStr) {
-              await secureFetch(`/api/v1/topics/${topicId}`, {
+            });
+            const payloadStr = JSON.stringify(payload);
+            
+            if (lastSavedPayloadsRef.current.get(`lesson-${lessonId}`) !== payloadStr) {
+              await secureFetch(`/api/v1/lessons/${lessonId}`, {
                 method: "PUT",
                 body: payloadStr,
               });
-              lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
+              lastSavedPayloadsRef.current.set(`lesson-${lessonId}`, payloadStr);
             }
           }
 
-          // 4. Sub-Topics (Backend Lessons) Loop
+          // 4. Topics (UI Topics) Loop
           for (let tIdx = 0; tIdx < sortedTopics.length; tIdx++) {
             const t = sortedTopics[tIdx];
-            const isNewSubTopic = String(t.id).startsWith("temp-");
-            let subTopicId = t.id;
+            const isNewTopic = String(t.id).startsWith("temp-");
+            let topicId = t.id;
 
-            if (isNewSubTopic) {
-              const payloadStr = JSON.stringify(cleanPayload({
+            const tQuizzes = (t.quizzes || []).map(getQuizId).filter((id): id is number => id !== null);
+            const tAssignments = (t.assignments || []).map(getAssignmentId).filter((id): id is number => id !== null);
+
+            if (isNewTopic) {
+              const payload = cleanPayload({
+                lesson_id: Number(lessonId),
                 name: t.title || `Topic ${tIdx + 1}`,
-                type: "text",
-                text: t.content || "",
                 content_text: t.content || "",
-                duration_minutes: 15,
+                text: t.content || "",
                 order_num: tIdx + 1,
-              }));
-              const res = await secureFetch(`/api/v1/topics/${topicId}/lessons`, {
+                quizzes: tQuizzes,
+                assignments: tAssignments,
+              });
+              const payloadStr = JSON.stringify(payload);
+              
+              const res = await secureFetch("/api/v1/topics", {
                 method: "POST",
                 body: payloadStr,
               });
               const json = await res.json();
-              subTopicId = String(json.data?.id || json.id);
-              updatedCourse.modules[mIdx].lessons[lIdx].topics[tIdx].id = subTopicId;
-              lastSavedPayloadsRef.current.set(`lesson-${subTopicId}`, payloadStr);
-              if (t.id === newActiveTopicId) {
-                newActiveTopicId = subTopicId;
+              topicId = String(json.data?.id || json.id);
+              
+              const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
+              if (targetModule) {
+                const targetLesson = targetModule.lessons.find((les: StoreLesson) => String(les.id) === String(l.id));
+                if (targetLesson) {
+                  const targetTopic = targetLesson.topics.find((top: StoreTopic) => String(top.id) === String(t.id));
+                  if (targetTopic) targetTopic.id = topicId;
+                  if (targetLesson.order) {
+                    targetLesson.order = targetLesson.order.map((o: { type: string; id: string | number }) => 
+                      o.id === t.id ? { ...o, id: topicId } : o
+                    );
+                  }
+                }
               }
-              // Update order array inside lesson
-              if (updatedCourse.modules[mIdx].lessons[lIdx].order) {
-                updatedCourse.modules[mIdx].lessons[lIdx].order = updatedCourse.modules[mIdx].lessons[lIdx].order.map((o: any) => 
-                  o.id === t.id ? { ...o, id: subTopicId } : o
-                );
-              }
+              
+              lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
+              if (t.id === newActiveTopicId) newActiveTopicId = topicId;
             } else {
-              const payloadStr = JSON.stringify(cleanPayload({
+              const payload = cleanPayload({
                 name: t.title || `Topic ${tIdx + 1}`,
-                type: "text",
-                text: t.content || "",
                 content_text: t.content || "",
-                duration_minutes: 15,
+                text: t.content || "",
                 order_num: tIdx + 1,
-              }));
-              if (lastSavedPayloadsRef.current.get(`lesson-${subTopicId}`) !== payloadStr) {
-                await secureFetch(`/api/v1/lessons/${subTopicId}`, {
+                quizzes: tQuizzes,
+                assignments: tAssignments,
+              });
+              const payloadStr = JSON.stringify(payload);
+              
+              if (lastSavedPayloadsRef.current.get(`topic-${topicId}`) !== payloadStr) {
+                await secureFetch(`/api/v1/topics/${topicId}`, {
                   method: "PUT",
                   body: payloadStr,
                 });
-                lastSavedPayloadsRef.current.set(`lesson-${subTopicId}`, payloadStr);
+                lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
               }
             }
           }
@@ -498,9 +619,15 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         activeTopicId: newActiveTopicId,
       }));
 
+      // Reset baseline reference to prevent exit cleanup autosave duplicates
+      lastSavedCourseJsonRef.current = JSON.stringify(useCourseStore.getState().course);
+
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
       queryClient.invalidateQueries({ queryKey: ["course", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domain"] });
+      queryClient.invalidateQueries({ queryKey: ["domainStats"] });
 
       if (!isSilent) {
         toast.success(
@@ -511,42 +638,133 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         );
         router.push("/admin/courses");
       }
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       console.error(error);
       if (error.message === "Token expired") {
-        if (!isSilent && toastId) {
-          toast.error("Your session has expired. Redirecting to login...", { id: toastId });
-        }
-        if (typeof document !== "undefined") {
-          document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1500);
+        if (!isSilent) {
+          if (toastId) {
+            toast.error("Your session has expired. Redirecting to login...", { id: toastId });
+          } else {
+            toast.error("Your session has expired. Redirecting to login...");
+          }
+          if (typeof document !== "undefined") {
+            document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            setTimeout(() => {
+              window.location.href = "/login";
+            }, 1500);
+          }
         }
       } else {
         if (!isSilent) {
-          toast.error(error.message || "Failed to save course structure", { id: toastId });
+          if (toastId) {
+            toast.error(error.message || "Failed to save course structure", { id: toastId });
+          } else {
+            toast.error(error.message || "Failed to save course structure");
+          }
         }
+      }
+    } finally {
+      isSavingRef.current = false;
+      if (isComponentMountedRef.current) {
+        setIsSaving(false);
       }
     }
   };
 
-  // Background auto-save every 30 seconds
+  const handleSaveRef = useRef(handleSave);
+  const hasUnsavedChangesRef = useRef(hasUnsavedChanges);
+
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+  });
+
+  // 1. Mount & Exit Save Hook
+  useEffect(() => {
+    setMounted(true);
+    isComponentMountedRef.current = true;
+    return () => {
+      isComponentMountedRef.current = false;
+      
+      // Trigger save on exit if there are unsaved changes
+      const currentCourse = useCourseStore.getState().course;
+      if (currentCourse.title) {
+        const { deletedModules, deletedLessons, deletedTopics } = useCourseStore.getState();
+        const hasChanges = deletedModules.length > 0 || deletedLessons.length > 0 || deletedTopics.length > 0 ||
+          (lastSavedCourseJsonRef.current && JSON.stringify(currentCourse) !== lastSavedCourseJsonRef.current);
+        
+        if (hasChanges) {
+          handleSaveRef.current("draft", true);
+        }
+      }
+    };
+  }, []);
+
+  // 2. Sync the initial saved JSON ref when course details are loaded/initialized
+  useEffect(() => {
+    if (!mounted) return;
+
+    if (id) {
+      // If we are editing an existing course, wait until it's loaded in the store
+      if (course.id && String(course.id) === String(id) && !lastSavedCourseJsonRef.current) {
+        lastSavedCourseJsonRef.current = JSON.stringify(course);
+      }
+    } else {
+      // If we are creating a new course, set the initial empty state as the baseline
+      if (!lastSavedCourseJsonRef.current) {
+        lastSavedCourseJsonRef.current = JSON.stringify(course);
+      }
+    }
+  }, [mounted, id, course]);
+
+  // Reset caches and JSON reference when course ID changes
+  useEffect(() => {
+    if (id !== previousIdRef.current) {
+      lastSavedPayloadsRef.current.clear();
+      quizzesCacheRef.current = null;
+      assignmentsCacheRef.current = null;
+      // Only reset the JSON baseline if we are switching to a different course
+      if (previousIdRef.current !== null || !id) {
+        lastSavedCourseJsonRef.current = null;
+      }
+      previousIdRef.current = id;
+    }
+  }, [id]);
+
+  // 3. Background auto-save every 30 seconds, only if there are unsaved changes
   useEffect(() => {
     if (!mounted) return;
     const interval = setInterval(() => {
-      handleSave("draft", true);
+      if (hasUnsavedChangesRef.current()) {
+        handleSaveRef.current("draft", true);
+      }
     }, 30000);
     return () => clearInterval(interval);
   }, [mounted]);
+
+  // 4. Auto draft save on step/path navigation, only if there are unsaved changes
+  const previousPathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== previousPathnameRef.current) {
+      if (hasUnsavedChangesRef.current()) {
+        handleSaveRef.current("draft", true);
+      }
+      previousPathnameRef.current = pathname;
+    }
+  }, [pathname]);
 
   const handleBack = async () => {
     if (!course.title) {
       router.push("/admin/courses");
       return;
     }
-    await handleSave("draft");
+    if (hasUnsavedChanges()) {
+      await handleSave("draft");
+    } else {
+      router.push("/admin/courses");
+    }
   };
 
   const isRootLevel = pathname === "/admin/courses/create";
@@ -628,21 +846,24 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         <div className="flex gap-3">
           <button 
             onClick={handleBack}
-            className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs"
+            disabled={isSaving}
+            className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Back
           </button>
           <button 
             onClick={() => handleSave("draft")}
-            className="px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs whitespace-nowrap"
+            disabled={isSaving}
+            className="px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[110px]"
           >
-            Save as Draft
+            {isSaving ? "Saving..." : "Save as Draft"}
           </button>
           <button 
             onClick={() => handleSave("published")}
-            className="px-8 py-2 rounded-lg bg-green-600 text-white font-bold shadow-md hover:bg-green-700 transition-all text-xs whitespace-nowrap"
+            disabled={isSaving}
+            className="px-8 py-2 rounded-lg bg-green-600 text-white font-bold shadow-md hover:bg-green-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[80px]"
           >
-            Publish
+            {isSaving ? "Saving..." : "Publish"}
           </button>
         </div>
       </div>

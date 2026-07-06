@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Search, HelpCircle, Clock, RefreshCcw, Edit3, CheckCircle2, CheckSquare, Loader2 } from "lucide-react";
+import { Search, HelpCircle, Clock, CheckSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
 import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useQuizzes, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { Quiz as ApiQuiz, QuizQuestion, QuizQuestionOption } from "@/features/admin/quizzes/api/quiz-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -19,10 +20,12 @@ export default function QuizLibraryPage() {
     activeQuizId, 
     updateQuiz, 
     updateCourseQuiz,
-    setActiveQuiz
+    setActiveQuiz,
+    deleteQuiz,
+    deleteCourseQuiz
   } = useCourseStore();
   
-  let activeQuiz: any;
+  let activeQuiz: { id: string | number; title?: string; quiz_title?: string } | undefined;
   if (!activeModuleId) {
     activeQuiz = course.quizzes?.find(q => String(q.id) === String(activeQuizId));
   } else if (!activeLessonId) {
@@ -38,6 +41,7 @@ export default function QuizLibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
 
   // 1. Fetch real list of quizzes with pagination & search
   const { data: quizzesData, isLoading: listLoading } = useQuizzes(
@@ -51,13 +55,14 @@ export default function QuizLibraryPage() {
   const totalPages = Math.ceil(totalItems / 6);
 
   // 2. Fetch specific quiz details if it is a real database ID
-  const isRealId = activeQuiz?.id && !String(activeQuiz.id).includes("-");
-  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? String(activeQuiz.id) : "");
+  const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : "";
+  const isRealId = activeQuizIdStr && !activeQuizIdStr.includes("-");
+  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? activeQuizIdStr : "");
 
   const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || "";
-  const shouldShowPreview = !!quizTitle;
+  const shouldShowPreview = !!quizTitle && !forceLibraryView;
 
-  const handleAddToCourse = (quiz: any) => {
+  const handleAddToCourse = (quiz: ApiQuiz) => {
     if (activeQuizId) {
       const newId = String(quiz.id);
       if (!activeModuleId) {
@@ -66,6 +71,7 @@ export default function QuizLibraryPage() {
         updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
       }
       setActiveQuiz(newId);
+      setForceLibraryView(false);
       setSuccessMsg(`"${quiz.title}" added to course successfully!`);
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
@@ -138,6 +144,31 @@ export default function QuizLibraryPage() {
                     </p>
                   </div>
                 </div>
+                
+                {/* ACTION BUTTONS */}
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                  <button 
+                    onClick={() => setForceLibraryView(true)}
+                    className="px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
+                  >
+                    Change Quiz
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (activeQuiz?.id) {
+                        if (!activeModuleId) {
+                          deleteCourseQuiz(String(activeQuiz.id));
+                        } else {
+                          deleteQuiz(activeModuleId, activeLessonId || null, String(activeQuiz.id));
+                        }
+                      }
+                      router.push('/admin/courses/create');
+                    }}
+                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                  >
+                    Remove Association
+                  </button>
+                </div>
               </div>
 
               {/* QUESTIONS LIST CARD */}
@@ -154,7 +185,7 @@ export default function QuizLibraryPage() {
                       Loading quiz questions...
                     </div>
                   ) : quizDetail?.questions && quizDetail.questions.length > 0 ? (
-                    quizDetail.questions.map((q: any, idx: number) => (
+                    quizDetail.questions.map((q: QuizQuestion, idx: number) => (
                       <div key={q.id || idx} className="p-6 border border-slate-100 bg-slate-50/40 rounded-2xl flex flex-col gap-4 shadow-xs">
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-bold tracking-widest text-blue-650 uppercase bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md">
@@ -166,7 +197,7 @@ export default function QuizLibraryPage() {
                         </h4>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
-                          {q.options?.map((opt: any, optIdx: number) => (
+                          {q.options?.map((opt: QuizQuestionOption, optIdx: number) => (
                             <div 
                               key={optIdx} 
                               className="flex items-center gap-3 p-3.5 rounded-xl border transition-all border-slate-200 bg-white text-slate-700"
@@ -249,7 +280,7 @@ export default function QuizLibraryPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {quizItems.map((quiz: any) => {
+                    {quizItems.map((quiz: ApiQuiz) => {
                       const badge = getStatusBadge(quiz.status);
                       return (
                         <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.045)] hover:border-blue-200/50 transition-all flex flex-col h-full group">

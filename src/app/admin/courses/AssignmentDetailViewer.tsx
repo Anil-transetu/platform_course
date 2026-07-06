@@ -84,7 +84,7 @@ export default function AssignmentDetailViewer({ assignmentId, onBack }: Assignm
       >
         <div className="p-8 max-w-xl mx-auto text-center space-y-4">
           <h2 className="text-xl font-bold text-rose-600">Failed to load assignment details</h2>
-          <p className="text-gray-500">{(error as any)?.message || "The assignment details could not be retrieved."}</p>
+          <p className="text-gray-500">{(error as Error)?.message || "The assignment details could not be retrieved."}</p>
           <button onClick={onBack} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             Back to Dashboard
           </button>
@@ -117,7 +117,7 @@ export default function AssignmentDetailViewer({ assignmentId, onBack }: Assignm
           <div className="bg-gradient-to-r from-slate-900 to-indigo-950 border border-slate-800 rounded-3xl p-8 shadow-xl relative overflow-hidden text-white min-h-[200px] flex flex-col justify-end">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_60%)]" />
             <div className="relative z-10 space-y-3">
-              <span className="px-3.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase border border-indigo-500/40 bg-indigo-500/10 text-indigo-300">
+              <span className="px-3.5 py-1 rounded-full text-[10px] font-extrabold tracking-widest uppercase border border-indigo-500/40 bg-indigo-50/10 text-indigo-300">
                 Capstone Assessment
               </span>
               <h1 className="text-3xl font-black tracking-tight leading-tight">
@@ -173,7 +173,7 @@ export default function AssignmentDetailViewer({ assignmentId, onBack }: Assignm
                 </h3>
                 {assignment.evaluation_matrix && assignment.evaluation_matrix.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {assignment.evaluation_matrix.map((criteria: any, cIdx: number) => (
+                    {assignment.evaluation_matrix.map((criteria, cIdx: number) => (
                       <div key={cIdx} className="p-5 rounded-2xl border border-slate-100 bg-slate-50/40 hover:bg-indigo-50/5 hover:border-indigo-100/50 transition-all shadow-2xs">
                         <span className="font-extrabold text-sm text-slate-800 block mb-1">{criteria.name}</span>
                         <span className="text-xs font-bold text-slate-450 uppercase tracking-wider block">Max Score: <span className="text-indigo-600">{criteria.marks} marks</span></span>
