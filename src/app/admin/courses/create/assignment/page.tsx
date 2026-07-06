@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useAssignments, useAssignment } from "@/features/admin/assignments/api/use-assignments";
-import { useUpdateModule, useUpdateLesson, useUpdateCourse, useUnlinkAssignment } from '@/features/admin/courses/api/course-api';
-import { toast } from 'sonner';
 import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,18 +21,12 @@ export default function AssignmentLibraryPage() {
     setActiveAssignment,
     deleteAssignment,
     deleteCourseAssignment
+    setActiveAssignment,
+    deleteAssignment,
+    deleteCourseAssignment
   } = useCourseStore();
   
-  const finalAssessmentId = (course as any)?.final_assessment_id || (course as any)?.finalAssessmentId;
-
-  // Sync activeAssignmentId on course-level assignment if it is null or different
-  useEffect(() => {
-    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== String(finalAssessmentId)) {
-      setActiveAssignment(String(finalAssessmentId));
-    }
-  }, [activeModuleId, finalAssessmentId, activeAssignmentId, setActiveAssignment]);
-
-  let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
+  let activeAssignment: { id: string | number; title?: string; assignment_title?: string } | undefined;
   if (!activeModuleId) {
     const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
     const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
@@ -61,13 +53,6 @@ export default function AssignmentLibraryPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [forceLibraryView, setForceLibraryView] = useState(false);
 
-  const debouncedSearch = useDebounce(search, 300);
-
-  // 2. Fetch specific assignment details from backend if ID is a real backend ID
-  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
-  const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
-  const isLibraryEnabled = !isRealId || forceLibraryView;
-
   // 1. Fetch real list of assignments — only when library view is active
   const { data: assignmentsData, isLoading: listLoading } = useAssignments(
     currentPage, 
@@ -80,38 +65,26 @@ export default function AssignmentLibraryPage() {
   const totalItems = assignmentsData?.total || 0;
   const totalPages = Math.ceil(totalItems / 6);
 
-  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
+  // 2. Fetch specific assignment details from backend if ID is a real backend ID
+  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
+  const isRealId = activeAssignmentIdStr && !activeAssignmentIdStr.includes("-");
+  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined);
 
-  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || activeAssignment?.name || assignmentDetail?.title || "";
-  const shouldShowPreview = (isRealId || !!assignmentTitle) && !forceLibraryView;
-
-  const updateModuleMutation = useUpdateModule();
-  const updateLessonMutation = useUpdateLesson();
-  const updateCourseMutation = useUpdateCourse();
-  const unlinkAssignmentMutation = useUnlinkAssignment();
+  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || "";
+  const shouldShowPreview = !!assignmentTitle && !forceLibraryView;
 
   const handleAddToCourse = (assignment: ApiAssignment) => {
-    if (!activeAssignmentId) {
-      alert("Please ensure you have an active assignment selected in the sidebar to replace.");
-      return;
-    }
-
-    const assignmentIdStr = String(assignment.id);
-
-    // Optimistic local update
-    if (!activeModuleId) {
-      // Course final assessment (only one)
-      useCourseStore.setState((state) => ({
-        course: {
-          ...state.course,
-          final_assessment: {
-            id: assignmentIdStr,
-            title: assignment.title,
-            assignment_title: assignment.title
-          },
-          final_assessment_id: assignmentIdStr
-        }
-      }));
+    if (activeAssignmentId) {
+      const assignmentIdStr = String(assignment.id);
+      if (!activeModuleId) {
+        updateCourseAssignment(activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+      } else {
+        updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+      }
+      setActiveAssignment(assignmentIdStr);
+      setForceLibraryView(false);
+      setSuccessMsg(`"${assignment.title}" added to course successfully!`);
+      setTimeout(() => setSuccessMsg(""), 3000);
     } else {
       updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title }, { isLocalOnly: true });
     }
@@ -221,28 +194,21 @@ export default function AssignmentLibraryPage() {
                   </button>
                   <button 
                     onClick={() => {
-                      if (!activeAssignment?.id) return;
-                      const assignmentIdStr = String(activeAssignment.id);
-
-                      // Update local store
-                      if (!activeModuleId) {
-                        useCourseStore.setState((state) => ({
-                          course: {
-                            ...state.course,
-                            final_assessment: null,
-                            final_assessment_id: null
-                          }
-                        }));
-                      } else {
-                        deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
+                      if (activeAssignment?.id) {
+                        const assignmentIdStr = String(activeAssignment.id);
+                        if (!activeModuleId) {
+                          deleteCourseAssignment(assignmentIdStr);
+                        } else {
+                          deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
+                        }
+                        // Clear active assignment and return to library — do NOT navigate away
+                        setActiveAssignment(null);
+                        setForceLibraryView(false);
                       }
-
-                      setActiveAssignment(null);
-                      setForceLibraryView(false);
                     }}
-                   className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
-                   Remove Association
+                    Remove Association
                   </button>
                 </div>
               </div>
@@ -298,6 +264,7 @@ export default function AssignmentLibraryPage() {
                       </h4>
                       {assignmentDetail?.evaluation_matrix && assignmentDetail.evaluation_matrix.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {assignmentDetail.evaluation_matrix.map((criteria, cIdx: number) => (
                           {assignmentDetail.evaluation_matrix.map((criteria, cIdx: number) => (
                             <div key={cIdx} className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
                               <span className="font-bold text-sm text-slate-800 block mb-1">{criteria.name}</span>
@@ -383,6 +350,7 @@ export default function AssignmentLibraryPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {assignmentItems.map((assignment: ApiAssignment) => {
                     {assignmentItems.map((assignment: ApiAssignment) => {
                       const details = getSubmissionTypeDetails(assignment.submissionType || assignment.submission_type);
                       const badge = getStatusBadge(assignment.status);

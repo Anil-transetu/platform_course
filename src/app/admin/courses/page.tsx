@@ -8,6 +8,7 @@ import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
+import DataTable, { Column } from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
 import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -166,6 +167,7 @@ export default function CoursesPage() {
   const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
   // Track course selected for details viewing
   const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
+  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
   const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -292,7 +294,7 @@ export default function CoursesPage() {
     setSearch("");
   }, [activeTab]);
 
-  const handleSaveDomain = async (payload: any) => {
+  const handleSaveDomain = async (data: Record<string, unknown>) => {
     try {
       if (domainModal.mode === "add") {
         await createDomainMutation.mutateAsync(payload);

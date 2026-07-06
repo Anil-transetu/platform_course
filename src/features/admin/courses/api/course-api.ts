@@ -505,15 +505,16 @@ export function useDeleteModule() {
 
 /**
  * Mutation to create a topic (corresponds to UI Topic)
+ * Mutation to create a topic (corresponds to UI Topic)
  */
 export function useCreateTopic() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ lessonId, courseId, moduleId, data }: { lessonId: string | number; courseId?: string | number; moduleId?: string | number; data: { name: string; content_text?: string; text?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string } }) => {
-      const response = await fetch(`${API_HOST}/api/v1/lessons/${lessonId}/topics`, {
+    mutationFn: async ({ lessonId, courseId, data }: { lessonId: string | number; courseId?: string | number; data: { name: string; content_text?: string; text?: string; video_url?: string; order_num?: number } }) => {
+      const response = await fetch(`/api/v1/topics`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, lesson_id: Number(lessonId) }),
       });
       return handleResponse(response);
     },
@@ -531,6 +532,7 @@ export function useCreateTopic() {
 }
 
 /**
+ * Mutation to update a topic (corresponds to UI Topic)
  * Mutation to update a topic (corresponds to UI Topic)
  */
 export function useUpdateTopic() {
@@ -560,6 +562,7 @@ export function useUpdateTopic() {
 
 /**
  * Mutation to delete a topic (corresponds to UI Topic)
+ * Mutation to delete a topic (corresponds to UI Topic)
  */
 export function useDeleteTopic() {
   const queryClient = useQueryClient();
@@ -587,15 +590,16 @@ export function useDeleteTopic() {
 
 /**
  * Mutation to create a lesson (corresponds to UI Lesson)
+ * Mutation to create a lesson (corresponds to UI Lesson)
  */
 export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ moduleId, courseId, data }: { moduleId: string | number; courseId?: string | number; data: { name: string; type?: string; content_text?: string; text?: string; duration_minutes?: number; order_num?: number; quizzes?: number[]; assignments?: number[]; image_url?: string; video_url?: string; pdf_url?: string; url?: string } }) => {
-      const response = await fetch(`${API_HOST}/api/v1/modules/${moduleId}/lessons`, {
+    mutationFn: async ({ moduleId, courseId, data }: { moduleId: string | number; courseId?: string | number; data: { name: string; type?: string; content_text?: string; text?: string; video_url?: string; duration_minutes?: number; order_num?: number; quizzes?: number[]; assignments?: number[] } }) => {
+      const response = await fetch(`/api/v1/lessons`, {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, module_id: Number(moduleId) }),
       });
       return handleResponse(response);
     },

@@ -13,18 +13,14 @@ import {
   Pencil,
   Clock,
   Play,
-  Award,
-  Loader2,
-  ExternalLink
+  Award
 } from "lucide-react";
 import { useCourseCurriculum, useUpdateCourse, useCourseModuleDetail, useCourseLessonDetail, useCourseTopicDetail } from "@/features/admin/courses/api/course-api";
 import { useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
 import { useAssignment } from "@/features/admin/assignments/api/use-assignments";
 import { Skeleton } from "@/components/ui/skeleton";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import { cn, getDisplayThumbnailUrl, getDisplayMediaUrl } from "@/lib/utils";
-import { ContentBlocksRenderer } from "@/components/ui/ContentBlocksRenderer";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface QuizItem {
   id: string | number;
@@ -55,27 +51,15 @@ interface TopicItem {
   duration_minutes?: number;
   video_url?: string;
   content_text?: string;
-  content_blocks?: any[];
-  lessons?: any[];
-  topics?: any[];
 }
 
 interface LessonItem {
   id: string | number;
   name: string;
   content_text?: string;
-  content?: string;
-  text?: string;
-  title?: string;
-  images?: string[];
-  videos?: string[];
-  pdfs?: string[];
-  urls?: string[];
   lessons?: TopicItem[];
-  topics?: TopicItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
-  content_blocks?: any[];
 }
 
 interface ModuleItem {
@@ -83,10 +67,8 @@ interface ModuleItem {
   name: string;
   description?: string;
   topics?: LessonItem[];
-  lessons?: LessonItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
-  content_blocks?: any[];
 }
 
 interface CourseDetailItem {
@@ -106,6 +88,13 @@ interface CourseDetailViewerProps {
   onEdit: () => void;
 }
 
+type ActiveItem = 
+  | { type: "course"; id: string | number; data: CourseDetailItem }
+  | { type: "module"; id: string | number; data: ModuleItem }
+  | { type: "lesson"; id: string | number; data: LessonItem }
+  | { type: "topic"; id: string | number; data: TopicItem }
+  | { type: "quiz"; id: string | number; data: QuizItem }
+  | { type: "assignment"; id: string | number; data: AssignmentItem };
 type ActiveItem = 
   | { type: "course"; id: string | number; data: CourseDetailItem }
   | { type: "module"; id: string | number; data: ModuleItem }
@@ -306,6 +295,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         <div className="p-8 max-w-xl mx-auto text-center space-y-4">
           <h2 className="text-xl font-bold text-red-600">Failed to load course details</h2>
           <p className="text-gray-500">{(error as Error)?.message || "The course could not be found or fetched."}</p>
+          <p className="text-gray-500">{(error as Error)?.message || "The course could not be found or fetched."}</p>
           <button onClick={onBack} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             Back to Dashboard
           </button>
@@ -316,25 +306,26 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
 
   const course = fetchedCourse;
   const modules: ModuleItem[] = course.modules || [];
+  const modules: ModuleItem[] = course.modules || [];
 
   // Count stats
   const totalModules = modules.length;
-  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.lessons?.length || m.topics?.length || 0), 0);
+  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.topics?.length || 0), 0);
   const totalTopics = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.topics?.length || t.lessons?.length || 0), 0) || 0), 0
+    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.lessons?.length || 0), 0) || 0), 0
   );
 
   const courseQuizzesCount = course.quizzes?.length || 0;
   const moduleQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.quizzes?.length || 0), 0);
   const lessonQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
+    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
   );
   const totalQuizzes = courseQuizzesCount + moduleQuizzesCount + lessonQuizzesCount;
 
   const courseAssignmentsCount = course.assignments?.length || 0;
   const moduleAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.assignments?.length || 0), 0);
   const lessonAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
+    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
   );
   const totalAssignments = courseAssignmentsCount + moduleAssignmentsCount + lessonAssignmentsCount;
 
@@ -346,6 +337,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         <div className="space-y-6">
           {/* COURSE HERO IMAGE BANNER */}
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl shadow-sm overflow-hidden relative min-h-[220px] flex flex-col justify-end">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
               alt={course.name} 
@@ -389,6 +381,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Course-Level Content</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {course.quizzes?.map((quiz: QuizItem, idx: number) => (
+                {course.quizzes?.map((quiz: QuizItem, idx: number) => (
                   <div 
                     key={quiz.id || idx}
                     onClick={() => setActiveItem({ type: "quiz", id: quiz.id, data: quiz })}
@@ -403,6 +396,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                     </div>
                   </div>
                 ))}
+                {course.assignments?.map((assignment: AssignmentItem, idx: number) => (
                 {course.assignments?.map((assignment: AssignmentItem, idx: number) => (
                   <div 
                     key={assignment.id || idx}
@@ -429,6 +423,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <p className="text-sm text-gray-400 italic">No modules added to this course.</p>
             ) : (
               <div className="space-y-3">
+                {modules.map((m: ModuleItem, idx: number) => (
                 {modules.map((m: ModuleItem, idx: number) => (
                   <div 
                     key={m.id}
@@ -482,7 +477,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <p className="text-sm text-gray-400 italic">No lessons in this module.</p>
             ) : (
               <div className="space-y-3">
-                {(moduleData.lessons || moduleData.topics || []).map((t: LessonItem) => (
+                {moduleData.topics.map((t: LessonItem) => (
                   <div 
                     key={t.id}
                     onClick={() => setActiveItem({ type: "lesson", id: t.id, data: t })}
@@ -554,7 +549,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <p className="text-sm text-gray-400 italic">No topics inside this lesson.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(lessonData.topics || lessonData.lessons || []).map((item: TopicItem) => (
+                {lessonData.lessons.map((item: TopicItem) => (
                   <div 
                     key={item.id}
                     onClick={() => setActiveItem({ type: "topic", id: item.id, data: item })}
@@ -785,6 +780,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                 {assignment.evaluation_matrix && assignment.evaluation_matrix.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {assignment.evaluation_matrix.map((criteria, cIdx: number) => (
+                    {assignment.evaluation_matrix.map((criteria, cIdx: number) => (
                       <div key={cIdx} className="p-4 rounded-xl border border-gray-150 dark:border-border/50 bg-slate-50/50 dark:bg-muted/30">
                         <span className="font-bold text-sm text-foreground block mb-1">{criteria.name}</span>
                         <span className="text-xs text-gray-500 dark:text-muted-foreground">Marks: {criteria.marks}</span>
@@ -815,11 +811,13 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-bold text-slate-455 uppercase tracking-wider">Type</span>
+                    <span className="font-bold text-slate-455 uppercase tracking-wider">Type</span>
                     <span className="font-bold text-slate-800 dark:text-foreground bg-slate-100 dark:bg-muted px-2.5 py-1 rounded-md capitalize">
                       {assignment.submission_type || "File submission"}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-slate-455 uppercase tracking-wider">Max Points</span>
                     <span className="font-bold text-slate-455 uppercase tracking-wider">Max Points</span>
                     <span className="font-bold text-slate-800 dark:text-foreground text-sm">
                       {assignment.max_score || "100.00"} pts
@@ -915,6 +913,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <div className="space-y-1.5 border-b pb-3 mb-2 pl-2">
                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Course Content</span>
                 {course.quizzes?.map((q: QuizItem) => (
+                {course.quizzes?.map((q: QuizItem) => (
                   <button 
                     key={q.id}
                     onClick={() => setActiveItem({ type: "quiz", id: q.id, data: q })}
@@ -929,6 +928,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                     <span className="truncate">{q.name || "Course Quiz"}</span>
                   </button>
                 ))}
+                {course.assignments?.map((a: AssignmentItem) => (
                 {course.assignments?.map((a: AssignmentItem) => (
                   <button 
                     key={a.id}
@@ -950,6 +950,8 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
             {/* Modules List */}
             {modules.map((m: ModuleItem, mIdx: number) => {
               const isModExpanded = !!expandedModules[String(m.id)];
+            {modules.map((m: ModuleItem, mIdx: number) => {
+              const isModExpanded = !!expandedModules[String(m.id)];
               const isModActive = activeItem?.type === "module" && activeItem?.id === m.id;
               
               return (
@@ -958,6 +960,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                   <div 
                     onClick={() => {
                       setActiveItem({ type: "module", id: m.id, data: m });
+                      toggleModule(String(m.id));
                       toggleModule(String(m.id));
                     }}
                     className={cn(
@@ -984,6 +987,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                     <div className="pl-4 border-l border-gray-100/80 ml-5 py-1 space-y-1">
                       {/* Module quizzes and assignments */}
                       {m.quizzes?.map((q: QuizItem) => (
+                      {m.quizzes?.map((q: QuizItem) => (
                         <button
                           key={q.id}
                           onClick={() => setActiveItem({ type: "quiz", id: q.id, data: q })}
@@ -998,6 +1002,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                           <span className="truncate">{q.name || "Module Quiz"}</span>
                         </button>
                       ))}
+                      {m.assignments?.map((a: AssignmentItem) => (
                       {m.assignments?.map((a: AssignmentItem) => (
                         <button
                           key={a.id}
@@ -1015,10 +1020,10 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                       ))}
 
                       {/* Lessons (topics in API) */}
-                      {(m.lessons || m.topics || []).map((lesson: LessonItem) => {
+                      {m.topics?.map((lesson: LessonItem) => {
                         const isLessActive = 
                           (activeItem?.type === "lesson" && activeItem?.id === lesson.id) ||
-                          (activeItem?.type === "topic" && (lesson.topics || lesson.lessons || []).some(t => String(t.id) === String(activeItem.id))) ||
+                          (activeItem?.type === "topic" && lesson.lessons?.some(t => String(t.id) === String(activeItem.id))) ||
                           (activeItem?.type === "quiz" && lesson.quizzes?.some(q => String(q.id) === String(activeItem.id))) ||
                           (activeItem?.type === "assignment" && lesson.assignments?.some(a => String(a.id) === String(activeItem.id)));
                         
@@ -1038,7 +1043,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                             {/* Lesson topics/quizzes/assignments (lessons inside topic in API) */}
                             {isLessActive && (
                               <div className="pl-4 border-l border-gray-100 ml-4 py-1 space-y-1">
-                                {(lesson.topics || lesson.lessons || []).map((t: TopicItem) => (
+                                {lesson.lessons?.map((t: TopicItem) => (
                                   <button
                                     key={t.id}
                                     onClick={() => setActiveItem({ type: "topic", id: t.id, data: t })}
@@ -1054,6 +1059,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                                   </button>
                                 ))}
                                 {lesson.quizzes?.map((q: QuizItem) => (
+                                {lesson.quizzes?.map((q: QuizItem) => (
                                   <button
                                     key={q.id}
                                     onClick={() => setActiveItem({ type: "quiz", id: q.id, data: q })}
@@ -1068,6 +1074,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                                     <span className="truncate">{q.name || "Lesson Quiz"}</span>
                                   </button>
                                 ))}
+                                {lesson.assignments?.map((a: AssignmentItem) => (
                                 {lesson.assignments?.map((a: AssignmentItem) => (
                                   <button
                                     key={a.id}

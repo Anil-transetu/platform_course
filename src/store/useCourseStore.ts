@@ -14,20 +14,8 @@ export type Topic = {
   id: string;
   title: string;
   content: string;
-  order_num?: number;
   quizzes?: Quiz[];
   assignments?: Assignment[];
-  image_url?: string;
-  video_url?: string;
-  pdf_url?: string;
-  url?: string;
-  content_text?: string;
-  text?: string;
-  images?: string[];
-  videos?: string[];
-  pdfs?: string[];
-  urls?: string[];
-  content_blocks?: ContentBlock[];
 };
 
 export type Quiz = {
