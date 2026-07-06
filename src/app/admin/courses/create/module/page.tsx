@@ -1,14 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { 
-  FileUp,
-  Video,
-  Globe,
-  Image as ImageIcon
-} from "lucide-react";
+import React, { useState, useRef } from "react";
+import { FileUp, Video, Globe, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import ResourceModals from "@/components/modals/ResourceModals";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -61,24 +55,18 @@ export default function ModuleDetailsPage() {
     validateField(field, value);
   };
 
-  const handleSaveModule = () => {
-    const t1 = validateField("moduleTitle", moduleTitle);
-    const t2 = validateField("moduleDescription", moduleDescription);
-    setTouched({ moduleTitle: true, moduleDescription: true });
-    if (t1 || t2) return;
-    alert("Module saved successfully!");
-  };
+
 
   const openModal = (type: "pdf" | "image" | "video" | "url") => {
     setModalType(type);
     setIsModalOpen(true);
   };
 
-  const handleAttach = (type: string, payload: any) => {
+  const handleAttach = (type: string, payload: { url: string; title?: string }) => {
     if (type === 'image') editorRef.current?.insertImage(payload.url);
     if (type === 'video') editorRef.current?.insertVideo(payload.url);
-    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title);
-    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title);
+    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title || "");
+    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title || "");
   };
 
   if (!activeModule) {

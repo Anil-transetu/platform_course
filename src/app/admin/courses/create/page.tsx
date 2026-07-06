@@ -1,12 +1,50 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, LayoutGrid, UploadCloud, Image as ImageIcon, X, BookOpen, GraduationCap, ClipboardList, Book, Sparkles, Settings } from "lucide-react";
+import { Plus, LayoutGrid, UploadCloud, Image as ImageIcon, BookOpen, GraduationCap, ClipboardList, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useCourse } from "@/features/admin/courses/api/course-api";
 
+interface RawQuiz {
+  id: string | number;
+  name?: string;
+}
+
+interface RawAssignment {
+  id: string | number;
+  title?: string;
+  name?: string;
+}
+
+interface RawTopic {
+  id: string | number;
+  name: string;
+  content_text?: string;
+  text?: string;
+  quizzes?: RawQuiz[];
+  assignments?: RawAssignment[];
+}
+
+interface RawLesson {
+  id: string | number;
+  name: string;
+  content_text?: string;
+  text?: string;
+  topics?: RawTopic[];
+  quizzes?: RawQuiz[];
+  assignments?: RawAssignment[];
+}
+
+interface RawModule {
+  id: string | number;
+  name: string;
+  description?: string;
+  lessons?: RawLesson[];
+  quizzes?: RawQuiz[];
+  assignments?: RawAssignment[];
+}
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -20,41 +58,48 @@ export default function CreateCoursePage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [formError, setFormError] = useState("");
   const [hasInitialized, setHasInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
 
   useEffect(() => {
-    if (id && fetchedCourse && !hasInitialized) {
-      const mappedModules = (fetchedCourse.modules || []).map((m: any) => ({
+    if (id && fetchedCourse) {
+      const mappedModules = (fetchedCourse.modules || []).map((m: RawModule) => ({
         id: String(m.id),
         title: m.name || "",
         description: m.description || "",
-        lessons: (m.topics || []).map((t: any) => ({
-          id: String(t.id),
-          title: t.name || "",
-          content: t.content_text || t.text || "",
-          topics: (t.lessons || []).map((l: any) => ({
-            id: String(l.id),
-            title: l.name || "",
-            content: l.content_text || l.text || "",
+        lessons: (m.lessons || []).map((l: RawLesson) => ({
+          id: String(l.id),
+          title: l.name || "",
+          content: l.content_text || l.text || "",
+          topics: (l.topics || []).map((t: RawTopic) => ({
+            id: String(t.id),
+            title: t.name || "",
+            content: t.content_text || t.text || "",
+            quizzes: (t.quizzes || []).map((q: RawQuiz) => ({
+              id: String(q.id),
+              title: q.name || "",
+            })),
+            assignments: (t.assignments || []).map((a: RawAssignment) => ({
+              id: String(a.id),
+              title: a.title || a.name || "",
+            })),
           })),
-          quizzes: (t.quizzes || []).map((q: any) => ({
+          quizzes: (l.quizzes || []).map((q: RawQuiz) => ({
             id: String(q.id),
             title: q.name || "",
           })),
-          assignments: (t.assignments || []).map((a: any) => ({
+          assignments: (l.assignments || []).map((a: RawAssignment) => ({
             id: String(a.id),
             title: a.title || a.name || "",
           })),
         })),
-        quizzes: (m.quizzes || []).map((q: any) => ({
+        quizzes: (m.quizzes || []).map((q: RawQuiz) => ({
           id: String(q.id),
           title: q.name || "",
         })),
-        assignments: (m.assignments || []).map((a: any) => ({
+        assignments: (m.assignments || []).map((a: RawAssignment) => ({
           id: String(a.id),
           title: a.title || a.name || "",
         })),
@@ -68,17 +113,18 @@ export default function CreateCoursePage() {
         thumbnail_url: fetchedCourse.thumbnail_url || "",
         description: fetchedCourse.description || "",
         modules: mappedModules,
-        quizzes: (fetchedCourse.quizzes || []).map((q: any) => ({
+        quizzes: (fetchedCourse.quizzes || []).map((q: RawQuiz) => ({
           id: String(q.id),
           title: q.name || "",
         })),
-        assignments: (fetchedCourse.assignments || []).map((a: any) => ({
+        assignments: (fetchedCourse.assignments || []).map((a: RawAssignment) => ({
           id: String(a.id),
           title: a.title || a.name || "",
         })),
       });
       setHasInitialized(true);
     } else if (!id && !hasInitialized) {
+      // Only reset if we're not editing an existing course and haven't initialized yet
       resetCourse();
       setHasInitialized(true);
     }
@@ -275,8 +321,8 @@ export default function CreateCoursePage() {
                 <div className="relative pl-6 border-l border-slate-200 flex flex-col gap-8 py-2 ml-3">
                   {course.modules.map((m, idx) => {
                     const totalLessons = m.lessons?.length || 0;
-                    const totalQuizzes = (m.quizzes?.length || 0) + m.lessons?.reduce((acc: number, l: any) => acc + (l.quizzes?.length || 0), 0);
-                    const totalAssignments = (m.assignments?.length || 0) + m.lessons?.reduce((acc: number, l: any) => acc + (l.assignments?.length || 0), 0);
+                    const totalQuizzes = (m.quizzes?.length || 0) + m.lessons?.reduce((acc: number, l: { quizzes?: { id: string | number }[] }) => acc + (l.quizzes?.length || 0), 0);
+                    const totalAssignments = (m.assignments?.length || 0) + m.lessons?.reduce((acc: number, l: { assignments?: { id: string | number }[] }) => acc + (l.assignments?.length || 0), 0);
 
                     return (
                       <div key={m.id} className="relative group">

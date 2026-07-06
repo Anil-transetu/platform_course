@@ -32,7 +32,7 @@ export default function CourseDeleteDialog({
         </DialogHeader>
         
         <div className="text-gray-600 dark:text-muted-foreground mb-6">
-          Are you sure you want to delete {type === "course" ? "course" : "domain"} <span className="font-semibold text-gray-900 dark:text-foreground">"{item.name}"</span>? This action cannot be undone.
+          Are you sure you want to delete {type === "course" ? "course" : "domain"} <span className="font-semibold text-gray-900 dark:text-foreground">&quot;{item.name}&quot;</span>? This action cannot be undone.
         </div>
 
         <div className="flex justify-end gap-3">

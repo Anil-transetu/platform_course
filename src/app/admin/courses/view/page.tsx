@@ -52,7 +52,7 @@ function CourseViewContent() {
         </div>
         <h2 className="text-xl font-bold text-slate-800">Failed to Load Course</h2>
         <p className="text-slate-500 text-sm mt-1 max-w-sm">
-          {(error as any)?.message || "The requested course could not be retrieved from the server."}
+          {(error as Error)?.message || "The requested course could not be retrieved from the server."}
         </p>
         <button 
           onClick={handleBack}
