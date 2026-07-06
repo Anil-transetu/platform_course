@@ -25,13 +25,15 @@ const getAvatarColor = (id: string | number) => {
   return avatarColors[index];
 };
 
-export interface Course {
+export interface Course extends Record<string, unknown> {
   id: number;
   name: string;
   category: string;
-  modules: number;
+  modules: number | unknown[];
   updated: string;
   status: string;
+  description?: string;
+  no_of_modules?: number;
 }
 
 
@@ -71,7 +73,9 @@ export const buildCourseColumns = (): Column<Course>[] => [
     key: "modules",
     label: "TOTAL MODULES",
     render: (value, row) => (
-      <span className="text-slate-700 font-medium text-sm">{row.modules} Modules</span>
+      <span className="text-slate-700 font-medium text-sm">
+        {typeof row.modules === "number" ? row.modules : row.modules.length} Modules
+      </span>
     ),
   },
   {

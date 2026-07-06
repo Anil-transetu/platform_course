@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { 
-  ChevronRight, 
-  FileUp,
-  Video,
-  Globe,
-  Image as ImageIcon
-} from "lucide-react";
-import Link from "next/link";
+import { FileUp, Video, Globe, Image as ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ResourceModals from "@/components/modals/ResourceModals";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -49,11 +42,11 @@ export default function TopicDetailsPage() {
     setIsModalOpen(true);
   };
 
-  const handleAttach = (type: string, payload: any) => {
+  const handleAttach = (type: string, payload: { url: string; title?: string }) => {
     if (type === 'image') editorRef.current?.insertImage(payload.url);
     if (type === 'video') editorRef.current?.insertVideo(payload.url);
-    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title);
-    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title);
+    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title || "");
+    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title || "");
   };
 
   if (!activeTopic) {
