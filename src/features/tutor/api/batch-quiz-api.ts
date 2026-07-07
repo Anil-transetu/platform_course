@@ -124,7 +124,7 @@ export async function fetchBatchQuizzes(
         query.append("search", search);
     }
 
-    if (statusFilter && statusFilter !== "All") {
+    if (statusFilter && statusFilter !== "All Status") {
         query.append("status", statusFilter.toLowerCase());
     }
 
@@ -140,16 +140,19 @@ export async function fetchBatchQuizzes(
     const result = await handleResponse(response);
 
     const data = result?.data?.data || result?.data || [];
-    const total = result?.data?.total || result?.total || data.length;
+    const total = result?.pagination?.total_items || data.length;
 
-    // Map according to your dummyData structure
-    const mappedData = data.map((quiz: any) => ({
-        id: quiz.id,
-        quizTitle: quiz.quiz_name,
-        totalQuestions: quiz.total_questions,
-        submissions: quiz.submissions,
-        averageScore: quiz.average_score,
-        submissionDate: quiz.created_at,
+    const mappedData = data.map((student: any) => ({
+        id: `${student.quiz_id}-${student.student_id ?? "guest"}`,
+        studentId: student.student_id,
+        quizId: student.quiz_id,
+        avatar: student.student_profile,
+        name: student.student_name,
+        email: student.student_email,
+        quizTitle: student.quiz_title,
+        submissionDate: student.submission_date,
+        score: student.score,
+        status: student.status,
     }));
 
     return {
@@ -172,25 +175,5 @@ export function useBatchQuizzes(
         enabled: !!batchId,
         staleTime: 5 * 60 * 1000,
         placeholderData: keepPreviousData,
-    });
-}
-
-
-
-//Specific batch heading - Need to check again
-export async function fetchBatch(batchId: string) {
-    const response = await fetch(`${BASE_URL}/${batchId}`, {
-        headers: getAuthHeaders(),
-    });
-
-    const result = await handleResponse(response);
-    return result.data;
-}
-
-export function useBatch(batchId: string) {
-    return useQuery({
-        queryKey: ["batch", batchId],
-        queryFn: () => fetchBatch(batchId),
-        enabled: !!batchId,
     });
 }

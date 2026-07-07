@@ -6,7 +6,7 @@ import { Toaster, toast } from "sonner";
 import { FileText, CheckCircle, Percent } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
-import { useBatch, useBatchQuizStats, useBatchQuizzes } from "@/features/tutor/api/batch-quiz-api";
+import { useBatchQuizStats, useBatchQuizzes } from "@/features/tutor/api/batch-quiz-api";
 import { buildQuizSubmissionColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 
@@ -35,20 +35,7 @@ export default function BatchQuizStatsPage() {
         }
     }, [isError, error]);
 
-    // Start Debugging (remove later)
-    useEffect(() => {
-        console.log("Batch ID:", batchId);
-        //console.log("Quiz Stats Response:", statsData);
-    }, [batchId, statsData]);
-
-    useEffect(() => {
-        console.log("Quiz Stats Response-------------:", statsData);
-    }, [statsData]);
-    // End Debugging (remove later)   
-
-
     const stats = statsData || {};
-
 
     //Table States
     const [page, setPage] = useState(1);
@@ -73,9 +60,6 @@ export default function BatchQuizStatsPage() {
     // Fetch batch quizzes with pagination and search
     const { data, isFetching } = useBatchQuizzes(batchId, page, rowsPerPage, debouncedSearch, status);
 
-    // Specific batch heading - Need to check again
-    const { data: batchData } = useBatch(batchId);
-
     const filterConfig = [
         {
             id: "status",
@@ -83,7 +67,7 @@ export default function BatchQuizStatsPage() {
             type: "select" as const,
             value: status,
             options: [
-                { value: "All Status", label: "Status: All" },
+                { value: "All Status", label: "Status: All status" },
                 { value: "Graded", label: "Graded" },
                 { value: "Pending", label: "Pending" },
             ],

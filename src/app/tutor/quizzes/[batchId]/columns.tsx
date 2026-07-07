@@ -76,14 +76,23 @@ export function buildQuizSubmissionColumns(): Column<QuizSubmission>[] {
                 </div>
             ),
         },
+        // {
+        //     key: "score",
+        //     label: "SCORE",
+        //     render: (_, row) => (
+        //         <div className="font-bold text-slate-900 text-sm">
+        //             {row.score !== null
+        //                 ? `${row.score}/${row.score}`
+        //                 : `--/${row.score}`}
+        //         </div>
+        //     ),
+        // },
         {
             key: "score",
             label: "SCORE",
             render: (_, row) => (
                 <div className="font-bold text-slate-900 text-sm">
-                    {row.score !== null
-                        ? `${row.score}/${row.totalScore}`
-                        : `--/${row.totalScore}`}
+                    {row.score}
                 </div>
             ),
         },
