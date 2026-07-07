@@ -50,10 +50,16 @@ export function useBatchStudentsStats(id: string | number) {
   });
 }
 
-export function useBatchStudents(id: string | number, page: number = 1, limit: number = 10, status?: string) {
+export function useBatchStudents(
+  id: string | number,
+  page: number = 1,
+  limit: number = 10,
+  status?: string,
+  search?: string
+) {
   return useQuery({
-    queryKey: [QUERY_KEY, "students", id, { page, limit, status }],
-    queryFn: () => fetchBatchStudents(id, page, limit, status),
+    queryKey: [QUERY_KEY, "students", id, { page, limit, status, search }],
+    queryFn: () => fetchBatchStudents(id, page, limit, status, search),
     placeholderData: keepPreviousData,
     enabled: !!id,
   });

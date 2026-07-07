@@ -282,7 +282,8 @@ export async function fetchBatchStudents(
   id: string | number,
   page: number = 1,
   limit: number = 10,
-  status?: string
+  status?: string,
+  search?: string
 ) {
   let url = `${BASE_URL}/${id}/students`;
   const query = new URLSearchParams();
@@ -290,6 +291,9 @@ export async function fetchBatchStudents(
   query.append("limit", limit.toString());
   if (status && status !== "All") {
     query.append("status", status.toLowerCase());
+  }
+  if (search) {
+    query.append("search", search);
   }
 
   url += `?${query.toString()}`;
