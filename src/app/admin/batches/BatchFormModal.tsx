@@ -43,7 +43,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     name: "",
     institution_id: "",
     tutor_id: "",
-    course_key: "",
+    course_id: "",
+    domain_id: "",
+    department: "",
     start_date: "",
     end_date: "",
     status: "",
@@ -112,9 +114,11 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       if (activeBatch) {
         setForm({
           name: activeBatch.name || "",
-          institution_id: String(activeBatch.institution_id || ""),
-          tutor_id: String(activeBatch.tutor_id || ""),
-          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "",
+          institution_id: activeBatch.institution_id ? String(activeBatch.institution_id) : "",
+          tutor_id: activeBatch.tutor_id ? String(activeBatch.tutor_id) : "",
+          course_id: activeBatch.course_id ? String(activeBatch.course_id) : "",
+          domain_id: activeBatch.domain_id ? String(activeBatch.domain_id) : "",
+          department: activeBatch.department || "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
@@ -136,7 +140,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           name: "",
           institution_id: "",
           tutor_id: "",
-          course_key: "",
+          course_id: "",
+          domain_id: "",
+          department: "",
           start_date: "",
           end_date: "",
           status: "",
@@ -207,7 +213,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: form.course_key ? Number(form.course_key) : null,
+      course_id: form.course_id ? Number(form.course_id) : null,
+      domain_id: form.domain_id ? Number(form.domain_id) : null,
+      department: form.department || undefined,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
@@ -278,28 +286,40 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* SELECT COURSE & STATUS */}
-        <div className="grid grid-cols-2 gap-4">
-          <div ref={courseDropdownRef} className="relative">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT COURSE <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                value={courseSearch || selectedCourseName}
-                onChange={(e) => {
-                  setCourseSearch(e.target.value);
-                  setCourseDropdownOpen(true);
+        {/* ROW 2: ASSOCIATION — Course OR Domain (mutually exclusive) */}
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                COURSE
+              </label>
+              <CourseSelect
+                value={form.course_id}
+                onChange={(val) => {
+                  // Selecting a course clears the domain
+                  setForm({ ...form, course_id: val, domain_id: "" });
+                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
                 }}
-                onFocus={() => {
-                  setCourseSearch("");
-                  setCourseDropdownOpen(true);
-                }}
-                placeholder="Search and select course..."
-                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.course_key ? "border-red-500" : "border-gray-200"}`}
+                initialName={mode === "edit" && !form.domain_id ? (fullBatch || batch)?.course : undefined}
+                error={!!errors.association}
+                disabled={!!form.domain_id}
               />
-              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                DOMAIN
+              </label>
+              <DomainSelect
+                value={form.domain_id}
+                onChange={(val) => {
+                  // Selecting a domain clears the course
+                  setForm({ ...form, domain_id: val, course_id: "" });
+                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
+                }}
+                initialName={mode === "edit" && !form.course_id ? (fullBatch || batch)?.domain : undefined}
+                error={!!errors.association}
+                disabled={!!form.course_id}
+              />
             </div>
           </div>
           {errors.association && (
