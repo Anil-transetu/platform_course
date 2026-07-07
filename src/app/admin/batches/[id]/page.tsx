@@ -44,7 +44,8 @@ export default function EnrolledStudentsPage({ params }: { params: Promise<{ id:
     batchId,
     page,
     rowsPerPage,
-    status
+    status,
+    debouncedSearch || undefined
   );
   const { data: batchStats } = useBatchStudentsStats(batchId);
 
