@@ -49,6 +49,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     tutor_id: "",
     course_id: "",
     domain_id: "",
+    department: "",
     start_date: "",
     end_date: "",
     status: "",
@@ -107,6 +108,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           tutor_id: activeBatch.tutor_id ? String(activeBatch.tutor_id) : "",
           course_id: activeBatch.course_id ? String(activeBatch.course_id) : "",
           domain_id: activeBatch.domain_id ? String(activeBatch.domain_id) : "",
+          department: activeBatch.department || "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
@@ -130,6 +132,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           tutor_id: "",
           course_id: "",
           domain_id: "",
+          department: "",
           start_date: "",
           end_date: "",
           status: "",
@@ -168,12 +171,10 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
     
+    // Exactly one of courseId or domainId must be selected.
+    // Both selected at the same time is prevented by the UI, but we guard here anyway.
     if (!form.course_id && !form.domain_id) {
-      newErrors.course_id = "You must select either a Course or a Domain";
-      newErrors.domain_id = "You must select either a Course or a Domain";
-    } else if (form.course_id && form.domain_id) {
-      newErrors.course_id = "You cannot select both a Course and a Domain";
-      newErrors.domain_id = "You cannot select both a Course and a Domain";
+      newErrors.association = "You must select either a Course or a Domain";
     }
 
     if (selectedStudents.length === 0) {
@@ -192,17 +193,25 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       return;
     }
     
+    // Enforce mutual exclusivity in the payload:
+    // exactly one of course_id / domain_id will be non-null.
     const payload = {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
       course_id: form.course_id ? Number(form.course_id) : null,
       domain_id: form.domain_id ? Number(form.domain_id) : null,
+      department: form.department || undefined,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
       status: form.status,
     };
+
+    // Double-safety: ensure both are never non-null simultaneously
+    if (payload.course_id && payload.domain_id) {
+      payload.domain_id = null;
+    }
 
     if (mode === "add") {
       createMutation.mutate(payload, {
@@ -263,32 +272,45 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* ROW 2: SELECT COURSE & SELECT DOMAINS */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT COURSE
-            </label>
-            <CourseSelect
-              value={form.course_id}
-              onChange={(val) => setForm({ ...form, course_id: val })}
-              initialName={mode === "edit" ? (fullBatch || batch)?.course : undefined}
-              error={!!errors.course_id}
-            />
-            {errors.course_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.course_id}</p>}
+        {/* ROW 2: ASSOCIATION — Course OR Domain (mutually exclusive) */}
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                COURSE
+              </label>
+              <CourseSelect
+                value={form.course_id}
+                onChange={(val) => {
+                  // Selecting a course clears the domain
+                  setForm({ ...form, course_id: val, domain_id: "" });
+                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
+                }}
+                initialName={mode === "edit" && !form.domain_id ? (fullBatch || batch)?.course : undefined}
+                error={!!errors.association}
+                disabled={!!form.domain_id}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                DOMAIN
+              </label>
+              <DomainSelect
+                value={form.domain_id}
+                onChange={(val) => {
+                  // Selecting a domain clears the course
+                  setForm({ ...form, domain_id: val, course_id: "" });
+                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
+                }}
+                initialName={mode === "edit" && !form.course_id ? (fullBatch || batch)?.domain : undefined}
+                error={!!errors.association}
+                disabled={!!form.course_id}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              SELECT DOMAINS
-            </label>
-            <DomainSelect
-              value={form.domain_id}
-              onChange={(val) => setForm({ ...form, domain_id: val })}
-              initialName={mode === "edit" ? (fullBatch || batch)?.domain : undefined}
-              error={!!errors.domain_id}
-            />
-            {errors.domain_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.domain_id}</p>}
-          </div>
+          {errors.association && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.association}</p>
+          )}
         </div>
 
         {/* ROW 3: INSTRUCTOR & STATUS */}

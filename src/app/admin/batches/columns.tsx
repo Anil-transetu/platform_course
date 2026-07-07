@@ -47,7 +47,11 @@ export function buildBatchColumns(): Column<Batch>[] {
                 {row.name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                Course: {row.course || "N/A"}
+                {row.course && row.course !== "N/A"
+                  ? `Course: ${row.course}`
+                  : row.domain && row.domain !== "N/A"
+                  ? `Domain: ${row.domain}`
+                  : "N/A"}
               </p>
             </div>
           </div>

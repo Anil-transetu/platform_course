@@ -14,6 +14,7 @@ export interface Batch extends Record<string, any> {
   course_id?: number | null;
   domain_id?: number | null;
   domain?: string;
+  department?: string;
   Enrollments?: any[];
 }
 

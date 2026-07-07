@@ -10,9 +10,10 @@ interface DomainSelectProps {
   onChange: (value: string) => void;
   initialName?: string;
   error?: boolean;
+  disabled?: boolean;
 }
 
-export default function DomainSelect({ value, onChange, initialName, error }: DomainSelectProps) {
+export default function DomainSelect({ value, onChange, initialName, error, disabled }: DomainSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -69,18 +70,24 @@ export default function DomainSelect({ value, onChange, initialName, error }: Do
     <div className="relative" ref={wrapperRef}>
       {/* Trigger Button */}
       <div
-        className={`w-full flex items-center justify-between border bg-white dark:bg-card rounded-lg px-3 py-2.5 text-sm cursor-pointer ${
-          error ? "border-red-500" : "border-gray-200 dark:border-border/70"
-        } ${isOpen ? "ring-2 ring-blue-500/20 border-blue-500" : ""}`}
-        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between border rounded-lg px-3 py-2.5 text-sm ${
+          disabled
+            ? "bg-gray-100 dark:bg-muted/30 border-gray-200 dark:border-border/40 cursor-not-allowed opacity-50"
+            : "bg-white dark:bg-card cursor-pointer"
+        } ${
+          !disabled && error ? "border-red-500" : !disabled ? "border-gray-200 dark:border-border/70" : ""
+        } ${!disabled && isOpen ? "ring-2 ring-blue-500/20 border-blue-500" : ""}`}
+        onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          <Globe size={16} className="text-gray-400 shrink-0" />
-          <span className={`truncate ${selectedName ? "text-gray-900 dark:text-foreground" : "text-gray-400"}`}>
-            {selectedName || "Search and select domain..."}
+          <Globe size={16} className={`shrink-0 ${disabled ? "text-gray-300" : "text-gray-400"}`} />
+          <span className={`truncate ${
+            disabled ? "text-gray-400" : selectedName ? "text-gray-900 dark:text-foreground" : "text-gray-400"
+          }`}>
+            {disabled ? "Disabled (course selected)" : selectedName || "Search and select domain..."}
           </span>
         </div>
-        <ChevronDown size={16} className="text-gray-400 shrink-0" />
+        <ChevronDown size={16} className={`shrink-0 ${disabled ? "text-gray-300" : "text-gray-400"}`} />
       </div>
 
       {/* Dropdown Menu */}
