@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Column } from "@/components/reusable/DataTable";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -110,11 +111,15 @@ export function buildQuizColumns(): Column<QuizOverview>[] {
                     variant="outline"
                     size="sm"
                     className="rounded-lg border-blue-200 text-blue-600 hover:bg-blue-50"
-                    onClick={() => {
-                        console.log("View quizzes", row.batch_id);
-                    }}
+                    asChild
                 >
-                    View All Quizzes
+                    <Link href={`/tutor/quizzes/${row.batch_id || row.id}?batch_name=${encodeURIComponent(row.batch_name || "N/A")}`}>
+                        View All Quizzes
+                    </Link>
+
+                    {/* <Link href={`/tutor/quizzes/${row.batch_id || row.id}`}>
+                        View All Quizzes
+                    </Link> */}
                 </Button>
             ),
         },
