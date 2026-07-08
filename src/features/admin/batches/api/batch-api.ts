@@ -70,15 +70,15 @@ async function handleResponse(response: Response) {
  * Mapping helper: Normalizes batch data from backend to frontend format
  */
 export function mapBatch(b: Record<string, any>): Batch {
-  const tutorName = b.tutor || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
+  const tutorName = (typeof b.tutor === "object" && b.tutor !== null ? (b.tutor.full_name || b.tutor.name) : b.tutor) || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
   const enrollmentsCount = b.student_count !== undefined ? Number(b.student_count) : (b.students !== undefined ? Number(b.students) : (b.Enrollments ? b.Enrollments.length : 0));
   
   return {
     ...b,
     id: b.id,
     name: b.batch_name || b.name || "N/A",
-    institution: b.institution_name || b.Institution?.name || "N/A",
-    course: b.course || b.Course?.name || "N/A",
+    institution: (typeof b.institution === "object" && b.institution !== null ? b.institution.name : b.institution) || b.institution_name || b.Institution?.name || "N/A",
+    course: (typeof b.course === "object" && b.course !== null ? b.course.name : b.course) || b.Course?.name || "N/A",
     instructor: tutorName,
     start_date: b.start_date ? b.start_date.split("T")[0] : "",
     end_date: b.end_date ? b.end_date.split("T")[0] : "",
@@ -89,7 +89,8 @@ export function mapBatch(b: Record<string, any>): Batch {
     tutor_id: b.tutor_id || (b.batchTutors && b.batchTutors[0]?.tutor_id),
     course_id: b.course_id,
     domain_id: b.domain_id || b.Domain?.id,
-    domain: b.domain || b.Domain?.name || "N/A"
+    domain: (typeof b.domain === "object" && b.domain !== null ? b.domain.name : b.domain) || b.Domain?.name || "N/A",
+    department: b.department || ""
   };
 }
 
@@ -155,17 +156,24 @@ export async function fetchBatchById(id: string | number) {
  * Create a new batch
  */
 export async function createBatch(data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
-    domain_id: data.domain_id ? Number(data.domain_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active"
+    status: data.status || "active",
   };
+  if (data.course_id) {
+    payload.course_id = Number(data.course_id);
+  }
+  if (data.domain_id) {
+    payload.domain_id = Number(data.domain_id);
+  }
+  if (data.department) {
+    payload.department = data.department;
+  }
 
   const response = await fetch(BASE_URL, {
     method: "POST",
@@ -180,17 +188,24 @@ export async function createBatch(data: Record<string, unknown>) {
  * Update an existing batch
  */
 export async function updateBatch(id: string | number, data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
-    domain_id: data.domain_id ? Number(data.domain_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active"
+    status: data.status || "active",
   };
+  if (data.course_id) {
+    payload.course_id = Number(data.course_id);
+  }
+  if (data.domain_id) {
+    payload.domain_id = Number(data.domain_id);
+  }
+  if (data.department) {
+    payload.department = data.department;
+  }
 
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
@@ -267,7 +282,8 @@ export async function fetchBatchStudents(
   id: string | number,
   page: number = 1,
   limit: number = 10,
-  status?: string
+  status?: string,
+  search?: string
 ) {
   let url = `${BASE_URL}/${id}/students`;
   const query = new URLSearchParams();
@@ -275,6 +291,9 @@ export async function fetchBatchStudents(
   query.append("limit", limit.toString());
   if (status && status !== "All") {
     query.append("status", status.toLowerCase());
+  }
+  if (search) {
+    query.append("search", search);
   }
 
   url += `?${query.toString()}`;
