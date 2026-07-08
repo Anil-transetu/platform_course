@@ -15,10 +15,29 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useUserDetails } from "@/features/profile/api/profile-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function NavUser() {
+interface NavUserProps {
+  unreadCount?: number;
+  notifications?: any[];
+  onDropdownOpen?: () => Promise<void>;
+  onNotificationsClick?: () => Promise<void>;
+}
+
+export default function NavUser({
+  unreadCount = 0,
+  notifications = [],
+  onDropdownOpen,
+  onNotificationsClick
+}: NavUserProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { logout, role: storeRole } = useAuthStore();
   const { data: userDetails, isLoading } = useUserDetails();
+
+  const handleOpenChange = async (open: boolean) => {
+    setIsOpen(open);
+    if (open && onDropdownOpen) {
+      await onDropdownOpen();
+    }
+  };
 
   const data = userDetails?.data || userDetails; 
   const displayName = data?.name || data?.full_name || data?.email?.split('@')[0] || "User";
@@ -28,7 +47,7 @@ export default function NavUser() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="h-16 border-t border-[#2a374a] rounded-none hover:bg-card/5 transition-colors group-data-[collapsible=icon]:!border-t-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
               <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
@@ -42,14 +61,19 @@ export default function NavUser() {
                   </>
                 ) : (
                   <>
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
-                      <Image 
-                        src={avatarUrl} 
-                        alt={displayName} 
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
+                        <Image 
+                          src={avatarUrl} 
+                          alt={displayName} 
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#111827] z-10" />
+                      )}
                     </div>
 
                     <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
@@ -78,9 +102,22 @@ export default function NavUser() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
-              <Link href="/settings/notifications" className="flex items-center gap-3 w-full">
-                <Bell className="w-5 h-5 shrink-0" />
-                <span>Notifications</span>
+              <Link 
+                href="/settings/notifications" 
+                className="flex items-center justify-between w-full"
+                onClick={() => {
+                  if (onNotificationsClick) {
+                    onNotificationsClick();
+                  }
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 shrink-0" />
+                  <span>Notifications</span>
+                </div>
+                {unreadCount > 0 && (
+                  <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full shrink-0 mr-1" />
+                )}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
