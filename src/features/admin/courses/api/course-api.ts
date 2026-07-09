@@ -400,7 +400,7 @@ export function useQuizzes(page: number = 1, limit: number = 100, search?: strin
 /**
  * Hook to fetch all assignments
  */
-export function useAssignmentsList(page: number = 1, limit: number = 100, search?: string) {
+export function useAssignmentsList(page: number = 1, limit: number = 10, search?: string) {
   return useQuery({
     queryKey: ["assignmentsList", { page, limit, search }],
     queryFn: async () => {

@@ -54,7 +54,7 @@ function mapStudent(s: Record<string, unknown>): Student {
 /**
  * Fetch all students
  */
-export async function fetchStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
+export async function fetchStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   let url = BASE_URL;
   const query = new URLSearchParams();
   if (page !== undefined && limit !== undefined) {
@@ -192,7 +192,7 @@ export async function updateStudent(id: string | number, data: Record<string, un
  * TanStack Query Hooks
  */
 
-export function useStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
+export function useStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   return useQuery({
     queryKey: ["students", { page, limit, search, statusFilter, courseId, institutionId }],
     queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId, institutionId),

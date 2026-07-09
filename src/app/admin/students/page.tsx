@@ -93,18 +93,27 @@ function StudentsPageContent() {
   const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Reset page when search or status changes
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page when search, status or rowsPerPage changes
   useEffect(() => {
     setPage(1);
-  }, [search, status]);
+  }, [debouncedSearch, status, rowsPerPage]);
 
-  // Data fetching hooks - fetch all students on mount to enable client-side search & filtering
+  // Fetch students with server-side pagination and filtering
   const { data: studentsData, isLoading } = useStudents(
-    1,
-    1000,
-    undefined,
-    "All"
+    page,
+    rowsPerPage,
+    debouncedSearch || undefined,
+    status === "All" ? undefined : status
   );
 
   const { data: stats } = useStudentStats();
@@ -113,38 +122,11 @@ function StudentsPageContent() {
     return Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
   }, [studentsData]);
 
-  // Client-side filtering
-  const filteredStudents = React.useMemo(() => {
-    let result = studentsList;
-
-    // Search filter (name, email, or id)
-    if (search.trim()) {
-      const term = search.trim().toLowerCase();
-      result = result.filter(
-        (s: Student) =>
-          s.name?.toLowerCase().includes(term) ||
-          s.email?.toLowerCase().includes(term) ||
-          String(s.id).toLowerCase().includes(term)
-      );
-    }
-
-    // Status filter
-    if (status && status !== "All") {
-      result = result.filter(
-        (s: Student) => s.status?.toLowerCase() === status.toLowerCase()
-      );
-    }
-
-    return result;
-  }, [studentsList, search, status]);
-
-  const totalCount = filteredStudents.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const totalCount = studentsData?.pagination?.total_records || studentsData?.meta?.total || studentsData?.total || studentsList.length;
+  const totalPages = studentsData?.pagination?.total_pages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const startIndex = (page - 1) * rowsPerPage;
 
-  const visibleData = React.useMemo(() => {
-    return filteredStudents.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredStudents, startIndex, rowsPerPage]);
+  const visibleData = studentsList;
 
   // DataTable configs
   const searchConfig = {

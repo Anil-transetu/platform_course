@@ -9,20 +9,30 @@ import UserPageSkeleton from "@/components/users/UserPageSkeleton";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import DeleteDialog from "@/components/reusable/DeleteDialog";
-import { Users, UserPlus, Building, MoreVertical, Check, X } from "lucide-react";
+import { Users, UserPlus, Building, MoreVertical, Eye, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 function ActionMenu({
-  onAccept,
-  onReject,
+  onView,
+  onDelete,
 }: {
-  onAccept: () => void;
-  onReject: () => void;
+  onView: () => void;
+  onDelete: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -38,22 +48,22 @@ function ActionMenu({
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onAccept();
+            onView();
           }}
-          className="cursor-pointer px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors focus:bg-green-50 outline-none font-medium flex items-center gap-2"
+          className="cursor-pointer px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors focus:bg-slate-50 outline-none font-medium flex items-center gap-2"
         >
-          <Check size={14} className="text-green-500" />
-          Accept
+          <Eye size={14} className="text-slate-500" />
+          View
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onReject();
+            onDelete();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
         >
-          <X size={14} className="text-red-500" />
-          Reject
+          <Trash2 size={14} className="text-red-500" />
+          Delete
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -70,6 +80,9 @@ export default function PendingRequestsTab({
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [itemToView, setItemToView] = useState<ContactRequest | null>(null);
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ContactRequest | null>(null);
@@ -178,10 +191,11 @@ export default function PendingRequestsTab({
         actions={(request) => (
           <div className="flex justify-center">
             <ActionMenu
-              onAccept={() => {
-                // To be implemented or leave as placeholder to match existing pattern
+              onView={() => {
+                setItemToView(request);
+                setViewDialogOpen(true);
               }}
-              onReject={() => {
+              onDelete={() => {
                 setItemToDelete(request);
                 setDeleteDialogOpen(true);
               }}
@@ -211,9 +225,96 @@ export default function PendingRequestsTab({
             });
           }
         }}
-        itemName={itemToDelete?.first_name ? `${itemToDelete.first_name} ${itemToDelete.last_name}` : "this pending request"}
+        itemName={itemToDelete?.full_name || itemToDelete?.first_name ? `${itemToDelete.first_name || ''} ${itemToDelete.last_name || ''}`.trim() || itemToDelete?.full_name : "this pending request"}
         isLoading={deleteMutation.isPending}
       />
+
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[90vh] p-0 overflow-hidden flex flex-col w-[95vw] sm:w-full">
+          <div className="overflow-y-auto p-6 space-y-4 w-full">
+            <DialogHeader>
+              <DialogTitle>View Pending Request</DialogTitle>
+              <DialogDescription className="sr-only">
+                Read-only details for the selected pending request.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {itemToView && (
+              <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="view-fullname">Full Name</Label>
+                  <Input 
+                    id="view-fullname" 
+                    value={itemToView.full_name || (itemToView.first_name ? `${itemToView.first_name} ${itemToView.last_name}` : "N/A")} 
+                    readOnly 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="view-email">Email</Label>
+                  <Input 
+                    id="view-email" 
+                    value={itemToView.email || "N/A"} 
+                    readOnly 
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="view-role">Role</Label>
+                  <Input 
+                    id="view-role" 
+                    value={itemToView.role || "N/A"} 
+                    readOnly 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="view-date">Created Date</Label>
+                  <Input 
+                    id="view-date" 
+                    value={itemToView.created_at ? new Date(itemToView.created_at).toLocaleDateString() : "N/A"} 
+                    readOnly 
+                  />
+                </div>
+              </div>
+
+              {itemToView.institution_name && (
+                <div className="space-y-2">
+                  <Label htmlFor="view-institution">Institution Name</Label>
+                  <Input 
+                    id="view-institution" 
+                    value={itemToView.institution_name} 
+                    readOnly 
+                  />
+                </div>
+              )}
+
+              {itemToView.phone_number && (
+                <div className="space-y-2">
+                  <Label htmlFor="view-phone">Phone Number</Label>
+                  <Input 
+                    id="view-phone" 
+                    value={itemToView.phone_number} 
+                    readOnly 
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                  <Label htmlFor="view-message">Message</Label>
+                  <Textarea 
+                    id="view-message" 
+                    value={itemToView.message || "N/A"} 
+                    readOnly 
+                    className="min-h-[120px] resize-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

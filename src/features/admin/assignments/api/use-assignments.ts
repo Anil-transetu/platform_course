@@ -18,7 +18,7 @@ export const ASSIGNMENT_STATS_QUERY_KEY = ["assignmentStats"];
  */
 export function useAssignments(
   page: number = 1,
-  limit: number = 50,
+  limit: number = 10,
   search?: string,
   statusFilter?: string
 ) {
