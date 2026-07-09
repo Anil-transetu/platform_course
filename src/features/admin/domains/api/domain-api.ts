@@ -103,7 +103,8 @@ export async function fetchDomains(
   page: number = 1,
   limit: number = 10,
   search?: string,
-  statusFilter?: string
+  statusFilter?: string,
+  signal?: AbortSignal
 ) {
   let url = BASE_URL;
   const query = new URLSearchParams();
@@ -126,6 +127,7 @@ export async function fetchDomains(
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const result = await handleResponse(response);
@@ -143,10 +145,11 @@ export async function fetchDomains(
 /**
  * Fetch domain by ID (API #2)
  */
-export async function fetchDomainById(id: string | number): Promise<Domain> {
+export async function fetchDomainById(id: string | number, signal?: AbortSignal): Promise<Domain> {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const result = await handleResponse(response);
@@ -206,7 +209,8 @@ export async function updateDomain(id: string | number, data: Record<string, any
 export async function fetchDomainCourses(
   id: string | number,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  signal?: AbortSignal
 ) {
   const query = new URLSearchParams();
   query.append("page", page.toString());
@@ -215,6 +219,7 @@ export async function fetchDomainCourses(
   const response = await fetch(`${BASE_URL}/${id}/courses?${query.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   return handleResponse(response);
@@ -223,10 +228,11 @@ export async function fetchDomainCourses(
 /**
  * Fetch domain statistics (API #5)
  */
-export async function fetchDomainStats(): Promise<DomainStats> {
+export async function fetchDomainStats(signal?: AbortSignal): Promise<DomainStats> {
   const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const result = await handleResponse(response);
@@ -255,28 +261,37 @@ export async function deleteDomain(id: string | number) {
  * TanStack Query Hooks
  */
 
-export function useDomains(page: number = 1, limit: number = 10, search?: string, statusFilter?: string) {
+export function useDomains(
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  statusFilter?: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["domains", { page, limit, search, statusFilter }],
-    queryFn: () => fetchDomains(page, limit, search, statusFilter),
+    queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled,
   });
 }
 
 export function useDomain(id: string | number) {
   return useQuery({
     queryKey: ["domain", id],
-    queryFn: () => fetchDomainById(id),
+    queryFn: ({ signal }) => fetchDomainById(id, signal),
+    staleTime: 5 * 60 * 1000,
     enabled: !!id,
   });
 }
 
-export function useDomainStats() {
+export function useDomainStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["domainStats"],
-    queryFn: () => fetchDomainStats(),
+    queryFn: ({ signal }) => fetchDomainStats(signal),
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
@@ -317,7 +332,8 @@ export function useDeleteDomain() {
 export function useDomainCourses(id: string | number, page: number = 1, limit: number = 10) {
   return useQuery({
     queryKey: ["domainCourses", id, { page, limit }],
-    queryFn: () => fetchDomainCourses(id, page, limit),
+    queryFn: ({ signal }) => fetchDomainCourses(id, page, limit, signal),
+    staleTime: 5 * 60 * 1000,
     enabled: !!id,
   });
 }
