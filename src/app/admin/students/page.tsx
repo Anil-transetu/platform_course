@@ -122,8 +122,8 @@ function StudentsPageContent() {
     return Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
   }, [studentsData]);
 
-  const totalCount = studentsData?.pagination?.total_records || studentsData?.meta?.total || studentsData?.total || studentsList.length;
-  const totalPages = studentsData?.pagination?.total_pages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const totalCount = studentsData?.pagination?.total || studentsData?.pagination?.total_records || studentsData?.meta?.total || studentsData?.total || studentsData?.total_records || studentsList.length;
+  const totalPages = studentsData?.pagination?.total_pages || studentsData?.pagination?.totalPages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
   const startIndex = (page - 1) * rowsPerPage;
 
   const visibleData = studentsList;
