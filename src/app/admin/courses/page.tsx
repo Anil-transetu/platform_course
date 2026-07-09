@@ -40,6 +40,7 @@ import {
 import CourseDetailViewer from "./CourseDetailViewer";
 import AssignmentDetailViewer from "./AssignmentDetailViewer";
 import { useCourseStore } from "@/store/useCourseStore";
+import { useDebounce } from "@/hooks/use-debounce";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -217,6 +218,8 @@ export default function CoursesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const debouncedSearch = useDebounce(search, 300);
   
   // Courses React Query hook
   const {
@@ -226,11 +229,14 @@ export default function CoursesPage() {
   } = useCourses(
     activeTab === "courses" ? page : 1,
     rowsPerPage,
-    search,
-    statusFilter
+    debouncedSearch,
+    statusFilter,
+    { enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
   );
 
-  const { data: courseStatsRaw } = useCourseStats();
+  const { data: courseStatsRaw } = useCourseStats({
+    enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId
+  });
   const deleteCourseMutation = useDeleteCourse();
 
   // Queries & Mutations for domains
@@ -241,12 +247,18 @@ export default function CoursesPage() {
   } = useDomains(
     activeTab === "domains" ? page : 1,
     rowsPerPage,
-    search,
-    statusFilter
+    debouncedSearch,
+    statusFilter,
+    { enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
   );
 
-  const { data: domainStats } = useDomainStats();
-  const { data: assignmentsRes } = useAssignments(1, 100);
+  const { data: domainStats } = useDomainStats({
+    enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId
+  });
+
+  const { data: assignmentsRes } = useAssignments(1, 100, undefined, undefined, {
+    enabled: !!viewingDomain && !viewingAssignmentId
+  });
   const availableAssignments = assignmentsRes?.data || [];
 
   const createDomainMutation = useCreateDomain();
@@ -667,13 +679,15 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        <CreateDomainModal 
-          isOpen={domainModal.open} 
-          onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-          onSubmit={handleSaveDomain} 
-          mode={domainModal.mode}
-          domain={domainModal.domain}
-        />
+        {domainModal.open && (
+          <CreateDomainModal 
+            isOpen={domainModal.open} 
+            onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
+            onSubmit={handleSaveDomain} 
+            mode={domainModal.mode}
+            domain={domainModal.domain}
+          />
+        )}
       </ListingScreenTemplate>
     );
   }
@@ -776,13 +790,15 @@ export default function CoursesPage() {
       </div>
       )}
 
-      <CreateDomainModal 
-        isOpen={domainModal.open} 
-        onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-        onSubmit={handleSaveDomain} 
-        mode={domainModal.mode}
-        domain={domainModal.domain}
-      />
+      {domainModal.open && (
+        <CreateDomainModal 
+          isOpen={domainModal.open} 
+          onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
+          onSubmit={handleSaveDomain} 
+          mode={domainModal.mode}
+          domain={domainModal.domain}
+        />
+      )}
       
       <CourseDeleteDialog
         open={deleteDialog.open}

@@ -9,6 +9,7 @@ import { useAssignments, useAssignment } from "@/features/admin/assignments/api/
 import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function AssignmentLibraryPage() {
   const { 
@@ -41,11 +42,13 @@ export default function AssignmentLibraryPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [forceLibraryView, setForceLibraryView] = useState(false);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   // 1. Fetch real list of assignments
   const { data: assignmentsData, isLoading: listLoading } = useAssignments(
     currentPage, 
     6, 
-    search || undefined, 
+    debouncedSearch || undefined, 
     statusFilter === "All" ? undefined : statusFilter
   );
   const assignmentItems = assignmentsData?.data || [];
