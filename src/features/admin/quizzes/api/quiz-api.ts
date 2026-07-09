@@ -145,7 +145,8 @@ export async function fetchQuizzes(
   page: number = 1,
   limit: number = 50,
   search?: string, 
-  statusFilter?: string
+  statusFilter?: string,
+  signal?: AbortSignal
 ): Promise<{ data: Quiz[], total?: number }> {
   let url = BASE_URL;
   const query = new URLSearchParams();
@@ -170,6 +171,7 @@ export async function fetchQuizzes(
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const data = await handleResponse(response);
@@ -183,10 +185,11 @@ export async function fetchQuizzes(
 /**
  * Fetch stats for quizzes
  */
-export async function fetchQuizStats(): Promise<QuizStats> {
+export async function fetchQuizStats(signal?: AbortSignal): Promise<QuizStats> {
   const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
   const result = await handleResponse(response);
   return result.data || {
@@ -200,11 +203,13 @@ export async function fetchQuizStats(): Promise<QuizStats> {
  * Fetch a single quiz by ID
  */
 export async function fetchQuizById(
-  id: string | number
+  id: string | number,
+  signal?: AbortSignal
 ): Promise<Quiz> {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const data = await handleResponse(response);

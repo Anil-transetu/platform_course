@@ -20,23 +20,26 @@ export function useAssignments(
   page: number = 1,
   limit: number = 50,
   search?: string,
-  statusFilter?: string
+  statusFilter?: string,
+  options?: { enabled?: boolean }
 ) {
   return useQuery<{ data: Assignment[]; total?: number }, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, page, limit, search, statusFilter],
-    queryFn: () => fetchAssignments(page, limit, search, statusFilter),
+    queryFn: ({ signal }) => fetchAssignments(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to fetch stats
  */
-export function useAssignmentStats() {
+export function useAssignmentStats(options?: { enabled?: boolean }) {
   return useQuery<AssignmentStats, Error>({
     queryKey: ASSIGNMENT_STATS_QUERY_KEY,
-    queryFn: fetchAssignmentStats,
+    queryFn: ({ signal }) => fetchAssignmentStats(signal),
     staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
@@ -46,7 +49,7 @@ export function useAssignmentStats() {
 export function useAssignment(id: string | number | undefined) {
   return useQuery<Assignment, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, id],
-    queryFn: () => fetchAssignmentById(id!),
+    queryFn: ({ signal }) => fetchAssignmentById(id!, signal),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });

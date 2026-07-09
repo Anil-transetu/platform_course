@@ -89,11 +89,12 @@ export function useCourses(
   page: number = 1,
   limit: number = 10,
   search?: string,
-  statusFilter?: string
+  statusFilter?: string,
+  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: ["courses", { page, limit, search, statusFilter }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
       query.append("limit", limit.toString());
@@ -104,6 +105,7 @@ export function useCourses(
       }
 
       const response = await fetch(`/api/v1/courses?${query.toString()}`, {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
@@ -118,41 +120,46 @@ export function useCourses(
     },
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to fetch a single course structure by ID
  */
-export function useCourse(id: string | number | undefined) {
+export function useCourse(id: string | number | undefined, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["course", id],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       if (!id) return null;
       const response = await fetch(`/api/v1/courses/${id}`, {
-        headers: getAuthHeaders(),
-      });
-      const result = await handleResponse(response);
-      return result.data || result;
-    },
-    enabled: !!id,
-  });
-}
-
-/**
- * Hook to fetch course statistics
- */
-export function useCourseStats() {
-  return useQuery({
-    queryKey: ["courseStats"],
-    queryFn: async () => {
-      const response = await fetch("/api/v1/courses/stats", {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
       return result.data || result;
     },
     staleTime: 5 * 60 * 1000,
+    enabled: (options?.enabled ?? true) && !!id,
+  });
+}
+
+/**
+ * Hook to fetch course statistics
+ */
+export function useCourseStats(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["courseStats"],
+    queryFn: async ({ signal }) => {
+      const response = await fetch("/api/v1/courses/stats", {
+        signal,
+        headers: getAuthHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
@@ -422,73 +429,233 @@ export function useDeleteLesson() {
 /**
  * Hook to fetch all quizzes
  */
-export function useQuizzes(page: number = 1, limit: number = 100, search?: string) {
+export function useQuizzes(page: number = 1, limit: number = 100, search?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizzesList", { page, limit, search }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
       query.append("limit", limit.toString());
       if (search) query.append("search", search);
 
       const response = await fetch(`/api/v1/quizzes?${query.toString()}`, {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
       return result.data || result;
     },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to fetch all assignments
  */
-export function useAssignmentsList(page: number = 1, limit: number = 100, search?: string) {
+export function useAssignmentsList(page: number = 1, limit: number = 100, search?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentsList", { page, limit, search }],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
       query.append("limit", limit.toString());
       if (search) query.append("search", search);
 
       const response = await fetch(`/api/v1/assignments?${query.toString()}`, {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
       return result.data || result;
     },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to lookup capstone assignments for domains
  */
-export function useAssignmentLookup() {
+export function useAssignmentLookup(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentLookup"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = await fetch("/api/v1/assignment/lookup", {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
       return result.data || result;
     },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to lookup assignments (plural)
  */
-export function useAssignmentsLookup() {
+export function useAssignmentsLookup(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentsLookup"],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = await fetch("/api/v1/assignments/lookup", {
+        signal,
         headers: getAuthHeaders(),
       });
       const result = await handleResponse(response);
       return result.data || result;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
+  });
+}
+
+/**
+ * Hook to lookup courses
+ */
+export function useCourseLookup(search?: string, limit: number = 10, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["courseLookup", { search, limit }],
+    queryFn: async ({ signal }) => {
+      const query = new URLSearchParams();
+      if (search) query.append("search", search);
+      query.append("limit", limit.toString());
+
+      const response = await fetch(`/api/v1/courses/lookup?${query.toString()}`, {
+        signal,
+        headers: getAuthHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result;
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: options?.enabled,
+  });
+}
+
+/**
+ * Hook to fetch course curriculum
+ */
+export function useCourseCurriculum(id: string | number | undefined, studentId?: string | number, enrollmentId?: string | number) {
+  return useQuery({
+    queryKey: ["courseCurriculum", id, { studentId, enrollmentId }],
+    queryFn: async ({ signal }) => {
+      if (!id) return null;
+      const query = new URLSearchParams();
+      if (studentId) query.append("student_id", studentId.toString());
+      if (enrollmentId) query.append("enrollment_id", enrollmentId.toString());
+
+      const response = await fetch(`/api/v1/courses/${id}/curriculum?${query.toString()}`, {
+        signal,
+        headers: getAuthHeaders(),
+      });
+      const result = await handleResponse(response);
+      return result.data || result;
+    },
+    enabled: !!id,
+  });
+}
+
+/**
+ * Mutation to enroll a student in a course/batch
+ */
+export function useEnrollCourse() {
+  return useMutation({
+    mutationFn: async (data: { student_id: number; batch_id: number }) => {
+      const response = await fetch(`/api/v1/courses/enroll`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+  });
+}
+
+/**
+ * Mutation to create a module at root level
+ */
+export function useCreateModuleRoot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { course_id: number; name: string; description?: string; order_num?: number }) => {
+      const response = await fetch(`/api/v1/modules`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["course", variables.course_id] });
+    },
+  });
+}
+
+/**
+ * Mutation to create a topic under a module
+ */
+export function useCreateModuleTopic() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ moduleId, courseId, data }: { moduleId: string | number; courseId?: string | number; data: { name: string; content_text?: string; order_num?: number } }) => {
+      const response = await fetch(`/api/v1/modules/${moduleId}/topics`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    onSuccess: (_, variables) => {
+      if (variables.courseId) {
+        queryClient.invalidateQueries({ queryKey: ["course", variables.courseId] });
+      }
+    },
+  });
+}
+
+/**
+ * Mutation to create a lesson under a topic
+ */
+export function useCreateTopicLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ topicId, courseId, data }: { topicId: string | number; courseId?: string | number; data: { name: string; type: string; content_text?: string; order_num?: number } }) => {
+      const response = await fetch(`/api/v1/topics/${topicId}/lessons`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+      return handleResponse(response);
+    },
+    onSuccess: (_, variables) => {
+      if (variables.courseId) {
+        queryClient.invalidateQueries({ queryKey: ["course", variables.courseId] });
+      }
+    },
+  });
+}
+
+/**
+ * Mutation to mark a lesson complete
+ */
+export function useCompleteLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ lessonId, courseId, studentId, enrollmentId }: { lessonId: string | number; courseId?: string | number; studentId: number; enrollmentId: number }) => {
+      const response = await fetch(`/api/v1/lessons/${lessonId}/complete`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ student_id: studentId, enrollment_id: enrollmentId }),
+      });
+      return handleResponse(response);
+    },
+    onSuccess: (_, variables) => {
+      if (variables.courseId) {
+        queryClient.invalidateQueries({ queryKey: ["course", variables.courseId] });
+      }
     },
   });
 }
