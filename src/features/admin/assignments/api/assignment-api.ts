@@ -54,7 +54,7 @@ export function mapAssignment(data: any): Assignment {
  */
 export async function fetchAssignments(
   page: number = 1,
-  limit: number = 50,
+  limit: number = 10,
   search?: string, 
   statusFilter?: string,
   signal?: AbortSignal
