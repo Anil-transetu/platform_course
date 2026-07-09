@@ -329,7 +329,10 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           })),
         });
         const json = await res.json();
-        courseId = json.data?.id || json.id;
+        const courseData = json.data || json;
+        courseId = courseData?.id;
+        const placeholderAssignmentId = courseData?.assignments?.[0]?.id || courseData?.assignments?.[0]?.assignment_id;
+
         updatedCourse.id = courseId;
         isNewCourse = false;
 
@@ -344,9 +347,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         lastSavedCourseJsonRef.current = JSON.stringify(useCourseStore.getState().course);
         lastSavedPayloadsRef.current.set(`course-${courseId}`, payloadStr);
 
-        // After creating the course, link each selected assignment by updating its course_id.
-        // This mirrors how courseModule.service and topic.service link assignments:
-        // Assignment.update({ course_id }, { where: { id: assignments } })
+        // Link the selected assignment if there is one
         if (courseId && courseAssignments.length > 0) {
           for (const aId of courseAssignments) {
             await secureFetch(`/api/v1/assignments/${aId}`, {
@@ -354,6 +355,19 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
               body: JSON.stringify({ course_id: Number(courseId) }),
             }).catch(e => console.warn(`Failed to link assignment ${aId} to course`, e));
           }
+          
+          // Delete the placeholder assignment
+          if (placeholderAssignmentId) {
+            await secureFetch(`/api/v1/assignments/${placeholderAssignmentId}`, {
+              method: "DELETE",
+            }).catch(e => console.warn(`Failed to delete placeholder assignment ${placeholderAssignmentId}`, e));
+          }
+        } else if (courseId && placeholderAssignmentId) {
+          // If no selected assignment, update store to keep placeholder assignment as final assignment
+          updatedCourse.assignments = [{
+            id: String(placeholderAssignmentId),
+            title: placeholderAssignment.title
+          }];
         }
 
         // Update search parameter in window URL using Next.js router
@@ -613,6 +627,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
           ...state.course,
           id: courseId,
           modules: updatedCourse.modules,
+          assignments: updatedCourse.assignments || state.course.assignments,
         },
         activeModuleId: newActiveModuleId,
         activeLessonId: newActiveLessonId,

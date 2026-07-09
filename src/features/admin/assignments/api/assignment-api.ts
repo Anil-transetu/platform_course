@@ -56,7 +56,8 @@ export async function fetchAssignments(
   page: number = 1,
   limit: number = 50,
   search?: string, 
-  statusFilter?: string
+  statusFilter?: string,
+  signal?: AbortSignal
 ): Promise<{ data: Assignment[], total?: number }> {
   let url = BASE_URL;
   const query = new URLSearchParams();
@@ -80,6 +81,7 @@ export async function fetchAssignments(
   const response = await fetch(url, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const data = await handleResponse(response);
@@ -93,10 +95,11 @@ export async function fetchAssignments(
 /**
  * Fetch stats for assignments
  */
-export async function fetchAssignmentStats(): Promise<AssignmentStats> {
+export async function fetchAssignmentStats(signal?: AbortSignal): Promise<AssignmentStats> {
   const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
   const result = await handleResponse(response);
   const d = result.data || {};
@@ -112,11 +115,13 @@ export async function fetchAssignmentStats(): Promise<AssignmentStats> {
  * Fetch a single assignment by ID
  */
 export async function fetchAssignmentById(
-  id: string | number
+  id: string | number,
+  signal?: AbortSignal
 ): Promise<Assignment> {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
   });
 
   const data = await handleResponse(response);
