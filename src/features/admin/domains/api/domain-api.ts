@@ -56,6 +56,8 @@ export async function fetchDomains(
   search?: string,
   statusFilter?: string,
   signal?: AbortSignal
+  statusFilter?: string,
+  signal?: AbortSignal
 ) {
   let url = BASE_URL;
   const query = new URLSearchParams();
@@ -79,6 +81,7 @@ export async function fetchDomains(
     method: "GET",
     headers: getAuthHeaders(),
     signal,
+    signal,
   });
 
   const result = await handleResponse(response);
@@ -97,9 +100,11 @@ export async function fetchDomains(
  * Fetch domain by ID (API #2)
  */
 export async function fetchDomainById(id: string | number, signal?: AbortSignal): Promise<Domain> {
+export async function fetchDomainById(id: string | number, signal?: AbortSignal): Promise<Domain> {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
     signal,
   });
 
@@ -162,6 +167,8 @@ export async function fetchDomainCourses(
   page: number = 1,
   limit: number = 10,
   signal?: AbortSignal
+  limit: number = 10,
+  signal?: AbortSignal
 ) {
   const query = new URLSearchParams();
   query.append("page", page.toString());
@@ -170,6 +177,7 @@ export async function fetchDomainCourses(
   const response = await fetch(`${BASE_URL}/${id}/courses?${query.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
     signal,
   });
 
@@ -180,9 +188,11 @@ export async function fetchDomainCourses(
  * Fetch domain statistics (API #5)
  */
 export async function fetchDomainStats(signal?: AbortSignal): Promise<DomainStats> {
+export async function fetchDomainStats(signal?: AbortSignal): Promise<DomainStats> {
   const response = await fetch(`${BASE_URL}/stats`, {
     method: "GET",
     headers: getAuthHeaders(),
+    signal,
     signal,
   });
 
@@ -219,8 +229,16 @@ export function useDomains(
   statusFilter?: string,
   options?: { enabled?: boolean }
 ) {
+export function useDomains(
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  statusFilter?: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["domains", { page, limit, search, statusFilter }],
+    queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
     queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,

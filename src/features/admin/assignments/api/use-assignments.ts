@@ -22,15 +22,13 @@ export function useAssignments(
   search?: string,
   statusFilter?: string,
   options?: { enabled?: boolean }
+  statusFilter?: string,
+  options?: { enabled?: boolean }
 ) {
   return useQuery<{ data: Assignment[]; total?: number }, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, page, limit, search, statusFilter],
     queryFn: ({ signal }) => fetchAssignments(page, limit, search, statusFilter, signal),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     enabled: options?.enabled,
   });
 }
@@ -39,14 +37,12 @@ export function useAssignments(
  * Hook to fetch stats
  */
 export function useAssignmentStats(options?: { enabled?: boolean }) {
+export function useAssignmentStats(options?: { enabled?: boolean }) {
   return useQuery<AssignmentStats, Error>({
     queryKey: ASSIGNMENT_STATS_QUERY_KEY,
     queryFn: ({ signal }) => fetchAssignmentStats(signal),
+    queryFn: ({ signal }) => fetchAssignmentStats(signal),
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    refetchOnMount: false,
     enabled: options?.enabled,
   });
 }
@@ -59,6 +55,7 @@ export function useAssignment(id: string | number | undefined, options?: { enabl
   return useQuery<Assignment, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, id],
     queryFn: ({ signal }) => fetchAssignmentById(id!, signal),
+    enabled: !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,

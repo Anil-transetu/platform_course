@@ -9,6 +9,7 @@ import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/as
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function AssignmentLibraryPage() {
   const { 
@@ -53,13 +54,14 @@ export default function AssignmentLibraryPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [forceLibraryView, setForceLibraryView] = useState(false);
 
-  // 1. Fetch real list of assignments — only when library view is active
+  const debouncedSearch = useDebounce(search, 300);
+
+  // 1. Fetch real list of assignments
   const { data: assignmentsData, isLoading: listLoading } = useAssignments(
     currentPage, 
     6, 
     debouncedSearch || undefined, 
-    statusFilter === "All" ? undefined : statusFilter,
-    { enabled: isLibraryEnabled }
+    statusFilter === "All" ? undefined : statusFilter
   );
   const assignmentItems = assignmentsData?.data || [];
   const totalItems = assignmentsData?.total || 0;

@@ -209,11 +209,6 @@ export default function CoursesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const debouncedSearch = useDebounce(search, 300);
-  const [queriesReady, setQueriesReady] = useState(false);
-
-  useEffect(() => {
-    setQueriesReady(true);
-  }, []);
   
   // Courses React Query hook
   const {

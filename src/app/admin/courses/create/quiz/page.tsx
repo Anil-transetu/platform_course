@@ -11,7 +11,6 @@ import { Quiz as ApiQuiz, QuizQuestion, QuizQuestionOption } from "@/features/ad
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
-import { toast } from 'sonner';
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -49,13 +48,14 @@ export default function QuizLibraryPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [forceLibraryView, setForceLibraryView] = useState(false);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   // 1. Fetch real list of quizzes with pagination & search
   const { data: quizzesData, isLoading: listLoading } = useQuizzes(
     currentPage, 
     6, 
     debouncedSearch || undefined, 
-    statusFilter === "ALL" ? undefined : statusFilter,
-    { enabled: isLibraryEnabled }
+    statusFilter === "ALL" ? undefined : statusFilter
   );
   const quizItems = quizzesData?.data || [];
   const totalItems = quizzesData?.total || 0;
