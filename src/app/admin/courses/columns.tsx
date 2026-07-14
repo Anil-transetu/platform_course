@@ -28,7 +28,7 @@ export interface Course extends Record<string, unknown> {
   id: number;
   name: string;
   category: string;
-  modules: number | unknown[];
+  modules: number;
   updated: string;
   status: string;
   description?: string;
