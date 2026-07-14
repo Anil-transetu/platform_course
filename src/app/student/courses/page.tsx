@@ -151,7 +151,7 @@ export default function StudentCourses() {
                 bodyHeight="h-auto"
                 actions={(course) => (
                   <button 
-                    onClick={() => router.push(`/student/courses/${course.id}`)}
+                    onClick={() => router.push(`/student/courses/${course.id || course.course_id}`)}
                     className="flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors mx-auto"
                   >
                     <Eye size={14} /> View
@@ -273,7 +273,7 @@ export default function StudentCourses() {
                 bodyHeight="h-auto"
                 actions={(course) => (
                   <button 
-                    onClick={() => router.push(`/student/courses/${course.id}`)}
+                    onClick={() => router.push(`/student/courses/${course.id || course.course_id}`)}
                     className="flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors mx-auto"
                   >
                     <Eye size={14} /> View

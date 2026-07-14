@@ -108,5 +108,33 @@ export const studentCourseService = {
         content_text: `<p>Please ensure the endpoint <code>/api/v1/student-portal/course/${courseId}/view</code> is implemented on the backend.</p>`,
       };
     }
+  },
+
+  /**
+   * Get activity data for a specific type (modules, lessons, topics, quizzes, assignments)
+   */
+  async getCourseActivity(courseId: string, activityType: string, params: Record<string, any> = {}): Promise<any> {
+    const url = new URL(`${API_HOST}/api/v1/student-portal/course/${courseId}/${activityType}/activity`);
+    
+    // Append any query parameters for search/pagination if needed
+    Object.keys(params).forEach(key => {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== "") {
+        url.searchParams.append(key, String(params[key]));
+      }
+    });
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    
+    try {
+      const data = await handleResponse<any>(response);
+      return data;
+    } catch (e: any) {
+      console.error(`Activity API failed for ${activityType}`, e);
+      throw e;
+    }
   }
 };
+

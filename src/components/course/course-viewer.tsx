@@ -6,6 +6,7 @@ import { Clock, Play, Award, ClipboardList, HelpCircle, FileText, Target, Folder
 import { cn } from "@/lib/utils";
 import { useCourseView } from "@/hooks/use-course-view";
 import { useCourseHome } from "@/hooks/use-course-home";
+import { useRouter, useParams } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -94,6 +95,10 @@ function ErrorState({ onRetry, message }: { onRetry: () => void, message: string
 }
 
 function CourseOverview({ courseHome }: { courseHome: any }) {
+  const router = useRouter();
+  const params = useParams();
+  const courseId = params.courseId as string;
+
   const calculateOverallProgress = () => {
     if (courseHome.modules && courseHome.modules.total_count > 0) {
       return courseHome.modules.progress_percentage || 0;
@@ -158,26 +163,31 @@ function CourseOverview({ courseHome }: { courseHome: any }) {
             title="Modules" 
             icon={<Folder size={18} />} 
             stats={courseHome.modules} 
+            onClick={() => router.push(`/student/courses/${courseId}/modules`)}
           />
           <StatCard 
             title="Lessons" 
             icon={<BookOpen size={18} />} 
             stats={courseHome.lessons} 
+            onClick={() => router.push(`/student/courses/${courseId}/lessons`)}
           />
           <StatCard 
             title="Topics" 
             icon={<Layers size={18} />} 
             stats={courseHome.topics} 
+            onClick={() => router.push(`/student/courses/${courseId}/topics`)}
           />
           <StatCard 
             title="Quizzes" 
             icon={<HelpCircle size={18} />} 
             stats={courseHome.quizzes} 
+            onClick={() => router.push(`/student/courses/${courseId}/quizzes`)}
           />
           <StatCard 
             title="Assignments" 
             icon={<ClipboardList size={18} />} 
             stats={courseHome.assignments} 
+            onClick={() => router.push(`/student/courses/${courseId}/assignments`)}
           />
         </div>
       </div>
@@ -185,12 +195,15 @@ function CourseOverview({ courseHome }: { courseHome: any }) {
   );
 }
 
-function StatCard({ title, icon, stats }: { title: string, icon: React.ReactNode, stats: any }) {
+function StatCard({ title, icon, stats, onClick }: { title: string, icon: React.ReactNode, stats: any, onClick?: () => void }) {
   if (!stats) return null;
   const { completed_count, total_count, progress_percentage } = stats;
 
   return (
-    <Card className="overflow-hidden">
+    <Card 
+      className={cn("overflow-hidden transition-all duration-200", onClick && "cursor-pointer hover:shadow-md hover:border-primary/50")}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
