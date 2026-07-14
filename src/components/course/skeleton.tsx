@@ -10,7 +10,6 @@ export function CourseFullSkeleton() {
       headerText="Course Viewer"
       subHeaderText="Loading course content..."
       buttonRequired={false}
-      buttonOnclick={() => {}}
       extraActions={
         <Link 
           href="/student/courses"
