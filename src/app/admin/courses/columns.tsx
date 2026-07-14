@@ -71,7 +71,7 @@ export const buildCourseColumns = (): Column<Course>[] => [
     label: "Total Modules",
     render: (value, row) => (
       <span className="text-slate-700 font-medium text-sm">
-        {typeof row.modules === "number" ? row.modules : row.modules?.length || 0} Modules
+        {typeof row.modules === "number" ? row.modules : (row.modules as any)?.length || 0} Modules
       </span>
     ),
   },
