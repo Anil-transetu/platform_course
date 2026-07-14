@@ -10,7 +10,9 @@ import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { useEnrolledCourses } from "@/features/student/courses/api/courses-api";
 import { Input } from "@/components/ui/input";
-import { buildCourseColumns, EnrolledCourse } from "./columns";
+import { buildCourseColumns, EnrolledCourse, getProgressColor } from "./columns";
+import { useRouter } from "next/navigation";
+import { Eye } from "lucide-react";
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "N/A";
@@ -24,6 +26,7 @@ function formatDate(dateStr?: string) {
 
 export default function StudentCourses() {
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const router = useRouter();
   
   useEffect(() => {
     const stored = localStorage.getItem("course_view_mode");
@@ -146,6 +149,14 @@ export default function StudentCourses() {
                 onPageChange={() => {}}
                 onRowsPerPageChange={() => {}}
                 bodyHeight="h-auto"
+                actions={(course) => (
+                  <button 
+                    onClick={() => router.push(`/student/courses/${course.id}`)}
+                    className="flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors mx-auto"
+                  >
+                    <Eye size={14} /> View
+                  </button>
+                )}
               />
             </div>
           )
@@ -165,10 +176,10 @@ export default function StudentCourses() {
               <div className="flex flex-col h-full overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-4">
                   {visibleData.map((course, index) => (
-                    <div key={course.id || course.course_id || `course-${index}`} className="bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
+                    <div key={`${course.id || course.course_id || 'course'}-${index}`} className="bg-white dark:bg-card rounded-2xl border border-gray-100 dark:border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full group">
                       <div className="h-40 bg-slate-50 relative overflow-hidden flex-shrink-0">
-                        {course.thumbnail_url ? (
-                          <Image src={course.thumbnail_url} alt={course.name} fill className="object-cover transition-transform group-hover:scale-105" />
+                        {course.course_image || course.image ? (
+                          <Image src={course.course_image || course.image || ""} alt={course.name} fill className="object-cover transition-transform group-hover:scale-105" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-300 bg-gradient-to-br from-slate-100 to-slate-200">
                             <FileImage size={40} />
@@ -194,16 +205,17 @@ export default function StudentCourses() {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-foreground line-clamp-2 mb-auto" title={course.name}>
                           {course.name}
                         </h3>
-                        <div className="mt-6 pt-4 border-t border-gray-100 dark:border-border/50">
+
+                        <div className="mt-2 pt-4 border-t border-gray-100 dark:border-border/50">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</span>
-                            <span className="text-xs font-bold text-blue-600">{course.progress || 0}%</span>
+                            <span className="text-xs font-bold text-gray-700">{course.completionProgress || 0}%</span>
                           </div>
-                          <Progress value={course.progress || 0} className="h-2" />
+                          <Progress value={course.completionProgress || 0} className="h-2 bg-slate-100" indicatorClassName={getProgressColor(course.completionProgress || 0)} />
                           <div className="flex justify-between items-center mt-4 text-xs font-medium text-gray-400">
                             <div className="flex items-center gap-1.5">
                               <Calendar size={14} />
-                              <span>{formatDate(course.updated_at)}</span>
+                              <span>{formatDate(course.lastOpened)}</span>
                             </div>
                             {course.batches && (
                                <div className="flex items-center gap-1.5">
@@ -247,7 +259,7 @@ export default function StudentCourses() {
               <DataTable<any>
                 data={visibleData}
                 columns={buildCourseColumns()}
-                rowKey={(row, index) => String(row.id || row.course_id || index)}
+                rowKey={(row, index) => String(`${row.id || row.course_id || 'course'}-${index}`)}
                 search={searchConfig}
                 rowsPerPage={rowsPerPage}
                 currentPage={page}
@@ -259,6 +271,14 @@ export default function StudentCourses() {
                 emptyStateMessage="No courses found."
                 loading={isFetching}
                 bodyHeight="h-auto"
+                actions={(course) => (
+                  <button 
+                    onClick={() => router.push(`/student/courses/${course.id}`)}
+                    className="flex items-center justify-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors mx-auto"
+                  >
+                    <Eye size={14} /> View
+                  </button>
+                )}
               />
             </div>
           )
