@@ -41,22 +41,22 @@ export function CourseViewer({ courseId, activeItem }: CourseViewerProps) {
     return <CourseOverview courseHome={homeContent} />;
   }
 
-  if (activeItem.type === "module") {
-    const module = activeItem.data as SidebarModule;
-    return <ModuleOverview module={module} />;
-  }
-
-  if (activeItem.type === "lesson") {
-    const lesson = activeItem.data as SidebarLesson;
-    return <LessonOverview lesson={lesson} />;
-  }
-
   if (isViewLoading) {
     return <ViewerSkeleton />;
   }
 
   if (viewError || !viewContent) {
     return <ErrorState onRetry={refetchView} message="Failed to load content." />;
+  }
+
+  if (activeItem.type === "module") {
+    const module = activeItem.data as SidebarModule;
+    return <ModuleOverview module={module} content={viewContent} />;
+  }
+
+  if (activeItem.type === "lesson") {
+    const lesson = activeItem.data as SidebarLesson;
+    return <LessonOverview lesson={lesson} content={viewContent} />;
   }
 
   if (activeItem.type === "topic") {
@@ -232,14 +232,18 @@ function StatCard({ title, icon, stats, onClick }: { title: string, icon: React.
 // Fallback Views for Modules and Lessons
 // ----------------------------------------------------
 
-function ModuleOverview({ module }: { module: SidebarModule }) {
+function ModuleOverview({ module, content }: { module: SidebarModule; content?: CourseContent }) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto w-full pb-16">
       <Card>
         <CardContent className="p-8">
           <Badge variant="outline" className="mb-4">Module Overview</Badge>
-          <h1 className="text-2xl font-bold text-foreground mb-6">{module.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-6">{content?.title || module.name}</h1>
           
+          {content?.description && (
+            <p className="text-muted-foreground mb-6">{content.description}</p>
+          )}
+
           {module.progressPct !== undefined && (
             <div className="bg-muted p-4 rounded-lg border max-w-sm">
               <div className="flex justify-between items-center mb-2">
@@ -255,21 +259,57 @@ function ModuleOverview({ module }: { module: SidebarModule }) {
   );
 }
 
-function LessonOverview({ lesson }: { lesson: SidebarLesson }) {
+function LessonOverview({ lesson, content }: { lesson: SidebarLesson; content?: any }) {
+  const duration = content?.duration_minutes || (lesson as any).duration_minutes;
+  const videoUrl = content?.video_url || (lesson as any).video_url;
+  const contentText = content?.content_text || (lesson as any).content_text;
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto w-full pb-16">
       <Card>
         <CardContent className="p-8">
           <Badge variant="outline" className="mb-4">Lesson Overview</Badge>
-          <h1 className="text-2xl font-bold text-foreground mb-6">{lesson.name}</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-4">{content?.name || content?.title || lesson.name}</h1>
           
+          {duration && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6 bg-muted w-fit px-3 py-1.5 rounded-md">
+              <Clock size={14} /> {duration} minutes
+            </div>
+          )}
+          
+          {content?.description && (
+            <p className="text-muted-foreground mb-6">{content.description}</p>
+          )}
+
           {lesson.progressPct !== undefined && (
-            <div className="bg-muted p-4 rounded-lg border max-w-sm">
+            <div className="bg-muted p-4 rounded-lg border max-w-sm mb-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-foreground">Lesson Progress</span>
                 <span className="font-bold text-primary">{lesson.progressPct}%</span>
               </div>
               <Progress value={lesson.progressPct} className="h-2" />
+            </div>
+          )}
+
+          {videoUrl && (
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border mb-6">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors">
+                  <Play size={24} className="ml-1" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {contentText && (
+            <div className="mt-6 border-t pt-6">
+              <h4 className="flex items-center gap-2 text-base font-semibold mb-4">
+                <FileText size={18} /> Reading Material
+              </h4>
+              <div 
+                className="text-sm text-foreground leading-relaxed prose prose-slate dark:prose-invert max-w-none" 
+                dangerouslySetInnerHTML={{ __html: contentText }} 
+              />
             </div>
           )}
         </CardContent>
@@ -289,6 +329,13 @@ function TopicViewer({ content, data }: { content: CourseContent; data: any }) {
       <div>
         <Badge variant="outline" className="mb-3">Topic Details</Badge>
         <h1 className="text-3xl font-bold text-foreground">{content.title || data.name}</h1>
+        
+        {(content.description || data.description) && (
+          <p className="text-muted-foreground mt-4 mb-2">
+            {content.description || data.description}
+          </p>
+        )}
+
         {data.duration_minutes && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3 bg-muted w-fit px-3 py-1.5 rounded-md">
             <Clock size={14} /> {data.duration_minutes} minutes
