@@ -11,6 +11,7 @@ import { useCourseSidebar } from "@/hooks/use-course-sidebar";
 import { useCourseNavigation } from "@/hooks/use-course-navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { CourseNotes } from "@/components/course-notes";
 
 export default function StudentCoursePage() {
   const params = useParams();
@@ -115,6 +116,7 @@ export default function StudentCoursePage() {
           <CourseViewer courseId={courseId} activeItem={activeItem} />
         </main>
       </div>
+      <CourseNotes />
     </ListingScreenTemplate>
   );
 }

@@ -86,11 +86,9 @@ export const studentCourseService = {
    * Get specific view content (Topic, Lesson, Assignment)
    */
   async getCourseView(courseId: string, itemId: string, itemType: string): Promise<CourseContent> {
-    const url = new URL(`${API_HOST}/api/v1/student-portal/course/${courseId}/view`);
-    url.searchParams.append("itemId", itemId);
-    url.searchParams.append("itemType", itemType);
+    const url = `${API_HOST}/api/v1/student-portal/course/${courseId}/${itemType}/${itemId}`;
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: getAuthHeaders(),
     });
