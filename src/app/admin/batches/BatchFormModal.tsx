@@ -73,6 +73,12 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   );
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
+  
+  const { data: lookupCourses } = useCourseLookup(
+    debouncedCourseSearch,
+    10,
+    { enabled: open && (courseDropdownOpen || !!debouncedCourseSearch) }
+  );
 
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
@@ -105,6 +111,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
         });
+        setSelectedCourseName(activeBatch.course || activeBatch.Course?.name || "");
 
         if (activeBatch.Enrollments) {
           setSelectedStudents(
@@ -127,6 +134,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           end_date: "",
           status: "",
         });
+        setSelectedCourseName("");
         setSelectedStudents([]);
       }
       setStudentSearch("");

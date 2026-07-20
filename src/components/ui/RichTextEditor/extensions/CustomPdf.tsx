@@ -3,6 +3,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 import { X, FileText } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
+import { getDisplayMediaUrl, openPdf } from '@/lib/utils';
 
 const PdfComponent = (props: any) => {
   return (
@@ -13,15 +14,17 @@ const PdfComponent = (props: any) => {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-foreground truncate">{props.node.attrs.title || "Attached PDF Resource"}</p>
-          <a 
-            href={props.node.attrs.src} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline inline-block mt-0.5"
-            onClick={(e) => e.stopPropagation()}
+          <button 
+            type="button"
+            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline inline-block mt-0.5 text-left"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openPdf(props.node.attrs.src);
+            }}
           >
             Download / View PDF
-          </a>
+          </button>
         </div>
       </div>
       

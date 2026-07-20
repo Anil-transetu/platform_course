@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
   Folder, 
@@ -13,12 +13,18 @@ import {
   Pencil,
   Clock,
   Play,
-  Award
+  Award,
+  Loader2,
+  ExternalLink
 } from "lucide-react";
-import { useCourse } from "@/features/admin/courses/api/course-api";
+import { useCourseCurriculum, useUpdateCourse, useCourseModuleDetail, useCourseLessonDetail, useCourseTopicDetail } from "@/features/admin/courses/api/course-api";
+import { useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { useAssignment } from "@/features/admin/assignments/api/use-assignments";
 import { Skeleton } from "@/components/ui/skeleton";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import { cn } from "@/lib/utils";
+import { cn, getDisplayThumbnailUrl, getDisplayMediaUrl } from "@/lib/utils";
+import { ContentBlocksRenderer } from "@/components/ui/ContentBlocksRenderer";
+import { toast } from "sonner";
 
 interface QuizItem {
   id: string | number;
@@ -49,15 +55,27 @@ interface TopicItem {
   duration_minutes?: number;
   video_url?: string;
   content_text?: string;
+  content_blocks?: any[];
+  lessons?: any[];
+  topics?: any[];
 }
 
 interface LessonItem {
   id: string | number;
   name: string;
   content_text?: string;
+  content?: string;
+  text?: string;
+  title?: string;
+  images?: string[];
+  videos?: string[];
+  pdfs?: string[];
+  urls?: string[];
   lessons?: TopicItem[];
+  topics?: TopicItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
+  content_blocks?: any[];
 }
 
 interface ModuleItem {
@@ -65,8 +83,10 @@ interface ModuleItem {
   name: string;
   description?: string;
   topics?: LessonItem[];
+  lessons?: LessonItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
+  content_blocks?: any[];
 }
 
 interface CourseDetailItem {
@@ -95,9 +115,147 @@ type ActiveItem =
   | { type: "assignment"; id: string | number; data: AssignmentItem };
 
 export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseDetailViewerProps) {
-  const { data: fetchedCourse, isLoading, error } = useCourse(courseId);
+  const { data: fetchedCourse, isLoading, error } = useCourseCurriculum(courseId);
   const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+
+  const activeModuleId = activeItem?.type === "module" ? activeItem.id : undefined;
+  const activeLessonId = activeItem?.type === "lesson" ? activeItem.id : undefined;
+  const activeTopicId = activeItem?.type === "topic" ? activeItem.id : undefined;
+  const activeQuizId = activeItem?.type === "quiz" ? activeItem.id : undefined;
+  const activeAssignmentId = activeItem?.type === "assignment" ? activeItem.id : undefined;
+
+  const { data: moduleDetail, isLoading: isLoadingModule } = useCourseModuleDetail(courseId, activeModuleId, { enabled: !!activeModuleId });
+  const { data: lessonDetail, isLoading: isLoadingLesson } = useCourseLessonDetail(courseId, activeLessonId, { enabled: !!activeLessonId });
+  const { data: topicDetail, isLoading: isLoadingTopic } = useCourseTopicDetail(courseId, activeTopicId, { enabled: !!activeTopicId });
+  const { data: quizDetail, isLoading: isLoadingQuiz } = useQuiz(activeQuizId ? String(activeQuizId) : "", { enabled: !!activeQuizId });
+  const { data: assignmentDetail, isLoading: isLoadingAssignment } = useAssignment(activeAssignmentId ? String(activeAssignmentId) : undefined, { enabled: !!activeAssignmentId });
+
+  const updateCourseMutation = useUpdateCourse();
+
+  const handleStatusToggle = async (newStatus: 'active' | 'draft') => {
+    if (updateCourseMutation.isPending) return;
+    const isOffline = typeof window !== "undefined" && !navigator.onLine;
+    if (isOffline) {
+      toast.error("Network disconnected. Please check your connection.");
+      return;
+    }
+    
+    try {
+      await updateCourseMutation.mutateAsync({
+        id: courseId,
+        data: { status: newStatus }
+      });
+      toast.success(newStatus === 'active' ? "Course published successfully!" : "Course reverted to draft successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update course status");
+    }
+  };
+
+  useEffect(() => {
+    if (fetchedCourse) {
+      if (!activeItem) {
+        setActiveItem({
+          type: "course",
+          id: fetchedCourse.id,
+          data: fetchedCourse
+        });
+        return;
+      }
+
+      if (activeItem.type === "course") {
+        setActiveItem({
+          type: "course",
+          id: fetchedCourse.id,
+          data: fetchedCourse
+        });
+      } else if (activeItem.type === "module") {
+        const found = fetchedCourse.modules?.find((m: any) => String(m.id) === String(activeItem.id));
+        if (found) {
+          setActiveItem({
+            type: "module",
+            id: found.id,
+            data: found
+          });
+        }
+      } else if (activeItem.type === "lesson") {
+        let foundLesson: any = null;
+        for (const m of fetchedCourse.modules || []) {
+          const l = (m.lessons || m.topics || []).find((l: any) => String(l.id) === String(activeItem.id));
+          if (l) {
+            foundLesson = l;
+            break;
+          }
+        }
+        if (foundLesson) {
+          setActiveItem({
+            type: "lesson",
+            id: foundLesson.id,
+            data: foundLesson
+          });
+        }
+      } else if (activeItem.type === "topic") {
+        let foundTopic: any = null;
+        for (const m of fetchedCourse.modules || []) {
+          for (const l of m.lessons || m.topics || []) {
+            const t = (l.topics || l.lessons || []).find((t: any) => String(t.id) === String(activeItem.id));
+            if (t) {
+              foundTopic = t;
+              break;
+            }
+          }
+          if (foundTopic) break;
+        }
+        if (foundTopic) {
+          setActiveItem({
+            type: "topic",
+            id: foundTopic.id,
+            data: foundTopic
+          });
+        }
+      } else if (activeItem.type === "quiz") {
+        let foundQuiz: any = fetchedCourse.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
+        if (!foundQuiz) {
+          for (const m of fetchedCourse.modules || []) {
+            foundQuiz = m.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
+            if (foundQuiz) break;
+            for (const l of m.lessons || m.topics || []) {
+              foundQuiz = l.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
+              if (foundQuiz) break;
+            }
+            if (foundQuiz) break;
+          }
+        }
+        if (foundQuiz) {
+          setActiveItem({
+            type: "quiz",
+            id: foundQuiz.id,
+            data: foundQuiz
+          });
+        }
+      } else if (activeItem.type === "assignment") {
+        let foundAssignment: any = fetchedCourse.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
+        if (!foundAssignment) {
+          for (const m of fetchedCourse.modules || []) {
+            foundAssignment = m.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
+            if (foundAssignment) break;
+            for (const l of m.lessons || m.topics || []) {
+              foundAssignment = l.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
+              if (foundAssignment) break;
+            }
+            if (foundAssignment) break;
+          }
+        }
+        if (foundAssignment) {
+          setActiveItem({
+            type: "assignment",
+            id: foundAssignment.id,
+            data: foundAssignment
+          });
+        }
+      }
+    }
+  }, [fetchedCourse]);
 
   const toggleModule = (id: string) => {
     setExpandedModules(prev => ({ ...prev, [id]: !prev[id] }));
@@ -161,27 +319,28 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
 
   // Count stats
   const totalModules = modules.length;
-  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.topics?.length || 0), 0);
+  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.lessons?.length || m.topics?.length || 0), 0);
   const totalTopics = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.lessons?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.topics?.length || t.lessons?.length || 0), 0) || 0), 0
   );
 
   const courseQuizzesCount = course.quizzes?.length || 0;
   const moduleQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.quizzes?.length || 0), 0);
   const lessonQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
   );
   const totalQuizzes = courseQuizzesCount + moduleQuizzesCount + lessonQuizzesCount;
 
   const courseAssignmentsCount = course.assignments?.length || 0;
   const moduleAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.assignments?.length || 0), 0);
   const lessonAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
   );
   const totalAssignments = courseAssignmentsCount + moduleAssignmentsCount + lessonAssignmentsCount;
 
   const renderRightPanelContent = () => {
     if (!activeItem || activeItem.type === "course") {
+      const contentBlocks = course.content_blocks ?? [];
       // Course Overview Content
       return (
         <div className="space-y-6">
@@ -189,7 +348,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl shadow-sm overflow-hidden relative min-h-[220px] flex flex-col justify-end">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
+              src={getDisplayThumbnailUrl(course.thumbnail_url) || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
               alt={course.name} 
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"; }}
@@ -292,7 +451,16 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
     }
 
     if (activeItem.type === "module") {
-      const moduleData = activeItem.data;
+      const moduleData = moduleDetail || activeItem.data;
+      const contentBlocks = moduleData.content_blocks ?? [];
+      if (isLoadingModule) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-semibold text-sm">Loading module details...</p>
+          </div>
+        );
+      }
       return (
         <div className="space-y-6">
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm">
@@ -300,16 +468,22 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               Module Details
             </span>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-foreground mt-4 mb-2">{moduleData.name}</h1>
-            <p className="text-sm text-slate-500 dark:text-muted-foreground leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: moduleData.description || "No description provided." }} />
+            {moduleData.content_blocks && moduleData.content_blocks.length > 0 ? (
+              <ContentBlocksRenderer blocks={moduleData.content_blocks} />
+            ) : moduleData.description ? (
+              <p className="text-sm text-slate-500 dark:text-muted-foreground leading-relaxed mt-2" dangerouslySetInnerHTML={{ __html: moduleData.description }} />
+            ) : (
+              <p className="text-sm text-slate-400 italic mt-2">No description provided.</p>
+            )}
           </div>
 
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-6 shadow-sm">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Lessons inside Module</h3>
-            {(!moduleData.topics || moduleData.topics.length === 0) ? (
+            {(!moduleData.lessons && !moduleData.topics) || (moduleData.lessons || moduleData.topics || []).length === 0 ? (
               <p className="text-sm text-gray-400 italic">No lessons in this module.</p>
             ) : (
               <div className="space-y-3">
-                {moduleData.topics.map((t: LessonItem) => (
+                {(moduleData.lessons || moduleData.topics || []).map((t: LessonItem) => (
                   <div 
                     key={t.id}
                     onClick={() => setActiveItem({ type: "lesson", id: t.id, data: t })}
@@ -330,29 +504,58 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
     }
 
     if (activeItem.type === "lesson") {
-      const lessonData = activeItem.data;
+      const lessonData = lessonDetail || activeItem.data;
+      const hasContentBlocks = Array.isArray(lessonData.content_blocks)
+        ? lessonData.content_blocks.length > 0
+        : Boolean(lessonData.content_blocks);
+      const hasResourceLists = [lessonData.images, lessonData.videos, lessonData.pdfs, lessonData.urls]
+        .some((resources) => Array.isArray(resources) && resources.length > 0);
+      if (isLoadingLesson) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-semibold text-sm">Loading lesson details...</p>
+          </div>
+        );
+      }
       return (
         <div className="space-y-6">
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm">
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-wider">
               Lesson Details
             </span>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-foreground mt-4 mb-2">{lessonData.name}</h1>
-            {lessonData.content_text && (
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-foreground mt-4 mb-2">{lessonData.name || lessonData.title}</h1>
+            {hasContentBlocks ? (
+              <ContentBlocksRenderer
+                blocks={lessonData.content_blocks}
+                images={lessonData.images}
+                videos={lessonData.videos}
+                pdfs={lessonData.pdfs}
+                urls={lessonData.urls}
+              />
+            ) : lessonData.content_text || lessonData.content || lessonData.text ? (
               <div 
                 className="text-sm text-slate-500 dark:text-muted-foreground leading-relaxed mt-4 border-t pt-4"
-                dangerouslySetInnerHTML={{ __html: lessonData.content_text }}
+                dangerouslySetInnerHTML={{ __html: lessonData.content_text || lessonData.content || lessonData.text }}
+              />
+            ) : null}
+            {!hasContentBlocks && hasResourceLists && (
+              <ContentBlocksRenderer
+                images={lessonData.images}
+                videos={lessonData.videos}
+                pdfs={lessonData.pdfs}
+                urls={lessonData.urls}
               />
             )}
           </div>
 
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-6 shadow-sm">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Lesson Topics</h3>
-            {(!lessonData.lessons || lessonData.lessons.length === 0) ? (
+            {(!lessonData.lessons && !lessonData.topics) || (lessonData.topics || lessonData.lessons || []).length === 0 ? (
               <p className="text-sm text-gray-400 italic">No topics inside this lesson.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {lessonData.lessons.map((item: TopicItem) => (
+                {(lessonData.topics || lessonData.lessons || []).map((item: TopicItem) => (
                   <div 
                     key={item.id}
                     onClick={() => setActiveItem({ type: "topic", id: item.id, data: item })}
@@ -377,7 +580,16 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
     }
 
     if (activeItem.type === "topic") {
-      const topicData = activeItem.data;
+      const topicData = topicDetail || activeItem.data;
+      const contentBlocks = topicData.content_blocks ?? [];
+      if (isLoadingTopic) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-semibold text-sm">Loading topic details...</p>
+          </div>
+        );
+      }
       return (
         <div className="space-y-6">
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm">
@@ -392,30 +604,46 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
             )}
           </div>
 
-          {topicData.video_url && (
-            <div className="bg-slate-950 aspect-video rounded-3xl overflow-hidden relative shadow-md flex items-center justify-center text-white border border-slate-900">
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xs">
-                <div className="w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 cursor-pointer">
-                  <Play size={28} className="text-white fill-white ml-1" />
+          {topicData.content_blocks && topicData.content_blocks.length > 0 ? (
+            <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm">
+              <ContentBlocksRenderer blocks={topicData.content_blocks} />
+            </div>
+          ) : (
+            <>
+              {topicData.video_url && (
+                <div className="bg-slate-955 aspect-video rounded-3xl overflow-hidden relative shadow-md flex items-center justify-center text-white border border-slate-900">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-slate-900/60 backdrop-blur-xs">
+                    <div className="w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-105 cursor-pointer">
+                      <Play size={28} className="text-white fill-white ml-1" />
+                    </div>
+                    <h4 className="font-bold text-base mt-4 max-w-md text-center truncate">{topicData.name} Video Player</h4>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm text-center truncate">{topicData.video_url}</p>
+                  </div>
                 </div>
-                <h4 className="font-bold text-base mt-4 max-w-md text-center truncate">{topicData.name} Video Player</h4>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm text-center truncate">{topicData.video_url}</p>
-              </div>
-            </div>
-          )}
+              )}
 
-          {topicData.content_text && (
-            <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm space-y-4">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-3">Topic Notes</h3>
-              <p className="text-sm text-slate-600 dark:text-muted-foreground leading-relaxed leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: topicData.content_text }} />
-            </div>
+              {topicData.content_text && (
+                <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm space-y-4">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-3">Topic Notes</h3>
+                  <p className="text-sm text-slate-600 dark:text-muted-foreground leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: topicData.content_text }} />
+                </div>
+              )}
+            </>
           )}
         </div>
       );
     }
 
     if (activeItem.type === "quiz") {
-      const quiz = activeItem.data;
+      const quiz = quizDetail || activeItem.data;
+      if (isLoadingQuiz) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-semibold text-sm">Loading quiz details...</p>
+          </div>
+        );
+      }
       return (
         <div className="space-y-6">
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl p-8 shadow-sm relative overflow-hidden">
@@ -477,7 +705,15 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
     }
 
     if (activeItem.type === "assignment") {
-      const assignment = activeItem.data;
+      const assignment = assignmentDetail || activeItem.data;
+      if (isLoadingAssignment) {
+        return (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-semibold text-sm">Loading assignment details...</p>
+          </div>
+        );
+      }
       
       const getDeliverables = (type?: string) => {
         const t = (type || "").toUpperCase();
@@ -615,13 +851,41 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         <div className="flex gap-3">
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm h-[38px]"
           >
             <ArrowLeft size={16} /> Back to Dashboard
           </button>
+          {(() => {
+            const currentStatus = course.status && (course.status.toLowerCase() === 'active' || course.status.toLowerCase() === 'published')
+              ? 'active'
+              : 'draft';
+            return currentStatus === 'draft' ? (
+              <button
+                onClick={() => handleStatusToggle('active')}
+                disabled={updateCourseMutation.isPending}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[120px]"
+              >
+                {updateCourseMutation.isPending && updateCourseMutation.variables?.data.status === 'active' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : null}
+                Publish Course
+              </button>
+            ) : (
+              <button
+                onClick={() => handleStatusToggle('draft')}
+                disabled={updateCourseMutation.isPending}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[140px]"
+              >
+                {updateCourseMutation.isPending && updateCourseMutation.variables?.data.status === 'draft' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                ) : null}
+                Revert to Draft
+              </button>
+            );
+          })()}
           <button 
             onClick={onEdit}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold"
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold h-[38px]"
           >
             <Pencil size={16} /> Edit Course
           </button>
@@ -752,10 +1016,10 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                       ))}
 
                       {/* Lessons (topics in API) */}
-                      {m.topics?.map((lesson: LessonItem) => {
+                      {(m.lessons || m.topics || []).map((lesson: LessonItem) => {
                         const isLessActive = 
                           (activeItem?.type === "lesson" && activeItem?.id === lesson.id) ||
-                          (activeItem?.type === "topic" && lesson.lessons?.some(t => String(t.id) === String(activeItem.id))) ||
+                          (activeItem?.type === "topic" && (lesson.topics || lesson.lessons || []).some(t => String(t.id) === String(activeItem.id))) ||
                           (activeItem?.type === "quiz" && lesson.quizzes?.some(q => String(q.id) === String(activeItem.id))) ||
                           (activeItem?.type === "assignment" && lesson.assignments?.some(a => String(a.id) === String(activeItem.id)));
                         
@@ -775,7 +1039,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                             {/* Lesson topics/quizzes/assignments (lessons inside topic in API) */}
                             {isLessActive && (
                               <div className="pl-4 border-l border-gray-100 ml-4 py-1 space-y-1">
-                                {lesson.lessons?.map((t: TopicItem) => (
+                                {(lesson.topics || lesson.lessons || []).map((t: TopicItem) => (
                                   <button
                                     key={t.id}
                                     onClick={() => setActiveItem({ type: "topic", id: t.id, data: t })}
@@ -857,3 +1121,17 @@ function StatsCardItem({ icon, label, value, colorClass }: { icon: React.ReactNo
     </div>
   );
 }
+
+const isEmbedUrl = (url: string) => {
+  if (!url) return false;
+  return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+};
+
+const getEmbedUrl = (url: string) => {
+  if (!url) return "";
+  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
+  if (ytMatch && ytMatch[1]) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/i);
+  if (vimeoMatch && vimeoMatch[1]) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return url;
+};

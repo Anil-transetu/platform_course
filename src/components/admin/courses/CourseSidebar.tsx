@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { 
   FolderPlus, 
   FileText, 
@@ -16,12 +16,30 @@ import {
   FolderOpen,
   Book,
   BookOpen,
-  GraduationCap
+  GraduationCap,
+  GripVertical
 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useRouter, usePathname } from "next/navigation";
+import { useCreateModule, useUpdateModule, useDeleteModule, useCreateLesson, useUpdateLesson, useDeleteLesson, useCreateTopic, useDeleteTopic } from "@/features/admin/courses/api/course-api";
+import { Modal } from "@/components/ui/modal";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-export default function CourseSidebar() {
+const toastApiError = (err: any, fallbackMessage: string) => {
+  if (typeof window !== "undefined" && !navigator.onLine) {
+    toast.error("Network disconnected. Please check your connection.");
+    return;
+  }
+  toast.error(err?.message || fallbackMessage);
+};
+
+interface CourseSidebarProps {
+  isCollapsed?: boolean;
+  onToggle?: () => void;
+}
+
+export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { 
@@ -31,6 +49,10 @@ export default function CourseSidebar() {
     activeTopicId,
     activeQuizId,
     activeAssignmentId,
+    expandedModules,
+    expandedLessons,
+    toggleModuleExpand,
+    toggleLessonExpand,
     setActiveModule,
     setActiveLesson,
     setActiveTopic,
@@ -51,156 +73,707 @@ export default function CourseSidebar() {
     deleteCourseQuiz,
     deleteCourseAssignment,
     moveLessonItem,
-    moveModuleItem
+    moveModuleItem,
+    reorderModules,
+    reorderModuleItems,
+    reorderLessonItems,
+    mapTemporaryModuleId,
+    lastSavedCourseJson,
+    setPendingNavigation,
   } = useCourseStore();
 
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
-  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
+  const createModuleMutation = useCreateModule();
+  const updateModuleMutation = useUpdateModule();
+  const deleteModuleMutation = useDeleteModule();
+  const createLessonMutation = useCreateLesson();
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
+  const createTopicMutation = useCreateTopic();
+  const deleteTopicMutation = useDeleteTopic();
 
-  // Auto-expand module and lesson on active change
-  useEffect(() => {
-    if (activeModuleId) {
-      setExpandedModules(prev => ({ ...prev, [activeModuleId]: true }));
-    }
-  }, [activeModuleId]);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetType, setDeleteTargetType] = useState<string | null>(null);
+  const [deleteTargetModuleId, setDeleteTargetModuleId] = useState<string | null>(null);
+  const [deleteTargetLessonId, setDeleteTargetLessonId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    if (activeLessonId) {
-      setExpandedLessons(prev => ({ ...prev, [activeLessonId]: true }));
+  // Drag state tracking
+  const dragItem = useRef<{ type: 'module' | 'moduleItem' | 'lessonItem'; index: number; moduleId?: string; lessonId?: string } | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<string | null>(null);
+
+  const navigateTo = (subPath: string) => {
+    const basePath = course.id ? `/admin/courses/edit/${course.id}` : '/admin/courses/create';
+    const target = subPath ? `${basePath}/${subPath}` : basePath;
+    if (pathname !== target) {
+      router.push(target);
     }
-  }, [activeLessonId]);
+  };
+
+  const hasUnsavedChanges = () => {
+    const { course: currentCourse, deletedModules, deletedLessons, deletedTopics, lastSavedCourseJson: savedJson } = useCourseStore.getState();
+    if (deletedModules.length > 0 || deletedLessons.length > 0 || deletedTopics.length > 0) {
+      return true;
+    }
+    if (!savedJson) {
+      return !!currentCourse.title;
+    }
+    const currentJson = JSON.stringify(currentCourse);
+    return currentJson !== savedJson;
+  };
+
+  const confirmNavigation = (
+    type: "module" | "lesson" | "topic" | "quiz" | "assignment" | "route",
+    subPath: string,
+    activeStates: {
+      activeModuleId: string | null;
+      activeLessonId: string | null;
+      activeTopicId: string | null;
+      activeQuizId: string | null;
+      activeAssignmentId: string | null;
+    }
+  ) => {
+    const basePath = course.id ? `/admin/courses/edit/${course.id}` : '/admin/courses/create';
+    const target = subPath ? `${basePath}/${subPath}` : basePath;
+
+    if (!hasUnsavedChanges()) {
+      useCourseStore.setState(activeStates);
+      if (pathname !== target) {
+        router.push(target);
+      }
+      return;
+    }
+
+    setPendingNavigation({
+      type,
+      targetUrl: target,
+      ...activeStates
+    });
+  };
 
   const handleModuleClick = (id: string) => {
-    setActiveModule(id);
-    if (pathname !== '/admin/courses/create/module') {
-      router.push('/admin/courses/create/module');
-    }
+    confirmNavigation("module", "module", {
+      activeModuleId: id,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: null
+    });
   };
 
   const handleLessonClick = (moduleId: string, lessonId: string) => {
-    setActiveModule(moduleId);
-    setActiveLesson(lessonId);
-    if (pathname !== '/admin/courses/create/lesson') {
-      router.push('/admin/courses/create/lesson');
-    }
+    confirmNavigation("lesson", "lesson", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: null
+    });
   };
 
   const handleTopicClick = (moduleId: string, lessonId: string, topicId: string) => {
-    setActiveModule(moduleId);
-    setActiveLesson(lessonId);
-    setActiveTopic(topicId);
-    if (pathname !== '/admin/courses/create/topic') {
-      router.push('/admin/courses/create/topic');
-    }
+    confirmNavigation("topic", "topic", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId,
+      activeTopicId: topicId,
+      activeQuizId: null,
+      activeAssignmentId: null
+    });
   };
 
   const handleQuizClick = (moduleId: string, lessonId: string | undefined | null, quizId: string) => {
-    setActiveModule(moduleId);
-    if (lessonId) {
-      setActiveLesson(lessonId);
-    } else {
-      setActiveLesson(null);
-    }
-    setActiveQuiz(quizId);
-    if (pathname !== '/admin/courses/create/quiz') {
-      router.push('/admin/courses/create/quiz');
-    }
+    confirmNavigation("quiz", "quiz", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId || null,
+      activeTopicId: null,
+      activeQuizId: quizId,
+      activeAssignmentId: null
+    });
   };
 
   const handleAssignmentClick = (moduleId: string, lessonId: string | undefined | null, assignmentId: string) => {
-    setActiveModule(moduleId);
-    if (lessonId) {
-      setActiveLesson(lessonId);
-    } else {
-      setActiveLesson(null);
-    }
-    setActiveAssignment(assignmentId);
-    if (pathname !== '/admin/courses/create/assignment') {
-      router.push('/admin/courses/create/assignment');
-    }
+    confirmNavigation("assignment", "assignment", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId || null,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: assignmentId
+    });
   };
 
   const handleCourseQuizClick = (quizId: string) => {
-    setActiveModule(null);
-    setActiveLesson(null);
-    setActiveQuiz(quizId);
-    if (pathname !== '/admin/courses/create/quiz') {
-      router.push('/admin/courses/create/quiz');
-    }
+    confirmNavigation("quiz", "quiz", {
+      activeModuleId: null,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeQuizId: quizId,
+      activeAssignmentId: null
+    });
   };
 
   const handleCourseAssignmentClick = (assignmentId: string) => {
-    setActiveModule(null);
-    setActiveLesson(null);
-    setActiveAssignment(assignmentId);
-    if (pathname !== '/admin/courses/create/assignment') {
-      router.push('/admin/courses/create/assignment');
+    confirmNavigation("assignment", "assignment", {
+      activeModuleId: null,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: assignmentId
+    });
+  };
+
+  const handleAddModule = async () => {
+    if (!course.id) {
+      toast.error("Please save the course details first.");
+      return;
+    }
+    
+    if (createModuleMutation.isPending) return;
+
+    const execute = async () => {
+      const tempId = addModule();
+      navigateTo("module");
+
+      const currentCourse = useCourseStore.getState().course;
+      const orderNum = currentCourse.modules.length;
+
+      try {
+        const response = await createModuleMutation.mutateAsync({
+          courseId: currentCourse.id!,
+          data: {
+            name: "New Module",
+            description: "",
+            order_num: orderNum
+          }
+        });
+        const newModule = response.data || response;
+        const backendId = String(newModule.id);
+        mapTemporaryModuleId(tempId, backendId);
+      } catch (err) {
+        deleteModule(tempId);
+        toastApiError(err, "Failed to create module");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
+  };
+
+  const handleDeleteModuleClick = (moduleId: string) => {
+    setDeleteTargetId(moduleId);
+    setDeleteTargetType('module');
+  };
+
+  const handleDeleteLessonClick = (moduleId: string, lessonId: string) => {
+    setDeleteTargetId(lessonId);
+    setDeleteTargetModuleId(moduleId);
+    setDeleteTargetType('lesson');
+  };
+
+  const handleDeleteTopicClick = (moduleId: string, lessonId: string, topicId: string) => {
+    setDeleteTargetId(topicId);
+    setDeleteTargetModuleId(moduleId);
+    setDeleteTargetLessonId(lessonId);
+    setDeleteTargetType('topic');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTargetId) return;
+    setIsDeleting(true);
+    try {
+      if (deleteTargetType === 'module') {
+        const wasActive = activeModuleId === deleteTargetId;
+        const targetModule = course.modules.find(m => m.id === deleteTargetId);
+        
+        let nextActiveId = activeModuleId;
+        if (wasActive) {
+          const remaining = course.modules.filter(m => m.id !== deleteTargetId);
+          if (remaining.length > 0) {
+            const deletedIndex = course.modules.findIndex(m => m.id === deleteTargetId);
+            if (deletedIndex < remaining.length) {
+              nextActiveId = remaining[deletedIndex].id;
+            } else {
+              nextActiveId = remaining[deletedIndex - 1].id;
+            }
+          } else {
+            nextActiveId = null;
+          }
+        }
+
+        if (!String(deleteTargetId).startsWith("temp-")) {
+          await deleteModuleMutation.mutateAsync({
+            id: deleteTargetId,
+            courseId: course.id
+          });
+        }
+
+        deleteModule(deleteTargetId);
+        useCourseStore.getState().clearDeletedItems(); // Commit deletion baseline
+        
+        if (wasActive) {
+          if (nextActiveId) {
+            setActiveModule(nextActiveId);
+            navigateTo("module");
+          } else {
+            setActiveModule(null);
+            router.push(course.id ? `/admin/courses/edit/${course.id}` : '/admin/courses/create');
+          }
+        }
+        toast.success("Module deleted successfully");
+      } else if (deleteTargetType === 'lesson') {
+        if (!deleteTargetModuleId) return;
+        const wasActive = activeLessonId === deleteTargetId;
+        const targetModule = course.modules.find(m => m.id === deleteTargetModuleId);
+        const targetLesson = targetModule?.lessons.find(l => l.id === deleteTargetId);
+        
+        let nextActiveLessonId = activeLessonId;
+        if (wasActive && targetModule) {
+          const remaining = targetModule.lessons.filter(l => l.id !== deleteTargetId);
+          if (remaining.length > 0) {
+            const deletedIndex = targetModule.lessons.findIndex(l => l.id === deleteTargetId);
+            if (deletedIndex < remaining.length) {
+              nextActiveLessonId = remaining[deletedIndex].id;
+            } else {
+              nextActiveLessonId = remaining[deletedIndex - 1].id;
+            }
+          } else {
+            nextActiveLessonId = null;
+          }
+        }
+
+        if (!String(deleteTargetId).startsWith("temp-")) {
+          await deleteLessonMutation.mutateAsync({
+            id: deleteTargetId,
+            courseId: course.id,
+            moduleId: deleteTargetModuleId
+          });
+        }
+
+        deleteLesson(deleteTargetModuleId, deleteTargetId);
+        useCourseStore.getState().clearDeletedItems(); // Commit deletion baseline
+        
+        if (wasActive) {
+          if (nextActiveLessonId) {
+            setActiveLesson(nextActiveLessonId);
+            navigateTo("lesson");
+          } else {
+            setActiveLesson(null);
+            navigateTo("module");
+          }
+        }
+        toast.success("Lesson deleted successfully");
+      } else if (deleteTargetType === 'topic') {
+        if (!deleteTargetModuleId || !deleteTargetLessonId) return;
+        const wasActive = activeTopicId === deleteTargetId;
+        const targetModule = course.modules.find(m => m.id === deleteTargetModuleId);
+        const targetLesson = targetModule?.lessons.find(l => l.id === deleteTargetLessonId);
+        const targetTopic = targetLesson?.topics.find(t => t.id === deleteTargetId);
+        
+        let nextActiveTopicId = activeTopicId;
+        if (wasActive && targetLesson) {
+          const remaining = targetLesson.topics.filter(t => t.id !== deleteTargetId);
+          if (remaining.length > 0) {
+            const deletedIndex = targetLesson.topics.findIndex(t => t.id === deleteTargetId);
+            if (deletedIndex < remaining.length) {
+              nextActiveTopicId = remaining[deletedIndex].id;
+            } else {
+              nextActiveTopicId = remaining[deletedIndex - 1].id;
+            }
+          } else {
+            nextActiveTopicId = null;
+          }
+        }
+
+        if (!String(deleteTargetId).startsWith("temp-")) {
+          await deleteTopicMutation.mutateAsync({
+            id: deleteTargetId,
+            courseId: course.id
+          });
+        }
+
+        deleteTopic(deleteTargetModuleId, deleteTargetLessonId, deleteTargetId);
+        useCourseStore.getState().clearDeletedItems(); // Commit deletion baseline
+        
+        if (wasActive) {
+          if (nextActiveTopicId) {
+            setActiveTopic(nextActiveTopicId);
+            navigateTo("topic");
+          } else {
+            setActiveTopic(null);
+            navigateTo("lesson");
+          }
+        }
+        toast.success("Topic deleted successfully");
+      }
+    } catch (err: any) {
+      if (deleteTargetType === 'module') {
+        toastApiError(err, "Failed to delete module");
+      } else if (deleteTargetType === 'lesson') {
+        toastApiError(err, "Failed to delete lesson");
+      } else if (deleteTargetType === 'topic') {
+        toastApiError(err, "Failed to delete topic");
+      }
+    } finally {
+      setIsDeleting(false);
+      setDeleteTargetId(null);
+      setDeleteTargetType(null);
+      setDeleteTargetModuleId(null);
+      setDeleteTargetLessonId(null);
     }
   };
 
-  const handleAddModule = () => {
-    addModule();
-    router.push('/admin/courses/create/module');
-  };
+  const handleModuleReorder = async (startIndex: number, endIndex: number) => {
+    const previousModules = [...course.modules];
+    reorderModules(startIndex, endIndex);
 
-  const handleAddLesson = () => {
-    if (activeModuleId) {
-      addLesson(activeModuleId);
-      router.push('/admin/courses/create/lesson');
-    } else {
-      alert("Please select a module first.");
+    if (!course.id) return;
+
+    const updatedModules = useCourseStore.getState().course.modules;
+    const updates = updatedModules
+      .map((m, index) => ({ id: m.id, newOrderNum: index + 1, oldOrderNum: m.order_num }))
+      .filter(u => !String(u.id).startsWith("temp-") && u.newOrderNum !== u.oldOrderNum);
+
+    if (updates.length === 0) return;
+
+    try {
+      for (const update of updates) {
+        await updateModuleMutation.mutateAsync({
+          id: update.id,
+          // Omit courseId to prevent duplicate invalidations on each step of the loop
+          data: { order_num: update.newOrderNum }
+        });
+      }
+      useCourseStore.getState().clearDeletedItems(); // Commit reordering baseline
+    } catch (err: any) {
+      toastApiError(err, "Reordering failed. Resetting module positions.");
+      
+      useCourseStore.setState((state) => ({
+        course: { ...state.course, modules: previousModules }
+      }));
+
+
+      const currentModules = useCourseStore.getState().course.modules;
+      const activeExists = currentModules.some(m => String(m.id) === String(activeModuleId));
+      if (!activeExists) {
+        if (currentModules.length > 0) {
+          setActiveModule(currentModules[0].id);
+        } else {
+          setActiveModule(null);
+        }
+      }
     }
   };
 
-  const handleAddTopic = () => {
-    if (activeModuleId && activeLessonId) {
-      addTopic(activeModuleId, activeLessonId);
-      router.push('/admin/courses/create/topic');
-    } else {
-      alert("Please select a lesson first.");
+  const handleModuleItemReorder = async (moduleId: string, startIndex: number, endIndex: number) => {
+    // Save previous state
+    const targetModule = course.modules.find(m => m.id === moduleId);
+    if (!targetModule) return;
+
+    const previousOrder = targetModule.order ? [...targetModule.order] : undefined;
+    const previousLessons = [...targetModule.lessons];
+
+    reorderModuleItems(moduleId, startIndex, endIndex);
+
+    if (!course.id) return;
+
+    // Find updated module and lessons to update order_num
+    const updatedModule = useCourseStore.getState().course.modules.find(m => m.id === moduleId);
+    if (!updatedModule) return;
+
+    // Collect lessons that need order_num updated
+    const lessonUpdates: Array<{ id: string; newOrderNum: number }> = [];
+    // The order array has items in order, for lessons, assign order_num based on their position in the order array
+    const itemsOrder = updatedModule.order || [];
+    let lessonOrder = 1;
+    for (const item of itemsOrder) {
+      if (item.type === 'lesson') {
+        const lesson = updatedModule.lessons.find(l => l.id === item.id);
+        if (lesson && !String(lesson.id).startsWith("temp-")) {
+          lessonUpdates.push({ id: lesson.id, newOrderNum: lessonOrder });
+        }
+        lessonOrder++;
+      }
     }
+
+    if (lessonUpdates.length === 0) return;
+
+    try {
+      for (const update of lessonUpdates) {
+        await updateLessonMutation.mutateAsync({
+          id: update.id,
+          courseId: course.id,
+          data: { order_num: update.newOrderNum }
+        });
+      }
+      useCourseStore.getState().clearDeletedItems();
+    } catch (err: any) {
+      toastApiError(err, "Reordering failed. Resetting lesson positions.");
+      
+      // Revert Zustand store
+      useCourseStore.setState((state) => {
+        const revertModules = state.course.modules.map(m => {
+          if (m.id === moduleId) {
+            return { ...m, order: previousOrder, lessons: previousLessons };
+          }
+          return m;
+        });
+        return { course: { ...state.course, modules: revertModules } };
+      });
+
+    }
+  };
+
+  const handleAddLesson = async () => {
+    if (!activeModuleId) {
+      toast.error("Please select a module first.");
+      return;
+    }
+    if (!course.id) {
+      toast.error("Please save the course details first.");
+      return;
+    }
+    if (createLessonMutation.isPending) return;
+
+    const execute = async () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+      const currentCourse = useCourseStore.getState().course;
+      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
+      const orderNum = (activeModule?.lessons?.length || 0) + 1;
+
+      const tempId = addLesson(currentActiveModuleId);
+      navigateTo("lesson");
+
+      try {
+        const response = await createLessonMutation.mutateAsync({
+          moduleId: currentActiveModuleId,
+          courseId: currentCourse.id!,
+          data: {
+            name: "New Lesson",
+            type: "text",
+            order_num: orderNum
+          }
+        });
+        const newLesson = response.data || response;
+        const backendId = String(newLesson.id);
+        useCourseStore.setState((state) => {
+          const updatedModules = state.course.modules.map(m => {
+            if (m.id === currentActiveModuleId) {
+              const updatedLessons = m.lessons.map(l => l.id === tempId ? { ...l, id: backendId } : l);
+              let updatedOrder = m.order;
+              if (updatedOrder) {
+                updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
+              }
+              return { ...m, lessons: updatedLessons, order: updatedOrder };
+            }
+            return m;
+          });
+          const updatedActiveLessonId = state.activeLessonId === tempId ? backendId : state.activeLessonId;
+          const updatedExpandedLessons: Record<string, boolean> = {};
+          Object.entries(state.expandedLessons).forEach(([k, v]) => {
+            if (k === tempId) {
+              updatedExpandedLessons[backendId] = v;
+            } else {
+              updatedExpandedLessons[k] = v;
+            }
+          });
+          const nextCourse = { ...state.course, modules: updatedModules };
+          return {
+            course: nextCourse,
+            activeLessonId: updatedActiveLessonId,
+            expandedLessons: updatedExpandedLessons,
+            cleanCourse: nextCourse,
+            lastSavedCourseJson: JSON.stringify(nextCourse)
+          };
+        });
+      } catch (err) {
+        deleteLesson(currentActiveModuleId, tempId);
+        toastApiError(err, "Failed to create lesson");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
+  };
+
+  const handleAddTopic = async () => {
+    if (!activeModuleId || !activeLessonId) {
+      toast.error("Please select a lesson first.");
+      return;
+    }
+    if (!course.id) {
+      toast.error("Please save the course details first.");
+      return;
+    }
+    if (createTopicMutation.isPending) return;
+
+    const execute = async () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId || activeLessonId;
+      const currentCourse = useCourseStore.getState().course;
+      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
+      const activeLesson = activeModule?.lessons.find(l => l.id === currentActiveLessonId);
+      const orderNum = (activeLesson?.topics?.length || 0) + 1;
+
+      const tempId = addTopic(currentActiveModuleId, currentActiveLessonId);
+      navigateTo("topic");
+
+      try {
+        const response = await createTopicMutation.mutateAsync({
+          lessonId: currentActiveLessonId,
+          courseId: currentCourse.id!,
+          moduleId: currentActiveModuleId,
+          data: {
+            name: "New Topic",
+            content_text: "",
+            order_num: orderNum
+          }
+        });
+        const newTopic = response.data || response;
+        const backendId = String(newTopic.id);
+        useCourseStore.setState((state) => {
+          const updatedModules = state.course.modules.map(m => {
+            if (m.id === currentActiveModuleId) {
+              const updatedLessons = m.lessons.map(l => {
+                if (l.id === currentActiveLessonId) {
+                  const updatedTopics = l.topics.map(t => t.id === tempId ? { ...t, id: backendId } : t);
+                  let updatedOrder = l.order;
+                  if (updatedOrder) {
+                    updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
+                  }
+                  return { ...l, topics: updatedTopics, order: updatedOrder };
+                }
+                return l;
+              });
+              return { ...m, lessons: updatedLessons };
+            }
+            return m;
+          });
+          const updatedActiveTopicId = state.activeTopicId === tempId ? backendId : state.activeTopicId;
+          const nextCourse = { ...state.course, modules: updatedModules };
+          return {
+            course: nextCourse,
+            activeTopicId: updatedActiveTopicId,
+            cleanCourse: nextCourse,
+            lastSavedCourseJson: JSON.stringify(nextCourse)
+          };
+        });
+      } catch (err) {
+        deleteTopic(currentActiveModuleId, currentActiveLessonId, tempId);
+        toastApiError(err, "Failed to create topic");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
   };
 
   const handleAddQuiz = () => {
-    if (activeModuleId && activeLessonId) {
-      addQuiz(activeModuleId, activeLessonId);
-      router.push('/admin/courses/create/quiz');
-    } else if (activeModuleId) {
-      addQuiz(activeModuleId);
-      router.push('/admin/courses/create/quiz');
-    } else {
-      addCourseQuiz();
-      router.push('/admin/courses/create/quiz');
+    const execute = () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
+      if (currentActiveModuleId && currentActiveLessonId) {
+        addQuiz(currentActiveModuleId, currentActiveLessonId);
+      } else if (currentActiveModuleId) {
+        addQuiz(currentActiveModuleId);
+      } else {
+        addCourseQuiz();
+      }
+      navigateTo("quiz");
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
     }
+
+    execute();
   };
 
   const handleAddAssignment = () => {
-    if (activeModuleId && activeLessonId) {
-      addAssignment(activeModuleId, activeLessonId);
-      router.push('/admin/courses/create/assignment');
-    } else if (activeModuleId) {
-      addAssignment(activeModuleId);
-      router.push('/admin/courses/create/assignment');
-    } else {
-      addCourseAssignment();
-      router.push('/admin/courses/create/assignment');
+    const execute = () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
+      if (currentActiveModuleId && currentActiveLessonId) {
+        addAssignment(currentActiveModuleId, currentActiveLessonId);
+      } else if (currentActiveModuleId) {
+        addAssignment(currentActiveModuleId);
+      } else {
+        addCourseAssignment();
+      }
+      navigateTo("assignment");
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
     }
+
+    execute();
   };
 
   const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
 
-  const toggleModuleExpand = (moduleId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedModules(prev => ({ ...prev, [moduleId]: !prev[moduleId] }));
-  };
-
-  const toggleLessonExpand = (lessonId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedLessons(prev => ({ ...prev, [lessonId]: !prev[lessonId] }));
-  };
-
   return (
-    <div className="w-[320px] bg-[#f5f8fc] border-r border-slate-200/80 p-6 flex flex-col gap-8 shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700">
+    <div
+      className={`bg-[#f5f8fc] border-r border-slate-200/80 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700 overflow-hidden transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-[52px]' : 'w-[320px]'
+      }`}
+    >
+      {/* COLLAPSED ICON STRIP */}
+      {isCollapsed && (
+        <div className="flex flex-col items-center py-4 gap-3 flex-1">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500" title="Add Module">
+            <FolderPlus size={16} />
+          </div>
+          {course.modules.length > 0 && (
+            <div className="flex flex-col gap-2 items-center mt-1">
+              {course.modules.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleModuleClick(m.id)}
+                  title={m.title || "Module"}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                    activeModuleId === m.id
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-blue-600 border border-slate-200 hover:bg-blue-50'
+                  }`}
+                >
+                  <Folder size={14} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* EXPANDED FULL SIDEBAR */}
+      {!isCollapsed && (
+        <div className="p-6 flex flex-col gap-8 overflow-y-auto flex-1">
       {/* 1. CURRICULUM HIERARCHY */}
       <div className="flex-1 flex flex-col gap-5 overflow-hidden">
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -217,19 +790,49 @@ export default function CourseSidebar() {
               const isExpanded = !!expandedModules[module.id];
               
               return (
-                <div key={`module-${module.id}`} className="flex flex-col gap-1 mb-1">
+                <div
+                  key={`module-${module.id}`}
+                  className="flex flex-col gap-1 mb-1"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverIndex(`module-${mIdx}`);
+                  }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={() => {
+                    if (dragItem.current?.type === 'module' && dragItem.current.index !== mIdx) {
+                      handleModuleReorder(dragItem.current.index, mIdx);
+                    }
+                    setDragOverIndex(null);
+                    dragItem.current = null;
+                  }}
+                  onDragEnd={() => {
+                    setDragOverIndex(null);
+                    dragItem.current = null;
+                  }}
+                >
                   <div 
                     onClick={() => handleModuleClick(module.id)}
-                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${
-                      isModuleActive && !activeLessonId 
+                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${dragOverIndex === `module-${mIdx}` ? 'border-blue-400 bg-blue-50 shadow-md' : isModuleActive && !activeLessonId 
                         ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
                         : 'bg-white border-slate-200/80 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
                     }`}
                   >
                     <div className="flex items-center gap-2 overflow-hidden flex-1">
+                      {/* Drag Handle — only the grip triggers module drag */}
+                      <span
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          dragItem.current = { type: 'module', index: mIdx };
+                        }}
+                        className={`cursor-grab opacity-0 group-hover/module:opacity-50 shrink-0 ${isModuleActive && !activeLessonId ? 'text-white/60' : 'text-slate-400'}`}
+                      >
+                        <GripVertical size={14} />
+                      </span>
+
                       {/* Expand Arrow */}
                       <button
-                        onClick={(e) => toggleModuleExpand(module.id, e)}
+                        onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
                         className={`p-1 rounded-md transition-colors ${
                           isModuleActive && !activeLessonId
                             ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
@@ -254,28 +857,31 @@ export default function CourseSidebar() {
                         </span>
                       </div>
                     </div>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const wasActive = activeModuleId === module.id;
-                        const remaining = course.modules.filter(m => m.id !== module.id);
-                        deleteModule(module.id);
-                        if (wasActive) {
-                          if (remaining.length > 0) {
-                            router.push('/admin/courses/create/module');
-                          } else {
-                            router.push('/admin/courses/create');
-                          }
-                        }
-                      }}
-                      className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
-                        isModuleActive && !activeLessonId
-                          ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
-                          : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
-                      }`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/module:opacity-100 transition-opacity">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx - 1); }}
+                        disabled={mIdx === 0}
+                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                      >
+                        <ChevronUp size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx + 1); }}
+                        disabled={mIdx === course.modules.length - 1}
+                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                      >
+                        <ChevronDown size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteModuleClick(module.id);
+                        }}
+                        className={`p-0.5 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-450'}`}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Mixed Content inside Module (Expanded) */}
@@ -290,6 +896,8 @@ export default function CourseSidebar() {
                     return (
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                         {items.map((item, itemIdx) => {
+                          const dropKey = `moduleItem-${module.id}-${itemIdx}`;
+                          const isDropTarget = dragOverIndex === dropKey;
                           if (item.type === 'lesson') {
                             const lesson = module.lessons.find(l => l.id === item.id);
                             if (!lesson) return null;
@@ -298,19 +906,53 @@ export default function CourseSidebar() {
                             const isLessonExpanded = !!expandedLessons[lesson.id];
 
                             return (
-                              <div key={`lesson-${lesson.id}`} className="flex flex-col gap-1.5">
-                                <div 
+                              <div
+                                key={`lesson-${lesson.id}`}
+                                className="flex flex-col gap-1.5"
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverIndex(dropKey);
+                                }}
+                                onDragLeave={(e) => {
+                                  e.stopPropagation();
+                                  setDragOverIndex(null);
+                                }}
+                                onDrop={(e) => {
+                                  e.stopPropagation();
+                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
+                                  }
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
+                                onDragEnd={() => {
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
+                              >
+                                <div
                                   onClick={() => handleLessonClick(module.id, lesson.id)}
-                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                    isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId 
-                                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isDropTarget ? 'border-blue-400 bg-blue-50/40' : isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
+                                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20'
                                       : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-700 hover:text-slate-900'
                                   }`}
                                 >
                                   <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                    {/* Drag Handle — only the grip triggers lesson drag */}
+                                    <span
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                      }}
+                                      className={`cursor-grab opacity-0 group-hover/lesson:opacity-50 shrink-0 ${isLessonActive ? 'text-white/60' : 'text-slate-400'}`}
+                                    >
+                                      <GripVertical size={12} />
+                                    </span>
                                     {/* Lesson Expand Toggle */}
                                     <button
-                                      onClick={(e) => toggleLessonExpand(lesson.id, e)}
+                                      onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
                                       className={`p-0.5 rounded-md transition-colors ${
                                         isLessonActive
                                           ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
@@ -351,10 +993,7 @@ export default function CourseSidebar() {
                                     <button 
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        deleteLesson(module.id, lesson.id);
-                                        if (activeLessonId === lesson.id) {
-                                          router.push('/admin/courses/create/module');
-                                        }
+                                        handleDeleteLessonClick(module.id, lesson.id);
                                       }}
                                       className={`p-0.5 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                     >
@@ -375,6 +1014,8 @@ export default function CourseSidebar() {
                                   return (
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                       {lessonItems.map((lItem, lItemIdx) => {
+                                        const lessonDropKey = `lessonItem-${lesson.id}-${lItemIdx}`;
+                                        const isLessonDropTarget = dragOverIndex === lessonDropKey;
                                         if (lItem.type === 'topic') {
                                           const topic = lesson.topics.find(t => t.id === lItem.id);
                                           if (!topic) return null;
@@ -383,14 +1024,32 @@ export default function CourseSidebar() {
                                           return (
                                             <div 
                                               key={`topic-${topic.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isTopicActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
                                               <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isTopicActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <Target className={isTopicActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {topic.title || `Topic ${tIdx + 1}`}
@@ -414,10 +1073,7 @@ export default function CourseSidebar() {
                                                 <button 
                                                   onClick={(e) => {
                                                     e.stopPropagation();
-                                                    deleteTopic(module.id, lesson.id, topic.id);
-                                                    if (activeTopicId === topic.id) {
-                                                      router.push('/admin/courses/create/lesson');
-                                                    }
+                                                    handleDeleteTopicClick(module.id, lesson.id, topic.id);
                                                   }}
                                                   className={`p-0.5 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -436,16 +1092,34 @@ export default function CourseSidebar() {
                                           return (
                                             <div 
                                               key={`quiz-${quiz.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isQuizActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
                                               <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
-                                                <span className="text-xs font-medium truncate flex-1">
+                                                <span className="text-xs font-semibold truncate flex-1">
                                                   {quiz.title || `Quiz ${qIdx + 1}`}
                                                 </span>
                                               </div>
@@ -468,9 +1142,9 @@ export default function CourseSidebar() {
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteQuiz(module.id, lesson.id, quiz.id);
-                                                    if (activeQuizId === quiz.id) {
-                                                      router.push('/admin/courses/create/lesson');
-                                                    }
+                                                     if (activeQuizId === quiz.id) {
+                                                       navigateTo("lesson");
+                                                     }
                                                   }}
                                                   className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -489,14 +1163,32 @@ export default function CourseSidebar() {
                                           return (
                                             <div 
                                               key={`assignment-${assignment.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isAssignmentActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
                                               <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {assignment.title || `Assignment ${aIdx + 1}`}
@@ -521,9 +1213,9 @@ export default function CourseSidebar() {
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteAssignment(module.id, lesson.id, assignment.id);
-                                                    if (activeAssignmentId === assignment.id) {
-                                                      router.push('/admin/courses/create/lesson');
-                                                    }
+                                                     if (activeAssignmentId === assignment.id) {
+                                                       navigateTo("lesson");
+                                                     }
                                                   }}
                                                   className={`p-0.5 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -550,14 +1242,42 @@ export default function CourseSidebar() {
                              return (
                                <div 
                                  key={`quiz-${quiz.id}`}
+                                 draggable
+                                 onDragStart={(e) => {
+                                   e.stopPropagation();
+                                   dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                 }}
+                                 onDragOver={(e) => {
+                                   e.preventDefault();
+                                   e.stopPropagation();
+                                   setDragOverIndex(dropKey);
+                                 }}
+                                 onDragLeave={(e) => {
+                                   e.stopPropagation();
+                                   setDragOverIndex(null);
+                                 }}
+                                 onDrop={(e) => {
+                                   e.stopPropagation();
+                                   if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                     reorderModuleItems(module.id, dragItem.current.index, itemIdx);
+                                   }
+                                   setDragOverIndex(null);
+                                   dragItem.current = null;
+                                 }}
+                                 onDragEnd={() => {
+                                   setDragOverIndex(null);
+                                   dragItem.current = null;
+                                 }}
                                  onClick={() => handleQuizClick(module.id, undefined, quiz.id)}
                                  className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                   isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                    isQuizActive 
                                      ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                      : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                  }`}
                                >
-                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-5">
+                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                   <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                    <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
                                    <span className="text-xs font-semibold truncate flex-1">
                                      {quiz.title || `Module Quiz ${qIdx + 1}`}
@@ -582,9 +1302,9 @@ export default function CourseSidebar() {
                                      onClick={(e) => {
                                        e.stopPropagation();
                                        deleteQuiz(module.id, undefined, quiz.id);
-                                       if (activeQuizId === quiz.id) {
-                                         router.push('/admin/courses/create/module');
-                                       }
+                                        if (activeQuizId === quiz.id) {
+                                          navigateTo("module");
+                                        }
                                      }}
                                      className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                    >
@@ -603,14 +1323,42 @@ export default function CourseSidebar() {
                             return (
                               <div 
                                 key={`assignment-${assignment.id}`}
+                                draggable
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverIndex(dropKey);
+                                }}
+                                onDragLeave={(e) => {
+                                  e.stopPropagation();
+                                  setDragOverIndex(null);
+                                }}
+                                onDrop={(e) => {
+                                  e.stopPropagation();
+                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
+                                  }
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
+                                onDragEnd={() => {
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
                                 onClick={() => handleAssignmentClick(module.id, undefined, assignment.id)}
                                 className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                  isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                   isAssignmentActive 
                                     ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                     : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                 }`}
                               >
-                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-5">
+                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                  <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                   <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                   <span className="text-xs font-semibold truncate flex-1">
                                     {assignment.title || `Module Assignment ${aIdx + 1}`}
@@ -635,9 +1383,9 @@ export default function CourseSidebar() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       deleteAssignment(module.id, undefined, assignment.id);
-                                      if (activeAssignmentId === assignment.id) {
-                                        router.push('/admin/courses/create/module');
-                                      }
+                                       if (activeAssignmentId === assignment.id) {
+                                         navigateTo("module");
+                                       }
                                     }}
                                     className={`p-0.5 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                   >
@@ -682,7 +1430,7 @@ export default function CourseSidebar() {
                       e.stopPropagation();
                       deleteCourseQuiz(quiz.id);
                       if (activeQuizId === quiz.id) {
-                        router.push('/admin/courses/create');
+                        navigateTo("quiz");
                       }
                     }}
                     className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
@@ -699,13 +1447,16 @@ export default function CourseSidebar() {
           ) : null}
 
           {/* COURSE-LEVEL ASSIGNMENTS */}
-          {course.assignments && course.assignments.length > 0 ? (
-            course.assignments.map((assignment) => {
-              const isAssignmentActive = activeAssignmentId === assignment.id;
+          {(course as any).final_assessment ? (
+            (() => {
+              const finalAssessment = (course as any).final_assessment;
+              const finalAssessmentId = String(finalAssessment.id ?? "");
+              const isAssignmentActive = activeAssignmentId === finalAssessmentId;
+              const title = finalAssessment.title || "Final Assessment";
               return (
                 <div 
-                  key={`course-assignment-${assignment.id}`}
-                  onClick={() => handleCourseAssignmentClick(assignment.id)}
+                  key={`course-final-assessment-${finalAssessmentId}`}
+                  onClick={() => handleCourseAssignmentClick(finalAssessmentId)}
                   className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
                     isAssignmentActive 
                       ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
@@ -715,50 +1466,17 @@ export default function CourseSidebar() {
                   <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
                     <ClipboardList className={isAssignmentActive ? "text-white" : "text-blue-600"} size={16} />
                     <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isAssignmentActive ? "text-white" : "text-slate-800"}`}>
-                      {assignment.title || "Final Assessment"}
+                      {title}
                     </span>
                   </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteCourseAssignment(assignment.id);
-                      if (activeAssignmentId === assignment.id) {
-                        router.push('/admin/courses/create');
-                      }
-                    }}
-                    className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
-                      isAssignmentActive
-                        ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
-                        : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
-                    }`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </div>
               );
-            })
+            })()
           ) : null}
 
-          {/* ADD NEW COURSE-LEVEL CONTENT */}
-          {course.modules.length > 0 && (
-            <>
-              <button 
-                onClick={() => {
-                  addCourseAssignment();
-                  router.push('/admin/courses/create/assignment');
-                }}
-                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
-              >
-                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Plus size={14} strokeWidth={3} />
-                </div>
-                <span className="text-xs font-semibold">Add Course Assignment</span>
-              </button>
-            </>
-          )}
         </div>
       </div>
-      
+
       {/* 2. ADD CONTENT SECTION */}
       <div className="pt-4 border-t border-slate-200">
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
@@ -856,12 +1574,64 @@ export default function CourseSidebar() {
       <div className="mt-auto pt-8">
         <button 
           onClick={handleAddModule}
-          className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm"
+          disabled={createModuleMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Plus size={16} /> Add Another Module
+          {createModuleMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Plus size={16} />
+          )}
+          {createModuleMutation.isPending ? "Adding Module..." : "Add Another Module"}
         </button>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={deleteTargetId !== null} 
+        onClose={() => !isDeleting && (setDeleteTargetId(null), setDeleteTargetType(null), setDeleteTargetModuleId(null))}
+        title={deleteTargetType === 'module' ? "Delete Module" : "Delete Lesson"}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-650 leading-relaxed">
+            {deleteTargetType === 'module' 
+              ? "Are you sure you want to delete this module? This will permanently remove all lessons, topics, quizzes, and assignments under it."
+              : "Are you sure you want to delete this lesson? This will permanently remove all topics, quizzes, and assignments under it."
+            }
+          </p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              onClick={() => {
+                setDeleteTargetId(null);
+                setDeleteTargetType(null);
+                setDeleteTargetModuleId(null);
+              }}
+              disabled={isDeleting}
+              className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-650 hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="px-5 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-md shadow-rose-600/10 flex items-center gap-2 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+        </div>
+      )}
     </div>
   );
 }
