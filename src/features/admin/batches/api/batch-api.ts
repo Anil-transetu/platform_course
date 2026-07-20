@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Batch } from "@/types/batch";
 
+const TUTOR_LOOKUP_URL = `${process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com"}/api/v1/tutors/lookup`;
+
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/batches`;
 
@@ -19,7 +21,14 @@ function getAuthHeaders(): Record<string, string> {
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
+    let err: any = {};
+    let text = "";
+    try {
+      text = await response.text();
+      err = JSON.parse(text);
+    } catch (e) {
+      err = { message: text || response.statusText || `Status ${response.status}` };
+    }
     let messageStr = "API request failed";
     if (err.errors) {
       if (Array.isArray(err.errors)) {
@@ -61,15 +70,15 @@ async function handleResponse(response: Response) {
  * Mapping helper: Normalizes batch data from backend to frontend format
  */
 export function mapBatch(b: Record<string, any>): Batch {
-  const tutorName = b.tutor || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
-  const enrollmentsCount = b.students !== undefined ? b.students : (b.Enrollments ? b.Enrollments.length : 0);
+  const tutorName = (typeof b.tutor === "object" && b.tutor !== null ? (b.tutor.full_name || b.tutor.name) : b.tutor) || (b.batchTutors && b.batchTutors[0]?.Tutor?.full_name) || "N/A";
+  const enrollmentsCount = b.student_count !== undefined ? Number(b.student_count) : (b.students !== undefined ? Number(b.students) : (b.Enrollments ? b.Enrollments.length : 0));
   
   return {
     ...b,
     id: b.id,
     name: b.batch_name || b.name || "N/A",
-    institution: b.institution_name || b.Institution?.name || "N/A",
-    course: b.course || b.Course?.name || "N/A",
+    institution: (typeof b.institution === "object" && b.institution !== null ? b.institution.name : b.institution) || b.institution_name || b.Institution?.name || "N/A",
+    course: (typeof b.course === "object" && b.course !== null ? b.course.name : b.course) || b.Course?.name || "N/A",
     instructor: tutorName,
     start_date: b.start_date ? b.start_date.split("T")[0] : "",
     end_date: b.end_date ? b.end_date.split("T")[0] : "",
@@ -78,7 +87,10 @@ export function mapBatch(b: Record<string, any>): Batch {
     completion_percentage: b.completion_percentage || 0,
     institution_id: b.institution_id || b.Institution?.id,
     tutor_id: b.tutor_id || (b.batchTutors && b.batchTutors[0]?.tutor_id),
-    course_id: b.course_id
+    course_id: b.course_id,
+    domain_id: b.domain_id || b.Domain?.id,
+    domain: (typeof b.domain === "object" && b.domain !== null ? b.domain.name : b.domain) || b.Domain?.name || "N/A",
+    department: b.department || ""
   };
 }
 
@@ -144,16 +156,24 @@ export async function fetchBatchById(id: string | number) {
  * Create a new batch
  */
 export async function createBatch(data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active"
+    status: data.status || "active",
   };
+  if (data.course_id) {
+    payload.course_id = Number(data.course_id);
+  }
+  if (data.domain_id) {
+    payload.domain_id = Number(data.domain_id);
+  }
+  if (data.department) {
+    payload.department = data.department;
+  }
 
   const response = await fetch(BASE_URL, {
     method: "POST",
@@ -168,16 +188,24 @@ export async function createBatch(data: Record<string, unknown>) {
  * Update an existing batch
  */
 export async function updateBatch(id: string | number, data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     name: data.name,
-    course_id: data.course_id ? Number(data.course_id) : null,
     institution_id: data.institution_id ? Number(data.institution_id) : null,
     tutor_id: data.tutor_id ? Number(data.tutor_id) : null,
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active"
+    status: data.status || "active",
   };
+  if (data.course_id) {
+    payload.course_id = Number(data.course_id);
+  }
+  if (data.domain_id) {
+    payload.domain_id = Number(data.domain_id);
+  }
+  if (data.department) {
+    payload.department = data.department;
+  }
 
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
@@ -254,7 +282,8 @@ export async function fetchBatchStudents(
   id: string | number,
   page: number = 1,
   limit: number = 10,
-  status?: string
+  status?: string,
+  search?: string
 ) {
   let url = `${BASE_URL}/${id}/students`;
   const query = new URLSearchParams();
@@ -262,6 +291,9 @@ export async function fetchBatchStudents(
   query.append("limit", limit.toString());
   if (status && status !== "All") {
     query.append("status", status.toLowerCase());
+  }
+  if (search) {
+    query.append("search", search);
   }
 
   url += `?${query.toString()}`;
@@ -309,26 +341,140 @@ export function getBatchStudentsExportPdfUrl(id: string | number): string {
   return `${API_HOST}/api/v1/batches/${id}/students/export-pdf`;
 }
 
+// ─── Tutor Lookup (Batch Management only) ────────────────────────────────────
+// Uses GET /api/v1/tutors/lookup to fetch tutors filtered by institution.
+// This is intentionally separate from the global Tutor Management API
+// (GET /api/v1/tutors) and must only be used within Batch Management forms.
+
+export interface TutorLookupItem {
+  id: string | number;
+  name: string;
+  email?: string;
+}
+
+function mapTutorLookup(u: Record<string, any>): TutorLookupItem {
+  return {
+    id: u.tutor_id ?? u.id,
+    name: u.tutor_name || u.full_name || u.name || "N/A",
+    email: u.email || "",
+  };
+}
+
 /**
- * Download batch bulk upload template
+ * Fetch tutors from the lookup endpoint, optionally filtered by institution_id.
+ * Used exclusively in the Batch Create / Edit forms.
  */
-export async function downloadBatchBulkUploadTemplate() {
-  const url = `${API_HOST}/api/v1/batches/bulk-upload/template`;
+export async function fetchTutorsLookup(
+  institution_id?: string | number,
+  search?: string
+): Promise<TutorLookupItem[]> {
+  const query = new URLSearchParams();
+  if (institution_id) query.append("institution_id", String(institution_id));
+  if (search) query.append("search", search);
+
+  const url = query.toString()
+    ? `${TUTOR_LOOKUP_URL}?${query.toString()}`
+    : TUTOR_LOOKUP_URL;
+
   const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  const items: Record<string, any>[] = Array.isArray(result)
+    ? result
+    : result.data || result.tutors || [];
+
+  return items.map(mapTutorLookup);
+}
+
+/**
+ * React Query hook — wraps fetchTutorsLookup for Batch Management forms.
+ * Re-fetches automatically whenever institution_id changes.
+ */
+export function useTutorsLookup(
+  institution_id?: string | number,
+  search?: string
+) {
+  return useQuery({
+    queryKey: ["tutors-lookup-batch", { institution_id, search }],
+    queryFn: () => fetchTutorsLookup(institution_id, search),
+    staleTime: 2 * 60 * 1000,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Fetch courses for lookup dropdown
+ */
+export async function fetchCoursesLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/courses/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Fetch domains for lookup dropdown
+ */
+export async function fetchDomainsLookup(search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/domains/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Fetch students for lookup dropdown
+ */
+export async function fetchStudentLookup(institutionId?: string | number, search?: string): Promise<any[]> {
+  let url = `${API_HOST}/api/v1/students/lookup`;
+  const query = new URLSearchParams();
+  
+  if (institutionId) {
+    query.append("institution_id", String(institutionId));
+  }
+  if (search) {
+    query.append("search", search);
+  }
+  query.append("limit", "50");
+
+  if (query.toString()) {
+    url += `?${query.toString()}`;
+  }
+  
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+export async function downloadBatchBulkUploadTemplate(): Promise<Blob> {
+  const response = await fetch(`${BASE_URL}/bulk-upload/template`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
     throw new Error("Failed to download template");
   }
-  const blob = await response.blob();
-  const downloadUrl = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = downloadUrl;
-  a.download = "batch_students_bulk_upload_template.csv";
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(downloadUrl);
-  document.body.removeChild(a);
+  return response.blob();
 }
-

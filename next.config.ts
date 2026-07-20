@@ -27,7 +27,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  reactStrictMode: true,
+  reactStrictMode: false,
   images: {
     remotePatterns: [
       {
@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
   // eslint: {
   //   ignoreDuringBuilds: true,
   // },
+  allowedDevOrigins: ['10.74.220.246'],
   async headers() {
     return [
       {

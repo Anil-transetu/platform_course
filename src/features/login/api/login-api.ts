@@ -5,6 +5,7 @@ interface LoginResponse {
   user?: {
     email: string;
     name: string;
+    role?: string;
   };
   message: string;
 }

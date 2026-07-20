@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Settings, Bell, User, ChevronUp, ChevronDown } from "lucide-react";
+import { LogOut, Settings, Bell, User as UserIcon, ChevronUp, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,12 +12,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useUserDetails } from "@/features/profile/api/profile-api";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NavUser() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, role, logout } = useAuthStore();
-  const displayName = user?.name || user?.email?.split('@')[0] || "User";
-  const displaySubtitle = user?.email || role || "Guest";
+  const { logout, role: storeRole } = useAuthStore();
+  const { data: userDetails, isLoading } = useUserDetails();
+
+  const data = userDetails?.data || userDetails; 
+  const displayName = data?.name || data?.full_name || data?.email?.split('@')[0] || "User";
+  const displaySubtitle = data?.email || data?.role || storeRole || "Guest";
+  const avatarUrl = data?.avatar || data?.profile_image || `https://ui-avatars.com/api/?name=${displayName.replace(/\s+/g, '+')}&background=random`;
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -25,25 +32,36 @@ export default function NavUser() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="lg" className="h-16 border-t border-[#2a374a] rounded-none hover:bg-card/5 transition-colors group-data-[collapsible=icon]:!border-t-0 group-data-[collapsible=icon]:h-14 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
               <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
-                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
-                  <Image 
-                    src={`https://ui-avatars.com/api/?name=${displayName.replace(/\s+/g, '+')}&background=random`} 
-                    alt="User" 
-                    width={40}
-                    height={40}
-                    unoptimized
-                  />
-                </div>
+                {isLoading ? (
+                  <>
+                    <Skeleton className="w-10 h-10 rounded-full shrink-0 bg-slate-800" />
+                    <div className="flex-1 space-y-2 group-data-[collapsible=icon]:hidden">
+                      <Skeleton className="h-4 w-24 bg-slate-800" />
+                      <Skeleton className="h-3 w-16 bg-slate-800" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
+                      <Image 
+                        src={avatarUrl} 
+                        alt={displayName} 
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
 
-                <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
-                  {/* in the first p tag we have to pass the user name and in the second one we have to pass the user mail and user profile image is mandatory. */}
-                  <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wider truncate">{displaySubtitle}</p>
-                </div>
+                    <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
+                      <p className="text-sm font-medium text-white leading-tight truncate">{displayName}</p>
+                      <p className="text-[10px] text-gray-400 truncate">{displaySubtitle?.toLowerCase()}</p>
+                    </div>
 
-                <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
-                  {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-                </div>
+                    <div className="text-gray-400 mr-4 group-data-[collapsible=icon]:hidden transition-transform duration-200">
+                      {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                    </div>
+                  </>
+                )}
               </div>
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -55,7 +73,7 @@ export default function NavUser() {
           >
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
               <Link href="/settings/general" className="flex items-center gap-3 w-full">
-                <User className="w-5 h-5 shrink-0" />
+                <UserIcon className="w-5 h-5 shrink-0" />
                 <span>User Details</span>
               </Link>
             </DropdownMenuItem>
@@ -76,7 +94,7 @@ export default function NavUser() {
               className="rounded-xl border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300 cursor-pointer flex items-center gap-3 py-3 transition-all duration-300 hover:scale-[1.02]"
               onClick={() => {
                 logout();
-                window.location.replace("/login");
+                window.location.replace("/login?msg=logout_success");
               }}
             >
               <LogOut className="w-5 h-5 shrink-0" />

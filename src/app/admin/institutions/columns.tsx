@@ -108,7 +108,7 @@ export function buildInstitutionColumns(): Column<Institution>[] {
             "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
             isActive 
               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              : "bg-red-100 text-red-600 hover:bg-red-200"
           )}>
             {status}
           </Badge>

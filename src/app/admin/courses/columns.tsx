@@ -1,7 +1,11 @@
-import { Badge } from "@/components/ui/badge";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
-import { Domain } from "@/types/domain";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const getInitials = (name?: string) => {
   if (!name) return "C";
@@ -41,13 +45,11 @@ export const buildCourseColumns = (): Column<Course>[] => [
   {
     key: "id",
     label: "ID",
-    render: (value, row) => (
-      <div className="font-semibold text-slate-600 text-sm">#CRS-{row.id}</div>
-    ),
+    render: (value, row) => <span className="font-medium text-gray-900 dark:text-foreground">{row.id}</span>,
   },
   {
     key: "name",
-    label: "COURSE NAME",
+    label: "Course Name",
     render: (value, row) => (
       <div className="flex items-center gap-3 max-w-[280px]">
         <div className={cn(
@@ -56,7 +58,7 @@ export const buildCourseColumns = (): Column<Course>[] => [
         )}>
           {getInitials(row.name)}
         </div>
-        <div className="font-semibold text-slate-900 text-sm whitespace-normal break-words leading-tight">
+        <div className="font-semibold text-slate-900 dark:text-foreground text-sm whitespace-normal break-words leading-tight">
           {row.name}
         </div>
       </div>
@@ -65,13 +67,33 @@ export const buildCourseColumns = (): Column<Course>[] => [
   {
     key: "category",
     label: "COURSE DESCRIPTION",
-    render: (value, row) => (
-      <span className="text-slate-500 text-sm">{row.category}</span>
-    ),
+    width: "max-w-[280px]",
+    render: (value, row) => {
+      const descriptionText = (row.description || row.category || "").trim() || "N/A";
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                className="max-w-[280px] truncate overflow-hidden whitespace-nowrap text-ellipsis text-gray-500 dark:text-muted-foreground text-sm"
+                title={descriptionText}
+              >
+                {descriptionText}
+              </div>
+            </TooltipTrigger>
+            {descriptionText !== "N/A" && (
+              <TooltipContent className="max-w-xs sm:max-w-sm break-words">
+                <p className="text-xs">{descriptionText}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
   },
   {
     key: "modules",
-    label: "TOTAL MODULES",
+    label: "Total Modules",
     render: (value, row) => (
       <span className="text-slate-700 font-medium text-sm">
         {typeof row.modules === "number" ? row.modules : row.modules.length} Modules
@@ -80,91 +102,24 @@ export const buildCourseColumns = (): Column<Course>[] => [
   },
   {
     key: "updated",
-    label: "LAST UPDATED",
+    label: "Last Updated",
     render: (value, row) => (
-      <span className="text-slate-500 text-sm">{row.updated}</span>
+      <span className="text-gray-500 dark:text-muted-foreground">{row.updated}</span>
     ),
   },
   {
     key: "status",
-    label: "STATUS",
-    render: (value, row) => {
-      const isPublished = row.status === "Published";
-      return (
-        <Badge className={cn(
-          "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
-          isPublished
-            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-            : "bg-amber-100 text-amber-700 hover:bg-amber-200"
-        )}>
-          {row.status}
-        </Badge>
-      );
-    },
-  },
-];
-
-export const buildDomainColumns = (): Column<Domain>[] => [
-  {
-    key: "id",
-    label: "ID",
+    label: "Status",
     render: (value, row) => (
-      <div className="font-semibold text-slate-600 text-sm">#DOM-{row.id}</div>
+      <span
+        className={`px-2.5 py-1 text-xs rounded-full font-medium border ${
+          row.status === "Published"
+            ? "bg-green-50 text-green-700 border-green-200"
+            : "bg-orange-50 text-orange-700 border-orange-200"
+        }`}
+      >
+        {row.status}
+      </span>
     ),
-  },
-  {
-    key: "name",
-    label: "DOMAIN NAME",
-    render: (value, row) => (
-      <div className="flex items-center gap-3 max-w-[240px]">
-        <div className={cn(
-          "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
-          getAvatarColor(row.id)
-        )}>
-          {getInitials(row.name)}
-        </div>
-        <div className="font-semibold text-slate-900 text-sm whitespace-normal break-words leading-tight">
-          {row.name}
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: "category",
-    label: "CATEGORY",
-    render: (value, row) => (
-      <span className="text-slate-500 text-sm">{row.category}</span>
-    ),
-  },
-  {
-    key: "courses",
-    label: "TOTAL COURSES",
-    render: (value, row) => (
-      <span className="text-slate-700 font-medium text-sm">{row.courses} Courses</span>
-    ),
-  },
-  {
-    key: "updated",
-    label: "LAST UPDATED",
-    render: (value, row) => (
-      <span className="text-slate-500 text-sm">{row.updated}</span>
-    ),
-  },
-  {
-    key: "status",
-    label: "STATUS",
-    render: (value, row) => {
-      const isActive = row.status === "Active";
-      return (
-        <Badge className={cn(
-          "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
-          isActive
-            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-        )}>
-          {row.status}
-        </Badge>
-      );
-    },
   },
 ];

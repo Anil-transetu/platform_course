@@ -42,12 +42,20 @@ export function buildUserColumns(activeTab: "accepted" | "pending"): Column<User
       label: "USER",
       render: (value, row) => (
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold",
-            getAvatarColor(row.id)
-          )}>
-            {getInitials(row.name)}
-          </div>
+          {row.avatar_url ? (
+            <img 
+              src={row.avatar_url} 
+              alt={row.name || "User Avatar"} 
+              className="h-9 w-9 rounded-full object-cover shrink-0" 
+            />
+          ) : (
+            <div className={cn(
+              "h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+              getAvatarColor(row.id)
+            )}>
+              {getInitials(row.name)}
+            </div>
+          )}
           <div className="flex flex-col">
             <span className="font-semibold text-slate-900 text-sm">
               {row.name}

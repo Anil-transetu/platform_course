@@ -9,6 +9,7 @@ export interface Student extends Record<string, any> {
   course_name?: string;
   name?: string;
   notes?: string;
+  profile_image?: string;
   created_at?: string;
 }
 

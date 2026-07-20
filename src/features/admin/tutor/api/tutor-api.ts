@@ -1,43 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Tutor, TutorStats } from "@/types/tutor";
+import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/tutors`;
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      headers["Authorization"] = `Bearer ${match[2]}`;
-    }
-  }
-  return headers;
-}
 
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = err.message || err.detail || "API request failed";
-
-    if (
-      message.toLowerCase().includes("token expired") ||
-      response.status === 401
-    ) {
-      if (typeof document !== "undefined") {
-        document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        document.cookie =
-          "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
-    }
-    throw new Error(message);
-  }
-  return response.json();
-}
 
 /**
  * Mapping helper: Normalizes tutor data from backend to frontend format
@@ -176,28 +145,7 @@ export async function updateTutor(id: string | number, data: Record<string, unkn
 /**
  * Delete a tutor
  */
-export async function deleteTutor(id: string | number) {
-  try {
-    const tutor = await fetchTutorById(id);
-    if (tutor && tutor.email) {
-      const payload: Record<string, unknown> = {
-        full_name: tutor.name,
-        email: `deleted_${Date.now()}_${tutor.email}`,
-        mobile_number: tutor.phone,
-        domains: tutor.domains,
-        tags: tutor.tags,
-        status: "inactive"
-      };
-      await fetch(`${BASE_URL}/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
-    }
-  } catch (err) {
-    console.error("Failed to rename email before deletion", err);
-  }
-
+export async function deleteTutor(id: string | number, tutor?: Tutor | null) {
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
@@ -239,7 +187,7 @@ export async function fetchTutorStats(): Promise<TutorStats> {
 
 export function useTutors(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, domainFilter?: string) {
   return useQuery({
-    queryKey: ["tutors", { page, limit, search, statusFilter, domainFilter }],
+    queryKey: ["tutors", "list", { page, limit, search, statusFilter, domainFilter }],
     queryFn: () => fetchTutors(page, limit, search, statusFilter, domainFilter),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
@@ -248,7 +196,7 @@ export function useTutors(page: number = 1, limit: number = 50, search?: string,
 
 export function useTutor(id: string | number) {
   return useQuery({
-    queryKey: ["tutor", id],
+    queryKey: ["tutors", "detail", id],
     queryFn: () => fetchTutorById(id),
     enabled: !!id,
   });
@@ -256,7 +204,7 @@ export function useTutor(id: string | number) {
 
 export function useTutorStats() {
   return useQuery({
-    queryKey: ["tutorStats"],
+    queryKey: ["tutors", "stats"],
     queryFn: () => fetchTutorStats(),
     staleTime: 5 * 60 * 1000,
   });
@@ -266,9 +214,43 @@ export function useCreateTutor() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createTutor,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tutors"] });
-      queryClient.invalidateQueries({ queryKey: ["tutorStats"] });
+    onSuccess: (newTutorRes) => {
+      const newTutor = mapTutor(newTutorRes?.data || newTutorRes);
+      
+      // Update tutors list cache manually
+      queryClient.setQueriesData<any>({ queryKey: ["tutors", "list"] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (Array.isArray(oldData.data)) {
+          return {
+            ...oldData,
+            data: [newTutor, ...oldData.data],
+            total: (oldData.total ?? oldData.data.length) + 1,
+            pagination: oldData.pagination ? {
+              ...oldData.pagination,
+              total: (oldData.pagination.total ?? oldData.data.length) + 1
+            } : undefined
+          };
+        } else if (Array.isArray(oldData)) {
+          return [newTutor, ...oldData];
+        }
+        return oldData;
+      });
+
+      // Update stats cache manually
+      queryClient.setQueriesData<any>({ queryKey: ["tutors", "stats"] }, (oldStats: any) => {
+        if (!oldStats) return oldStats;
+        const total = (oldStats.total ?? 0) + 1;
+        const active = newTutor.status?.toLowerCase() === "active" ? (oldStats.active ?? 0) + 1 : (oldStats.active ?? 0);
+        const inactive = newTutor.status?.toLowerCase() !== "active" ? (oldStats.inactive ?? 0) + 1 : (oldStats.inactive ?? 0);
+        const newTutors = (oldStats.newTutors ?? 0) + 1;
+        return {
+          ...oldStats,
+          total,
+          active,
+          inactive,
+          newTutors
+        };
+      });
     },
   });
 }
@@ -276,11 +258,72 @@ export function useCreateTutor() {
 export function useUpdateTutor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string | number; data: Record<string, unknown> }) => updateTutor(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tutors"] });
-      queryClient.invalidateQueries({ queryKey: ["tutor", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["tutorStats"] });
+    mutationFn: ({ id, data }: { id: string | number; data: Record<string, unknown>; originalTutor?: Tutor | null }) => updateTutor(id, data),
+    onSuccess: (updatedTutorRes, variables) => {
+      const rawTutor = updatedTutorRes?.data || updatedTutorRes;
+      const updatedTutor = mapTutor({
+        ...(variables.originalTutor || {}),
+        ...rawTutor,
+        id: variables.id,
+        tutor_id: variables.id,
+        tutor_name: variables.data.name || variables.data.full_name,
+        email: variables.data.email,
+        mobile_number: variables.data.phone || variables.data.mobile_number,
+        domains: variables.data.domains,
+        tags: variables.data.tags,
+        status: variables.data.status
+      });
+
+      // Update list cache manually
+      queryClient.setQueriesData<any>({ queryKey: ["tutors", "list"] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (Array.isArray(oldData.data)) {
+          const updated = oldData.data.map((t: any) => 
+            String(t.id) === String(variables.id) ? updatedTutor : t
+          );
+          return {
+            ...oldData,
+            data: updated
+          };
+        } else if (Array.isArray(oldData)) {
+          return oldData.map((t: any) => 
+            String(t.id) === String(variables.id) ? updatedTutor : t
+          );
+        }
+        return oldData;
+      });
+
+      // Update detail cache manually
+      queryClient.setQueryData(["tutors", "detail", variables.id], updatedTutor);
+
+      // Update stats cache if status changed
+      if (
+        variables.originalTutor &&
+        variables.data.status &&
+        String(variables.originalTutor.status).toLowerCase() !== String(variables.data.status).toLowerCase()
+      ) {
+        queryClient.setQueriesData<any>({ queryKey: ["tutors", "stats"] }, (oldStats: any) => {
+          if (!oldStats) return oldStats;
+          
+          const wasActive = variables.originalTutor?.status?.toLowerCase() === "active";
+          const isActiveNow = String(variables.data.status).toLowerCase() === "active";
+          
+          if (wasActive && !isActiveNow) {
+            return {
+              ...oldStats,
+              active: Math.max(0, (oldStats.active ?? 0) - 1),
+              inactive: (oldStats.inactive ?? 0) + 1
+            };
+          } else if (!wasActive && isActiveNow) {
+            return {
+              ...oldStats,
+              active: (oldStats.active ?? 0) + 1,
+              inactive: Math.max(0, (oldStats.inactive ?? 0) - 1)
+            };
+          }
+          return oldStats;
+        });
+      }
     },
   });
 }
@@ -288,10 +331,47 @@ export function useUpdateTutor() {
 export function useDeleteTutor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: deleteTutor,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tutors"] });
-      queryClient.invalidateQueries({ queryKey: ["tutorStats"] });
+    mutationFn: ({ id, tutor }: { id: string | number; tutor?: Tutor | null }) => deleteTutor(id, tutor),
+    onSuccess: (_, variables) => {
+      // Remove from list cache manually
+      queryClient.setQueriesData<any>({ queryKey: ["tutors", "list"] }, (oldData: any) => {
+        if (!oldData) return oldData;
+        if (Array.isArray(oldData.data)) {
+          const filtered = oldData.data.filter((t: any) => String(t.id) !== String(variables.id));
+          return {
+            ...oldData,
+            data: filtered,
+            total: Math.max(0, (oldData.total ?? (oldData.data.length + 1)) - 1),
+            pagination: oldData.pagination ? {
+              ...oldData.pagination,
+              total: Math.max(0, (oldData.pagination.total ?? (oldData.data.length + 1)) - 1)
+            } : undefined
+          };
+        } else if (Array.isArray(oldData)) {
+          return oldData.filter((t: any) => String(t.id) !== String(variables.id));
+        }
+        return oldData;
+      });
+
+      // Update stats cache manually
+      queryClient.setQueriesData<any>({ queryKey: ["tutors", "stats"] }, (oldStats: any) => {
+        if (!oldStats) return oldStats;
+        
+        const isCurrentlyActive = variables.tutor?.status?.toLowerCase() === "active";
+        
+        const total = Math.max(0, (oldStats.total ?? 0) - 1);
+        const active = isCurrentlyActive ? Math.max(0, (oldStats.active ?? 0) - 1) : (oldStats.active ?? 0);
+        const inactive = !isCurrentlyActive ? Math.max(0, (oldStats.inactive ?? 0) - 1) : (oldStats.inactive ?? 0);
+        const newTutors = Math.max(0, (oldStats.newTutors ?? 0) - 1);
+        
+        return {
+          ...oldStats,
+          total,
+          active,
+          inactive,
+          newTutors
+        };
+      });
     },
   });
 }

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Student } from "@/types/student";
 import { Column } from "@/components/reusable/DataTable";
 import { cn } from "@/lib/utils";
@@ -37,12 +38,20 @@ export function buildStudentColumns(): Column<Student>[] {
       label: "Student Name",
       render: (value, row) => (
         <div className="flex items-center gap-2">
-          <div className={cn(
-            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold",
-            getAvatarColor(row.id)
-          )}>
-            {getInitials(row.first_name, row.last_name)}
-          </div>
+          {row.profile_image ? (
+            <img 
+              src={row.profile_image} 
+              alt={row.first_name || "Student Avatar"} 
+              className="h-9 w-9 rounded-lg object-cover shrink-0" 
+            />
+          ) : (
+            <div className={cn(
+              "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
+              getAvatarColor(row.id)
+            )}>
+              {getInitials(row.first_name, row.last_name)}
+            </div>
+          )}
           <span className="font-semibold text-slate-900 text-sm">
             {row.first_name} {row.last_name}
           </span>
@@ -59,18 +68,41 @@ export function buildStudentColumns(): Column<Student>[] {
       ),
     },
     {
-      key: "course_name",
+      key: "enrolled_batches",
       label: "Enrolled Batches",
       render: (value, row) => {
-        const course = row.course_name as string;
-        if (!course) return <span className="text-slate-400 text-sm">-</span>;
+        const batches = row.enrolled_batches as { id: number; name: string }[] | undefined;
+        if (!batches || batches.length === 0) return <span className="text-slate-400 text-sm">-</span>;
+        
+        const displayBatches = batches.slice(0, 2);
+        const remainingBatches = batches.length - 2;
+
         return (
-          <div className="flex flex-wrap gap-1.5">
-            {course.split(",").map((c, i) => (
-              <Badge key={i} className="bg-blue-100 text-blue-700 border-none rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-blue-200 transition-colors">
-                {c.trim()}
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {displayBatches.map((batch) => (
+              <Badge key={batch.id} className="bg-blue-100 text-blue-700 border-none rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-blue-200 transition-colors">
+                {batch.name}
               </Badge>
             ))}
+            
+            {remainingBatches > 0 && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge className="bg-slate-100 text-slate-600 border-none rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-slate-200 transition-colors cursor-help">
+                      +{remainingBatches} more
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-slate-800 text-white p-2 rounded-lg text-xs border-none shadow-lg z-50">
+                    <div className="flex flex-col gap-1">
+                      {batches.slice(2).map((b) => (
+                        <div key={b.id}>• {b.name}</div>
+                      ))}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         );
       },
@@ -86,7 +118,7 @@ export function buildStudentColumns(): Column<Student>[] {
             "px-3 py-1.5 rounded-lg text-xs font-bold border-none transition-all",
             isActive 
               ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" 
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              : "bg-red-100 text-red-600 hover:bg-red-200"
           )}>
             {status}
           </Badge>

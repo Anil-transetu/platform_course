@@ -1,61 +1,12 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Domain, DomainStats } from "@/types/domain";
+import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/domains`;
 
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      headers["Authorization"] = `Bearer ${match[2]}`;
-    }
-  }
-  return headers;
-}
 
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    let messageStr = "API request failed";
-    if (err.errors) {
-      if (Array.isArray(err.errors)) {
-        messageStr = err.errors.map((e: any) => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
-      } else if (typeof err.errors === "object") {
-        messageStr = Object.values(err.errors).flat().join(", ");
-      } else {
-        messageStr = String(err.errors);
-      }
-    } else if (Array.isArray(err.message)) {
-      messageStr = err.message.join(", ");
-    } else if (err.message) {
-      messageStr = err.message;
-    } else if (err.detail) {
-      messageStr = err.detail;
-    }
-
-    const isTokenExpired =
-      messageStr.toLowerCase().includes("token expired") ||
-      response.status === 401;
-
-    if (!isTokenExpired) {
-      console.error("API ERROR:", err);
-    } else {
-      if (typeof document !== "undefined") {
-        document.cookie =
-          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        document.cookie =
-          "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
-    }
-    throw new Error(messageStr);
-  }
-  return response.json();
-}
 
 /**
  * Mapping helper: Normalizes domain data from backend to frontend format
@@ -183,8 +134,6 @@ export async function createDomain(data: Record<string, any>) {
  * Edit domain by ID (API #3)
  */
 export async function updateDomain(id: string | number, data: Record<string, any>) {
-  // If only course_ids and assignment_ids are sent, payload is tailored.
-  // Otherwise we send all provided fields.
   const payload: Record<string, any> = {};
   
   if (data.course_ids !== undefined) payload.course_ids = data.course_ids;
@@ -277,64 +226,4 @@ export function useDomains(
   });
 }
 
-export function useDomain(id: string | number) {
-  return useQuery({
-    queryKey: ["domain", id],
-    queryFn: ({ signal }) => fetchDomainById(id, signal),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!id,
-  });
-}
-
-export function useDomainStats(options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ["domainStats"],
-    queryFn: ({ signal }) => fetchDomainStats(signal),
-    staleTime: 5 * 60 * 1000,
-    enabled: options?.enabled,
-  });
-}
-
-export function useCreateDomain() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createDomain,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domainStats"] });
-    },
-  });
-}
-
-export function useUpdateDomain() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string | number; data: Record<string, any> }) => updateDomain(id, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domain", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["domainStats"] });
-    },
-  });
-}
-
-export function useDeleteDomain() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteDomain,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domainStats"] });
-    },
-  });
-}
-
-export function useDomainCourses(id: string | number, page: number = 1, limit: number = 10) {
-  return useQuery({
-    queryKey: ["domainCourses", id, { page, limit }],
-    queryFn: ({ signal }) => fetchDomainCourses(id, page, limit, signal),
-    staleTime: 5 * 60 * 1000,
-    enabled: !!id,
-  });
-}
 

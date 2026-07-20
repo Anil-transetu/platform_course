@@ -3,12 +3,10 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Course } from "./columns";
-import { Domain } from "@/types/domain";
 
 interface CourseDeleteDialogProps {
   open: boolean;
-  item: Course | Domain | null;
-  type: "course" | "domain";
+  item: Course | null;
   onClose: () => void;
   onConfirm: () => void;
   loading?: boolean;
@@ -17,7 +15,6 @@ interface CourseDeleteDialogProps {
 export default function CourseDeleteDialog({
   open,
   item,
-  type,
   onClose,
   onConfirm,
   loading = false,
@@ -25,7 +22,7 @@ export default function CourseDeleteDialog({
   if (!item) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(val) => { if (!loading) onClose(); }}>
+    <Dialog open={open} onOpenChange={() => { if (!loading) onClose(); }}>
       <DialogContent className="max-w-md p-6 bg-white dark:bg-card rounded-2xl shadow-xl">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-foreground">
@@ -34,7 +31,7 @@ export default function CourseDeleteDialog({
         </DialogHeader>
         
         <div className="text-gray-600 dark:text-muted-foreground mb-6">
-          Are you sure you want to delete {type === "course" ? "course" : "domain"} <span className="font-semibold text-gray-900 dark:text-foreground">&quot;{item.name}&quot;</span>? This action cannot be undone.
+          Are you sure you want to delete course <span className="font-semibold text-gray-900 dark:text-foreground">&quot;{item.name}&quot;</span>? This action cannot be undone.
         </div>
 
         <div className="flex justify-end gap-3">
@@ -65,3 +62,4 @@ export default function CourseDeleteDialog({
     </Dialog>
   );
 }
+

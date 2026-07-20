@@ -1,6 +1,7 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -37,6 +38,7 @@ export interface FilterConfig {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   clearable?: boolean;
+  className?: string;
 }
 
 export interface SearchConfig {
@@ -88,6 +90,26 @@ export default function DataTable<T extends Record<string, unknown>>({
   renderExpandedRow,
 }: DataTableProps<T>) {
   const [expandedRowKeys, setExpandedRowKeys] = React.useState<Set<string | number>>(new Set());
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const [isMac, setIsMac] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        if (search?.enabled) {
+          e.preventDefault();
+          searchInputRef.current?.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [search?.enabled]);
 
   const toggleExpand = (rowId: string | number) => {
     const newSet = new Set(expandedRowKeys);
@@ -98,27 +120,33 @@ export default function DataTable<T extends Record<string, unknown>>({
   return (
     <div className="bg-card rounded-lg shadow-sm border border-border flex flex-col h-full overflow-hidden flex-1 min-h-0">
       {/* SEARCH & FILTERS BAR */}
-      {(search?.enabled || (filters && filters.length > 0)) && (
-        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-stretch md:items-center bg-card flex-shrink-0">
-          {/* SEARCH INPUT — grows to fill all remaining space */}
+      {(search?.enabled || (filters && filters.length > 0) || showPagination) && (
+        <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-card flex-shrink-0">
+          {/* SEARCH INPUT — grows to fill all remaining space on desktop */}
           {search?.enabled && (
-            <div className="flex-1 min-w-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="flex-1 w-full md:w-auto min-w-0">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 <Input
+                  ref={searchInputRef}
                   type="text"
                   placeholder={search.placeholder || "Search..."}
                   value={search.value}
                   onChange={(e) => search.onChange(e.target.value)}
-                  className="pl-10 w-full bg-card border-border"
+                  className="pl-10 pr-16 w-full bg-card border-border transition-all focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
                 />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 px-1 py-0.5 bg-gray-100 dark:bg-muted/50 border border-gray-200 dark:border-border/50 rounded-sm text-[10px] font-bold text-gray-500 pointer-events-none select-none">
+                  <span className="text-gray-400">{isMac ? '⌘' : 'Ctrl'}</span> K
+                </div>
               </div>
             </div>
           )}
 
-          {/* FILTER SELECTS — fixed width, aligned right */}
-          {filters && filters.length > 0 && (
-            <div className="flex gap-2 sm:gap-3 flex-wrap items-center w-full md:w-auto">
+          {/* FILTER & ROWS PER PAGE CONTAINER */}
+          <div className="flex flex-row gap-4 items-center justify-between sm:justify-start w-full md:w-auto">
+            {/* FILTER SELECTS */}
+            {filters && filters.length > 0 && (
+              <div className="flex gap-2 sm:gap-3 flex-row flex-wrap items-center flex-1 sm:flex-initial">
               {filters.map((filter) => (
                 <div key={filter.id} className="relative flex-1 sm:flex-initial min-w-[120px] sm:min-w-0">
                   {filter.type === "select" && (
@@ -126,7 +154,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       value={Array.isArray(filter.value) ? "" : (filter.value || "")}
                       onValueChange={(val) => filter.onChange(val)}
                     >
-                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -150,7 +178,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                         filter.onChange(val ? val.split(",") : [])
                       }
                     >
-                      <SelectTrigger className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm">
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
                         <SelectValue placeholder={filter.label} />
                       </SelectTrigger>
                       <SelectContent>
@@ -169,7 +197,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       placeholder={filter.placeholder || filter.label}
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
                     />
                   )}
 
@@ -178,7 +206,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       type="date"
                       value={Array.isArray(filter.value) ? "" : filter.value}
                       onChange={(e) => filter.onChange(e.target.value)}
-                      className="w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm"
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
                     />
                   )}
 
@@ -190,7 +218,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       }
                       variant="ghost"
                       size="sm"
-                      className="absolute -right-10 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
                       title="Clear filter"
                     >
                       <X className="h-4 w-4" />
@@ -198,20 +226,44 @@ export default function DataTable<T extends Record<string, unknown>>({
                   )}
                 </div>
               ))}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* ROWS PER PAGE (Mobile Only) */}
+            {showPagination && (
+              <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
+                <Select
+                  value={String(rowsPerPage)}
+                  onValueChange={(val) => onRowsPerPageChange(Number(val))}
+                >
+                  <SelectTrigger className="w-[95px] bg-card border-border h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">Rows: 5</SelectItem>
+                    <SelectItem value="10">Rows: 10</SelectItem>
+                    <SelectItem value="15">Rows: 15</SelectItem>
+                    <SelectItem value="20">Rows: 20</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* TABLE */}
-      <div className={`overflow-auto ${bodyHeight} w-full`}>
-        <Table className="border-collapse w-full min-w-[600px] md:min-w-0">
+      <div 
+        className={`overflow-x-auto overflow-y-auto ${bodyHeight} w-full`} 
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <Table className="border-collapse w-full min-w-[600px]">
           <TableHeader className="sticky top-0 bg-muted border-b border-border">
             <TableRow className="border-b border-border hover:bg-transparent">
               {columns.map((column) => (
                 <TableHead
                   key={String(column.key)}
-                  className={`font-semibold text-card-foreground bg-muted text-xs sm:text-sm ${
+                  className={`font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3 ${
                     column.width || ""
                   } ${column.sortable ? "cursor-pointer hover:bg-accent" : ""}`}
                 >
@@ -227,7 +279,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </TableHead>
               ))}
               {actions && (
-                <TableHead className="text-center font-semibold text-card-foreground bg-muted text-xs sm:text-sm">
+                <TableHead className="text-center font-semibold text-card-foreground bg-muted text-xs sm:text-sm whitespace-nowrap px-4 py-3">
                   Actions
                 </TableHead>
               )}
@@ -269,7 +321,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                       role={actions || onRowClick ? "button" : undefined}
                     >
                       {columns.map((column) => (
-                        <TableCell key={String(column.key)} className="text-card-foreground py-3 px-4">
+                        <TableCell key={String(column.key)} className={cn("text-card-foreground py-3 px-4 whitespace-nowrap", column.width)}>
                           {column.render
                             ? column.render(row[column.key as keyof T], row, isExpanded, () => toggleExpand(rowId))
                             : (row[column.key as keyof T] as ReactNode)}
@@ -308,44 +360,47 @@ export default function DataTable<T extends Record<string, unknown>>({
       {/* TABLE FOOTER - Pagination */}
       {showPagination && (
         <div className="flex-shrink-0 bg-card border-t border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start">
-            <span className="text-xs sm:text-sm font-medium text-card-foreground">Rows per page:</span>
-            <Select
-              value={String(rowsPerPage)}
-              onValueChange={(val) => onRowsPerPageChange(Number(val))}
-            >
-              <SelectTrigger className="w-[60px] sm:w-[70px] bg-card border-border h-8 sm:h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="15">15</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-              </SelectContent>
-            </Select>
-            {paginationInfo && (
-              <span className="text-xs sm:text-sm text-muted-foreground ml-2 sm:ml-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start order-1 sm:order-1 w-full sm:w-auto">
+            {/* ROWS PER PAGE (Desktop/Tablet) */}
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Rows per page:</span>
+              <Select
+                value={String(rowsPerPage)}
+                onValueChange={(val) => onRowsPerPageChange(Number(val))}
+              >
+                <SelectTrigger className="w-[70px] bg-card border-border h-9 text-xs sm:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {paginationInfo ? (
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 {paginationInfo}
+              </span>
+            ) : (
+              <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
+                Page {currentPage} of {totalPages}
               </span>
             )}
           </div>
 
-          <div className="flex gap-3 sm:gap-4 items-center justify-between w-full sm:w-auto">
+          <div className="flex gap-2 sm:gap-4 items-center justify-between w-full sm:w-auto order-2 sm:order-2">
             <button
               onClick={() => onPageChange(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className={`text-xs sm:text-sm ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:underline"}`}
+              className={`text-xs sm:text-sm p-2 -ml-2 sm:ml-0 font-medium ${currentPage === 1 ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               aria-label="Previous page"
             >
               Previous
             </button>
 
-            <span className="text-xs sm:hidden font-medium text-card-foreground">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <nav aria-label="Pagination" className="hidden sm:flex items-center gap-2">
+            <nav aria-label="Pagination" className="flex items-center gap-1 sm:gap-2">
               {Array.from({ length: totalPages }).map((_, i) => {
                 const p = i + 1;
                 if (
@@ -361,10 +416,10 @@ export default function DataTable<T extends Record<string, unknown>>({
                       key={p}
                       onClick={() => onPageChange(p)}
                       aria-current={isActive ? "page" : undefined}
-                      className={`inline-flex items-center justify-center w-9 h-9 text-xs sm:text-sm font-medium ${
+                      className={`inline-flex items-center justify-center min-w-[32px] sm:min-w-[36px] h-8 sm:h-9 text-xs sm:text-sm font-medium transition-colors ${
                         isActive
                           ? "bg-blue-600 text-white rounded-md shadow"
-                          : "text-card-foreground"
+                          : "text-card-foreground hover:bg-muted rounded-md"
                       }`}
                     >
                       {p}
@@ -374,7 +429,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
                 if (p === currentPage - 2 || p === currentPage + 2) {
                   return (
-                    <span key={`e-${p}`} className="px-2 text-muted-foreground">
+                    <span key={`e-${p}`} className="px-1 sm:px-2 text-muted-foreground">
                       …
                     </span>
                   );
@@ -387,7 +442,7 @@ export default function DataTable<T extends Record<string, unknown>>({
             <button
               onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className={`text-xs sm:text-sm ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:underline"}`}
+              className={`text-xs sm:text-sm p-2 -mr-2 sm:mr-0 font-medium ${currentPage === totalPages ? "text-gray-300" : "text-card-foreground hover:bg-muted rounded-md transition-colors"}`}
               aria-label="Next page"
             >
               Next

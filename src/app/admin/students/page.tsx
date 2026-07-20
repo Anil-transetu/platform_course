@@ -90,10 +90,10 @@ function StudentsPageContent() {
 
   // Filters & Pagination state
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<"All" | "Active" | "Inactive">("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   // Debounce search term
   useEffect(() => {
@@ -103,31 +103,30 @@ function StudentsPageContent() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Reset page when search or status changes
+  // Reset page when search, status or rowsPerPage changes
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, status]);
+  }, [debouncedSearch, status, rowsPerPage]);
 
-  // Data fetching hooks
-  const { data: studentsData, isLoading, isFetching } = useStudents(
+  // Fetch students with server-side pagination and filtering
+  const { data: studentsData, isLoading } = useStudents(
     page,
     rowsPerPage,
     debouncedSearch || undefined,
-    status
+    status === "All" ? undefined : status
   );
 
   const { data: stats } = useStudentStats();
 
-  const studentsList = Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
-  const totalCount = stats?.total_students || (Array.isArray(studentsData) ? studentsData.length : studentsData?.total || studentsList.length || 0);
-  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const studentsList = React.useMemo(() => {
+    return Array.isArray(studentsData) ? studentsData : studentsData?.data || [];
+  }, [studentsData]);
 
-  // If the backend returned more items than rowsPerPage, it means it didn't paginate, so we slice locally.
-  let visibleData = studentsList;
-  if (studentsList.length > rowsPerPage) {
-    const start = (page - 1) * rowsPerPage;
-    visibleData = studentsList.slice(start, start + rowsPerPage);
-  }
+  const totalCount = studentsData?.pagination?.total || studentsData?.pagination?.total_records || studentsData?.meta?.total || studentsData?.total || studentsData?.total_records || studentsList.length;
+  const totalPages = studentsData?.pagination?.total_pages || studentsData?.pagination?.totalPages || Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const startIndex = (page - 1) * rowsPerPage;
+
+  const visibleData = studentsList;
 
   // DataTable configs
   const searchConfig = {
@@ -156,7 +155,7 @@ function StudentsPageContent() {
   ];
 
   const paginationInfo = totalCount > 0
-    ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
+    ? `${startIndex + 1}-${Math.min(startIndex + visibleData.length, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
   const extraHeaderActions = (
@@ -214,7 +213,7 @@ function StudentsPageContent() {
         <DataTable<Student>
           columns={buildStudentColumns()}
           data={visibleData}
-          loading={isLoading || isFetching}
+          loading={isLoading}
           search={searchConfig}
           filters={filterConfig}
           actions={(student) => (

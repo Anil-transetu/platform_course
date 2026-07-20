@@ -3,36 +3,11 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 // Students API - fetches directly from backend to avoid server-to-localhost proxy issues on Vercel
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/students`;
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json"
-  };
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      headers["Authorization"] = `Bearer ${match[2]}`;
-    }
-  }
-  return headers;
-}
 
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const message = err.message || err.detail || "API request failed";
-
-    if (message.toLowerCase().includes("token expired") || response.status === 401) {
-      if (typeof document !== "undefined") {
-        document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        window.location.href = "/login";
-      }
-    }
-    throw new Error(message);
-  }
-  return response.json();
-}
 
 import { Student, StudentStats } from "@/types/student";
+import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+
 
 /**
  * Mapping helper: Splits a full name into first and last name
@@ -72,13 +47,14 @@ function mapStudent(s: Record<string, unknown>): Student {
     course_name: (s.course_name as string) || (s.course as Record<string, unknown>)?.name as string || "",
     email: (s.email as string) || "",
     status: s.status ? ((s.status as string).charAt(0).toUpperCase() + (s.status as string).slice(1).toLowerCase()) : "Active",
+    profile_image: (s.profile_image as string) || undefined,
   };
 }
 
 /**
  * Fetch all students
  */
-export async function fetchStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
+export async function fetchStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   let url = BASE_URL;
   const query = new URLSearchParams();
   if (page !== undefined && limit !== undefined) {
@@ -169,6 +145,8 @@ export async function createStudent(data: Record<string, unknown>) {
     mobile_number: data.mobile_number,
     password: data.password,
     notes: data.notes,
+    status: data.status,
+    institution_id: data.institution_id,
   };
 
   const response = await fetch(BASE_URL, {
@@ -195,6 +173,7 @@ export async function updateStudent(id: string | number, data: Record<string, un
     notes: data.notes || undefined,
     status: data.status ? (data.status as string).toLowerCase() : undefined,
     course_id: data.courseId || data.course_id || data.course, // Support both
+    institution_id: data.institution_id || data.institutionId || undefined,
   };
 
   // Remove undefined fields to prevent backend rejection
@@ -213,7 +192,7 @@ export async function updateStudent(id: string | number, data: Record<string, un
  * TanStack Query Hooks
  */
 
-export function useStudents(page: number = 1, limit: number = 50, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
+export function useStudents(page: number = 1, limit: number = 10, search?: string, statusFilter?: string, courseId?: string, institutionId?: string) {
   return useQuery({
     queryKey: ["students", { page, limit, search, statusFilter, courseId, institutionId }],
     queryFn: () => fetchStudents(page, limit, search, statusFilter, courseId, institutionId),

@@ -4,6 +4,15 @@ import { Column } from "@/components/reusable/DataTable";
 import { Tutor } from "@/types/tutor";
 import { cn } from "@/lib/utils";
 
+const getInitials = (name?: string) => {
+  if (!name) return "T";
+  const parts = name.trim().split(" ");
+  if (parts.length > 1) {
+    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+  }
+  return name.charAt(0).toUpperCase();
+};
+
 const avatarColors = [
   "bg-blue-100 text-blue-600",
   "bg-orange-200 text-orange-600",
@@ -13,7 +22,10 @@ const avatarColors = [
 ];
 
 const getAvatarColor = (id: string | number) => {
-  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
+  const index =
+    typeof id === "number"
+      ? id % avatarColors.length
+      : String(id).length % avatarColors.length;
   return avatarColors[index];
 };
 
@@ -22,17 +34,25 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "name",
       label: "Tutor Info",
-      width: "w-[20%]",
+      width: "w-1/5",
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold",
-            getAvatarColor(row.id)
-          )}>
-            <span>
-              {row.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          {row.avatar ? (
+            <img
+              src={row.avatar}
+              alt={row.name || "Tutor Avatar"}
+              className="h-10 w-10 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className={cn(
+                "h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
+                getAvatarColor(row.id)
+              )}
+            >
+              {getInitials(row.name)}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="font-semibold text-foreground text-sm truncate">
               {row.name}
@@ -78,11 +98,10 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "email",
       label: "Contact",
-      width: "w-[25%]",
       render: (_, row) => (
         <div>
           <p className="text-foreground font-medium text-sm">{row.email}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{row.phone}</p>
+          <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5">{row.phone}</p>
         </div>
       ),
     },
@@ -100,7 +119,7 @@ export function buildTutorColumns(): Column<Tutor>[] {
             {visibleBatches.map((b: any, i: number) => (
               <span
                 key={b?._id || b?.id || b?.batchName || i}
-                className="bg-gray-100 text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block max-w-[180px]"
+                className="bg-gray-100 dark:bg-muted text-muted-foreground text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-normal break-words inline-block max-w-[180px]"
               >
                 {typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b}
               </span>
@@ -108,7 +127,7 @@ export function buildTutorColumns(): Column<Tutor>[] {
             {extraCount > 0 && (
               <span
                 title={batches.map((b: any) => typeof b === 'object' ? (b.batchName || b.name || 'Unknown') : b).slice(maxVisible).join(", ")}
-                className="bg-gray-200 text-gray-800 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap cursor-help"
+                className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase whitespace-nowrap cursor-help"
               >
                 +{extraCount}
               </span>
@@ -120,18 +139,21 @@ export function buildTutorColumns(): Column<Tutor>[] {
     {
       key: "status",
       label: "Status",
-      width: "w-[10%]",
-      render: (_, row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-            row.status?.toLowerCase() === "active"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {row.status?.charAt(0).toUpperCase() + row.status?.slice(1)}
-        </span>
-      ),
+      render: (_, row) => {
+        const status = (row.status as string) || "Inactive";
+        const isActive = status.toLowerCase() === "active";
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+              isActive
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {isActive ? "Active" : "Inactive"}
+          </span>
+        );
+      },
     },
   ];
 }

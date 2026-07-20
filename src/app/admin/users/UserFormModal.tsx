@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Eye, EyeOff, Search } from "lucide-react";
 import { toast } from "sonner";
 import InstitutionSelect from "./InstitutionSelect";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Props {
   open: boolean;
@@ -139,7 +140,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Full Name
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 value={form.name}
@@ -156,19 +157,19 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
 
             <div className="sm:w-1/3">
               <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Status
+                Status <span className="text-red-500">*</span>
               </label>
-              <select
-                value={form.is_active}
-                onChange={(e) => setForm({ ...form, is_active: e.target.value })}
-                className={`w-full border bg-white dark:bg-card rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 dark:text-foreground ${
+              <Select value={form.is_active} onValueChange={(val) => setForm({ ...form, is_active: val })}>
+                <SelectTrigger className={`w-full bg-white dark:bg-card ${
                   (errors as any).is_active ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              >
-                <option value="">Select status</option>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
+                }`}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
               {(errors as any).is_active && (
                 <p className="text-red-500 text-xs mt-1">{(errors as any).is_active}</p>
               )}
@@ -178,7 +179,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           {/* Email Address */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Email Address
+              Email Address <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -198,7 +199,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           {/* Password */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Initial Password
+              Initial Password {mode === "add" && <span className="text-red-500">*</span>}
             </label>
             <div className="relative">
               <input
@@ -227,20 +228,19 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           {/* Role */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Select Role
+              Select Role <span className="text-red-500">*</span>
             </label>
-            <select
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className={`w-full border bg-white dark:bg-card rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-gray-700 dark:text-foreground ${
+            <Select value={form.role} onValueChange={(val) => setForm({ ...form, role: val })}>
+              <SelectTrigger className={`w-full bg-white dark:bg-card ${
                 errors.role ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            >
-              <option value="">Select a role</option>
-              <option value="admin">Admin</option>
-              <option value="institution_representative">Institution Representative</option>
-
-            </select>
+              }`}>
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="institution_representative">Institution Representative</SelectItem>
+              </SelectContent>
+            </Select>
             {errors.role && (
               <p className="text-red-500 text-xs mt-1">{errors.role}</p>
             )}
@@ -250,7 +250,7 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           {form.role === "institution_representative" && (
             <div>
               <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Select Institution
+                Select Institution <span className="text-red-500">*</span>
               </label>
               <InstitutionSelect
                 value={form.institution_id}
