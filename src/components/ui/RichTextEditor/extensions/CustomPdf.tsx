@@ -4,6 +4,7 @@ import React from 'react';
 import { X, FileText } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
 import { getDisplayMediaUrl, openPdf } from '@/lib/utils';
+import { getDisplayMediaUrl, openPdf } from '@/lib/utils';
 
 const PdfComponent = (props: any) => {
   return (
@@ -12,13 +13,11 @@ const PdfComponent = (props: any) => {
         <div className="w-12 h-12 rounded-xl bg-red-500/10 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
           <FileText size={24} strokeWidth={2} />
         </div>
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <p className="text-sm font-bold text-foreground truncate block" title={props.node.attrs.title || "Attached PDF Resource"}>
-            {props.node.attrs.title || "Attached PDF Resource"}
-          </p>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-foreground truncate">{props.node.attrs.title || "Attached PDF Resource"}</p>
           <button 
             type="button"
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline inline-block mt-0.5 text-left truncate max-w-full"
+            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline inline-block mt-0.5 text-left"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -26,6 +25,7 @@ const PdfComponent = (props: any) => {
             }}
           >
             Download / View PDF
+          </button>
           </button>
         </div>
       </div>

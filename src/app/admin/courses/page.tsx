@@ -209,11 +209,18 @@ export default function CoursesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const debouncedSearch = useDebounce(search, 300);
+  const [queriesReady, setQueriesReady] = useState(false);
+
+  useEffect(() => {
+    setQueriesReady(true);
+  }, []);
   
   // Courses React Query hook
   const {
     data: coursesResponse,
     isLoading: isLoadingCourses,
+    isFetching: isFetchingCourses,
+    error: coursesError
     isFetching: isFetchingCourses,
     error: coursesError
   } = useCourses(
@@ -281,13 +288,6 @@ export default function CoursesPage() {
 
   const coursesList = coursesResponse?.data || [];
   const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
-
-  // Reset page & filters when switching tabs
-  useEffect(() => {
-    setPage(1);
-    setStatusFilter("All");
-    setSearch("");
-  }, [activeTab]);
 
   const handleSaveDomain = async (data: Record<string, unknown>) => {
     try {
@@ -425,6 +425,7 @@ export default function CoursesPage() {
           setViewingCourse(null);
           router.push("/admin/courses");
         }} 
+        onEdit={() => router.push(`/admin/courses/edit/${viewingCourse.id}`)}
         onEdit={() => router.push(`/admin/courses/edit/${viewingCourse.id}`)}
       />
     );
@@ -819,3 +820,4 @@ export default function CoursesPage() {
     </ListingScreenTemplate>
   );
 }
+

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { FileUp, Video, Globe, Image as ImageIcon } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { FileUp, Video, Globe, Image as ImageIcon, BookOpen, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ResourceModals from "@/components/modals/ResourceModals";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -92,11 +92,32 @@ export default function LessonDetailsPage() {
   };
 
   const handleAttach = (type: string, payload: { url: string; title?: string }) => {
-    if (type === 'image') editorRef.current?.insertImage(payload.url);
-    if (type === 'video') editorRef.current?.insertVideo(payload.url);
-    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title || "");
-    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title || "");
+    if (editorRef.current) {
+      if (type === "image") {
+        editorRef.current.insertImage(payload.url);
+      } else if (type === "video") {
+        editorRef.current.insertVideo(payload.url);
+      } else if (type === "pdf") {
+        editorRef.current.insertPdf(payload.url, payload.title || "PDF Resource");
+      } else if (type === "url" || type === "link") {
+        editorRef.current.insertLink(payload.url, payload.title || payload.url);
+      }
+    }
   };
+
+  if (!activeModule) {
+    return (
+      <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-4 text-center p-6">
+        <p className="text-slate-550 font-semibold text-sm">No active module selected.</p>
+        <button 
+          onClick={() => router.push(course.id ? `/admin/courses/edit/${course.id}/module` : '/admin/courses/create/module')} 
+          className="text-blue-600 underline font-bold hover:text-blue-700 transition-colors text-xs uppercase tracking-wider"
+        >
+          Go to Modules
+        </button>
+      </div>
+    );
+  }
 
   if (!activeLesson) {
     return (

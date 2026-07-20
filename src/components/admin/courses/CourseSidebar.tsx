@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { 
   FolderPlus, 
   FileText, 
@@ -17,7 +18,7 @@ import {
   Book,
   BookOpen,
   GraduationCap,
-  Award
+  GripVertical
 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useRouter, usePathname } from "next/navigation";
@@ -38,7 +39,25 @@ interface CourseSidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
 }
+import { useCreateModule, useUpdateModule, useDeleteModule, useCreateLesson, useUpdateLesson, useDeleteLesson, useCreateTopic, useDeleteTopic } from "@/features/admin/courses/api/course-api";
+import { Modal } from "@/components/ui/modal";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
+const toastApiError = (err: any, fallbackMessage: string) => {
+  if (typeof window !== "undefined" && !navigator.onLine) {
+    toast.error("Network disconnected. Please check your connection.");
+    return;
+  }
+  toast.error(err?.message || fallbackMessage);
+};
+
+interface CourseSidebarProps {
+  isCollapsed?: boolean;
+  onToggle?: () => void;
+}
+
+export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
 export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -50,6 +69,10 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     activeTopicId,
     activeQuizId,
     activeAssignmentId,
+    expandedModules,
+    expandedLessons,
+    toggleModuleExpand,
+    toggleLessonExpand,
     expandedModules,
     expandedLessons,
     toggleModuleExpand,
@@ -81,6 +104,13 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     mapTemporaryModuleId,
     lastSavedCourseJson,
     setPendingNavigation,
+    moveModuleItem,
+    reorderModules,
+    reorderModuleItems,
+    reorderLessonItems,
+    mapTemporaryModuleId,
+    lastSavedCourseJson,
+    setPendingNavigation,
   } = useCourseStore();
 
   const createModuleMutation = useCreateModule();
@@ -98,7 +128,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   const [deleteTargetLessonId, setDeleteTargetLessonId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-
+  // Drag state tracking
+  const dragItem = useRef<{ type: 'module' | 'moduleItem' | 'lessonItem'; index: number; moduleId?: string; lessonId?: string } | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<string | null>(null);
 
   const navigateTo = (subPath: string) => {
     const basePath = course.id ? `/admin/courses/edit/${course.id}` : '/admin/courses/create';
@@ -167,9 +199,23 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       activeQuizId: null,
       activeAssignmentId: null
     });
+    confirmNavigation("lesson", "lesson", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: null
+    });
   };
 
   const handleTopicClick = (moduleId: string, lessonId: string, topicId: string) => {
+    confirmNavigation("topic", "topic", {
+      activeModuleId: moduleId,
+      activeLessonId: lessonId,
+      activeTopicId: topicId,
+      activeQuizId: null,
+      activeAssignmentId: null
+    });
     confirmNavigation("topic", "topic", {
       activeModuleId: moduleId,
       activeLessonId: lessonId,
@@ -219,13 +265,48 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     });
   };
 
-  const handleAddModule = () => {
+  const handleAddModule = async () => {
     if (!course.id) {
       toast.error("Please save the course details first.");
       return;
     }
-    addModule();
-    navigateTo("module");
+    
+    if (createModuleMutation.isPending) return;
+
+    const execute = async () => {
+      const tempId = addModule();
+      navigateTo("module");
+
+      const currentCourse = useCourseStore.getState().course;
+      const orderNum = currentCourse.modules.length;
+
+      try {
+        const response = await createModuleMutation.mutateAsync({
+          courseId: currentCourse.id!,
+          data: {
+            name: "New Module",
+            description: "",
+            order_num: orderNum
+          }
+        });
+        const newModule = response.data || response;
+        const backendId = String(newModule.id);
+        mapTemporaryModuleId(tempId, backendId);
+      } catch (err) {
+        deleteModule(tempId);
+        toastApiError(err, "Failed to create module");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
   };
 
   const handleDeleteModuleClick = (moduleId: string) => {
@@ -492,9 +573,8 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     }
   };
 
-  const handleAddLesson = () => {
-    const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
-    if (!currentActiveModuleId) {
+  const handleAddLesson = async () => {
+    if (!activeModuleId) {
       toast.error("Please select a module first.");
       return;
     }
@@ -502,14 +582,78 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       toast.error("Please save the course details first.");
       return;
     }
-    addLesson(currentActiveModuleId);
-    navigateTo("lesson");
+    if (createLessonMutation.isPending) return;
+
+    const execute = async () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+      const currentCourse = useCourseStore.getState().course;
+      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
+      const orderNum = (activeModule?.lessons?.length || 0) + 1;
+
+      const tempId = addLesson(currentActiveModuleId);
+      navigateTo("lesson");
+
+      try {
+        const response = await createLessonMutation.mutateAsync({
+          moduleId: currentActiveModuleId,
+          courseId: currentCourse.id!,
+          data: {
+            name: "New Lesson",
+            type: "text",
+            order_num: orderNum
+          }
+        });
+        const newLesson = response.data || response;
+        const backendId = String(newLesson.id);
+        useCourseStore.setState((state) => {
+          const updatedModules = state.course.modules.map(m => {
+            if (m.id === currentActiveModuleId) {
+              const updatedLessons = m.lessons.map(l => l.id === tempId ? { ...l, id: backendId } : l);
+              let updatedOrder = m.order;
+              if (updatedOrder) {
+                updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
+              }
+              return { ...m, lessons: updatedLessons, order: updatedOrder };
+            }
+            return m;
+          });
+          const updatedActiveLessonId = state.activeLessonId === tempId ? backendId : state.activeLessonId;
+          const updatedExpandedLessons: Record<string, boolean> = {};
+          Object.entries(state.expandedLessons).forEach(([k, v]) => {
+            if (k === tempId) {
+              updatedExpandedLessons[backendId] = v;
+            } else {
+              updatedExpandedLessons[k] = v;
+            }
+          });
+          const nextCourse = { ...state.course, modules: updatedModules };
+          return {
+            course: nextCourse,
+            activeLessonId: updatedActiveLessonId,
+            expandedLessons: updatedExpandedLessons,
+            cleanCourse: nextCourse,
+            lastSavedCourseJson: JSON.stringify(nextCourse)
+          };
+        });
+      } catch (err) {
+        deleteLesson(currentActiveModuleId, tempId);
+        toastApiError(err, "Failed to create lesson");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
   };
 
-  const handleAddTopic = () => {
-    const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
-    const currentActiveLessonId = useCourseStore.getState().activeLessonId || activeLessonId;
-    if (!currentActiveModuleId || !currentActiveLessonId) {
+  const handleAddTopic = async () => {
+    if (!activeModuleId || !activeLessonId) {
       toast.error("Please select a lesson first.");
       return;
     }
@@ -517,11 +661,99 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       toast.error("Please save the course details first.");
       return;
     }
-    addTopic(currentActiveModuleId, currentActiveLessonId);
-    navigateTo("topic");
+    if (createTopicMutation.isPending) return;
+
+    const execute = async () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId || activeLessonId;
+      const currentCourse = useCourseStore.getState().course;
+      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
+      const activeLesson = activeModule?.lessons.find(l => l.id === currentActiveLessonId);
+      const orderNum = (activeLesson?.topics?.length || 0) + 1;
+
+      const tempId = addTopic(currentActiveModuleId, currentActiveLessonId);
+      navigateTo("topic");
+
+      try {
+        const response = await createTopicMutation.mutateAsync({
+          lessonId: currentActiveLessonId,
+          courseId: currentCourse.id!,
+          moduleId: currentActiveModuleId,
+          data: {
+            name: "New Topic",
+            content_text: "",
+            order_num: orderNum
+          }
+        });
+        const newTopic = response.data || response;
+        const backendId = String(newTopic.id);
+        useCourseStore.setState((state) => {
+          const updatedModules = state.course.modules.map(m => {
+            if (m.id === currentActiveModuleId) {
+              const updatedLessons = m.lessons.map(l => {
+                if (l.id === currentActiveLessonId) {
+                  const updatedTopics = l.topics.map(t => t.id === tempId ? { ...t, id: backendId } : t);
+                  let updatedOrder = l.order;
+                  if (updatedOrder) {
+                    updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
+                  }
+                  return { ...l, topics: updatedTopics, order: updatedOrder };
+                }
+                return l;
+              });
+              return { ...m, lessons: updatedLessons };
+            }
+            return m;
+          });
+          const updatedActiveTopicId = state.activeTopicId === tempId ? backendId : state.activeTopicId;
+          const nextCourse = { ...state.course, modules: updatedModules };
+          return {
+            course: nextCourse,
+            activeTopicId: updatedActiveTopicId,
+            cleanCourse: nextCourse,
+            lastSavedCourseJson: JSON.stringify(nextCourse)
+          };
+        });
+      } catch (err) {
+        deleteTopic(currentActiveModuleId, currentActiveLessonId, tempId);
+        toastApiError(err, "Failed to create topic");
+      }
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    await execute();
   };
 
   const handleAddQuiz = () => {
+    const execute = () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
+      if (currentActiveModuleId && currentActiveLessonId) {
+        addQuiz(currentActiveModuleId, currentActiveLessonId);
+      } else if (currentActiveModuleId) {
+        addQuiz(currentActiveModuleId);
+      } else {
+        addCourseQuiz();
+      }
+      navigateTo("quiz");
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    execute();
     const execute = () => {
       const currentActiveModuleId = useCourseStore.getState().activeModuleId;
       const currentActiveLessonId = useCourseStore.getState().activeLessonId;
@@ -569,11 +801,69 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     }
 
     execute();
+    const execute = () => {
+      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
+      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
+      if (currentActiveModuleId && currentActiveLessonId) {
+        addAssignment(currentActiveModuleId, currentActiveLessonId);
+      } else if (currentActiveModuleId) {
+        addAssignment(currentActiveModuleId);
+      } else {
+        addCourseAssignment();
+      }
+      navigateTo("assignment");
+    };
+
+    if (hasUnsavedChanges()) {
+      setPendingNavigation({
+        type: "action",
+        action: execute
+      });
+      return;
+    }
+
+    execute();
   };
 
   const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
+  const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
 
   return (
+    <div
+      className={`bg-[#f5f8fc] border-r border-slate-200/80 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700 overflow-hidden transition-all duration-300 ease-in-out ${
+        isCollapsed ? 'w-[52px]' : 'w-[320px]'
+      }`}
+    >
+      {/* COLLAPSED ICON STRIP */}
+      {isCollapsed && (
+        <div className="flex flex-col items-center py-4 gap-3 flex-1">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500" title="Add Module">
+            <FolderPlus size={16} />
+          </div>
+          {course.modules.length > 0 && (
+            <div className="flex flex-col gap-2 items-center mt-1">
+              {course.modules.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => handleModuleClick(m.id)}
+                  title={m.title || "Module"}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                    activeModuleId === m.id
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-white text-blue-600 border border-slate-200 hover:bg-blue-50'
+                  }`}
+                >
+                  <Folder size={14} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* EXPANDED FULL SIDEBAR */}
+      {!isCollapsed && (
+        <div className="p-6 flex flex-col gap-8 overflow-y-auto flex-1">
     <div
       className={`bg-[#f5f8fc] border-r border-slate-200/80 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700 overflow-hidden transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-[52px]' : 'w-[320px]'
@@ -628,17 +918,46 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                 <div
                   key={`module-${module.id}`}
                   className="flex flex-col gap-1 mb-1"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOverIndex(`module-${mIdx}`);
+                  }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={() => {
+                    if (dragItem.current?.type === 'module' && dragItem.current.index !== mIdx) {
+                      handleModuleReorder(dragItem.current.index, mIdx);
+                    }
+                    setDragOverIndex(null);
+                    dragItem.current = null;
+                  }}
+                  onDragEnd={() => {
+                    setDragOverIndex(null);
+                    dragItem.current = null;
+                  }}
                 >
                   <div 
                     onClick={() => handleModuleClick(module.id)}
-                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${isModuleActive && !activeLessonId 
+                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${dragOverIndex === `module-${mIdx}` ? 'border-blue-400 bg-blue-50 shadow-md' : isModuleActive && !activeLessonId 
                         ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
                         : 'bg-white border-slate-200/80 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
                     }`}
                   >
-                    <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                    <div className="flex items-center gap-2 overflow-hidden flex-1">
+                      {/* Drag Handle — only the grip triggers module drag */}
+                      <span
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          dragItem.current = { type: 'module', index: mIdx };
+                        }}
+                        className={`cursor-grab opacity-0 group-hover/module:opacity-50 shrink-0 ${isModuleActive && !activeLessonId ? 'text-white/60' : 'text-slate-400'}`}
+                      >
+                        <GripVertical size={14} />
+                      </span>
+
                       {/* Expand Arrow */}
                       <button
+                        onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
                         onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
                         className={`p-1 rounded-md transition-colors ${
                           isModuleActive && !activeLessonId
@@ -669,11 +988,25 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                     </div>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/module:opacity-100 transition-opacity">
                       <button 
+                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx - 1); }}
+                        disabled={mIdx === 0}
+                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                      >
+                        <ChevronUp size={12} />
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx + 1); }}
+                        disabled={mIdx === course.modules.length - 1}
+                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
+                      >
+                        <ChevronDown size={12} />
+                      </button>
+                      <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteModuleClick(module.id);
                         }}
-                        className={`p-0.5 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-455'}`}
+                        className={`p-0.5 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-450'}`}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -693,6 +1026,8 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                         {items.map((item, itemIdx) => {
+                          const dropKey = `moduleItem-${module.id}-${itemIdx}`;
+                          const isDropTarget = dragOverIndex === dropKey;
                           if (item.type === 'lesson') {
                             const lesson = module.lessons.find(l => l.id === item.id);
                             if (!lesson) return null;
@@ -703,18 +1038,51 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                             return (
                               <div
                                 key={`lesson-${lesson.id}`}
-                                className="flex flex-col gap-1"
+                                className="flex flex-col gap-1.5"
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverIndex(dropKey);
+                                }}
+                                onDragLeave={(e) => {
+                                  e.stopPropagation();
+                                  setDragOverIndex(null);
+                                }}
+                                onDrop={(e) => {
+                                  e.stopPropagation();
+                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
+                                  }
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
+                                onDragEnd={() => {
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
                               >
                                 <div
                                   onClick={() => handleLessonClick(module.id, lesson.id)}
-                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
+                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isDropTarget ? 'border-blue-400 bg-blue-50/40' : isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
                                       ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20'
                                       : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-700 hover:text-slate-900'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                  <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                    {/* Drag Handle — only the grip triggers lesson drag */}
+                                    <span
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                      }}
+                                      className={`cursor-grab opacity-0 group-hover/lesson:opacity-50 shrink-0 ${isLessonActive ? 'text-white/60' : 'text-slate-400'}`}
+                                    >
+                                      <GripVertical size={12} />
+                                    </span>
                                     {/* Lesson Expand Toggle */}
                                     <button
+                                      onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
                                       onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
                                       className={`p-0.5 rounded-md transition-colors ${
                                         isLessonActive
@@ -747,6 +1115,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteLessonClick(module.id, lesson.id);
+                                        handleDeleteLessonClick(module.id, lesson.id);
                                       }}
                                       className={`p-0.5 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                     >
@@ -768,6 +1137,8 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                       {lessonItems.map((lItem, lItemIdx) => {
+                                        const lessonDropKey = `lessonItem-${lesson.id}-${lItemIdx}`;
+                                        const isLessonDropTarget = dragOverIndex === lessonDropKey;
                                         if (lItem.type === 'topic') {
                                           const topic = lesson.topics.find(t => t.id === lItem.id);
                                           if (!topic) return null;
@@ -776,14 +1147,32 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`topic-${topic.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isTopicActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isTopicActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <Target className={isTopicActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {(() => {
@@ -798,6 +1187,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                 <button 
                                                   onClick={(e) => {
                                                     e.stopPropagation();
+                                                    handleDeleteTopicClick(module.id, lesson.id, topic.id);
                                                     handleDeleteTopicClick(module.id, lesson.id, topic.id);
                                                   }}
                                                   className={`p-0.5 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
@@ -817,15 +1207,34 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`quiz-${quiz.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isQuizActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
+                                                <span className="text-xs font-semibold truncate flex-1">
                                                 <span className="text-xs font-semibold truncate flex-1">
                                                   {quiz.title || `Quiz ${qIdx + 1}`}
                                                 </span>
@@ -835,9 +1244,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteQuiz(module.id, lesson.id, quiz.id);
-                                                    if (activeQuizId === quiz.id) {
-                                                      navigateTo("lesson");
-                                                    }
+                                                     if (activeQuizId === quiz.id) {
+                                                       navigateTo("lesson");
+                                                     }
                                                   }}
                                                   className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -856,14 +1265,32 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`assignment-${assignment.id}`}
+                                              draggable
+                                              onDragStart={(e) => {
+                                                e.stopPropagation();
+                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
+                                              }}
+                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
+                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
+                                              onDrop={(e) => {
+                                                e.stopPropagation();
+                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
+                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
+                                                }
+                                                setDragOverIndex(null);
+                                                dragItem.current = null;
+                                              }}
+                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isAssignmentActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                                 <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {assignment.title || `Assignment ${aIdx + 1}`}
@@ -874,6 +1301,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteAssignment(module.id, lesson.id, assignment.id);
+                                                     if (activeAssignmentId === assignment.id) {
+                                                       navigateTo("lesson");
+                                                     }
                                                      if (activeAssignmentId === assignment.id) {
                                                        navigateTo("lesson");
                                                      }
@@ -903,14 +1333,42 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                              return (
                                <div 
                                  key={`quiz-${quiz.id}`}
+                                 draggable
+                                 onDragStart={(e) => {
+                                   e.stopPropagation();
+                                   dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                 }}
+                                 onDragOver={(e) => {
+                                   e.preventDefault();
+                                   e.stopPropagation();
+                                   setDragOverIndex(dropKey);
+                                 }}
+                                 onDragLeave={(e) => {
+                                   e.stopPropagation();
+                                   setDragOverIndex(null);
+                                 }}
+                                 onDrop={(e) => {
+                                   e.stopPropagation();
+                                   if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                     reorderModuleItems(module.id, dragItem.current.index, itemIdx);
+                                   }
+                                   setDragOverIndex(null);
+                                   dragItem.current = null;
+                                 }}
+                                 onDragEnd={() => {
+                                   setDragOverIndex(null);
+                                   dragItem.current = null;
+                                 }}
                                  onClick={() => handleQuizClick(module.id, undefined, quiz.id)}
                                  className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                   isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                    isQuizActive 
                                      ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                      : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                  }`}
                                >
-                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
+                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                   <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                    <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
                                    <span className="text-xs font-semibold truncate flex-1">
                                      {quiz.title || `Module Quiz ${qIdx + 1}`}
@@ -921,6 +1379,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                      onClick={(e) => {
                                        e.stopPropagation();
                                        deleteQuiz(module.id, undefined, quiz.id);
+                                        if (activeQuizId === quiz.id) {
+                                          navigateTo("module");
+                                        }
                                         if (activeQuizId === quiz.id) {
                                           navigateTo("module");
                                         }
@@ -942,14 +1403,42 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                             return (
                               <div 
                                 key={`assignment-${assignment.id}`}
+                                draggable
+                                onDragStart={(e) => {
+                                  e.stopPropagation();
+                                  dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
+                                }}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setDragOverIndex(dropKey);
+                                }}
+                                onDragLeave={(e) => {
+                                  e.stopPropagation();
+                                  setDragOverIndex(null);
+                                }}
+                                onDrop={(e) => {
+                                  e.stopPropagation();
+                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
+                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
+                                  }
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
+                                onDragEnd={() => {
+                                  setDragOverIndex(null);
+                                  dragItem.current = null;
+                                }}
                                 onClick={() => handleAssignmentClick(module.id, undefined, assignment.id)}
                                 className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
+                                  isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                   isAssignmentActive 
                                     ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                     : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                 }`}
                               >
-                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
+                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                  <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
                                   <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                   <span className="text-xs font-semibold truncate flex-1">
                                     {assignment.title || `Module Assignment ${aIdx + 1}`}
@@ -960,6 +1449,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       deleteAssignment(module.id, undefined, assignment.id);
+                                       if (activeAssignmentId === assignment.id) {
+                                         navigateTo("module");
+                                       }
                                        if (activeAssignmentId === assignment.id) {
                                          navigateTo("module");
                                        }
@@ -1007,47 +1499,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                       e.stopPropagation();
                       deleteCourseQuiz(quiz.id);
                       if (activeQuizId === quiz.id) {
-                        router.push('/admin/courses/create');
-                      }
-                    }}
-                    className={`p-1 rounded-md transition-opacity opacity-0 group-hover/module:opacity-100 ${
-                      isQuizActive
-                        ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
-                        : 'hover:bg-rose-50 text-slate-400 hover:text-rose-600'
-                    }`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              );
-            })
-          ) : null}
-
-          {/* COURSE-LEVEL ASSIGNMENTS */}
-          {course.assignments && course.assignments.length > 0 ? (
-            course.assignments.map((assignment) => {
-              const isAssignmentActive = activeAssignmentId === assignment.id;
-              return (
-                <div 
-                  key={`course-assignment-${assignment.id}`}
-                  onClick={() => handleCourseAssignmentClick(assignment.id)}
-                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
-                    isAssignmentActive 
-                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
-                      : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                    <GraduationCap className={isQuizActive ? "text-white" : "text-blue-600"} size={16} />
-                    <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isQuizActive ? "text-white" : "text-slate-800"}`}>
-                      {quiz.title || "Course Quiz"}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteCourseQuiz(quiz.id);
-                      if (activeQuizId === quiz.id) {
                         navigateTo("quiz");
                       }
                     }}
@@ -1064,37 +1515,37 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
             })
           ) : null}
 
-          {/* ADD NEW COURSE-LEVEL CONTENT */}
-          {course.modules.length > 0 && (
-            <>
-              <button 
-                onClick={() => {
-                  addCourseQuiz();
-                  router.push('/admin/courses/create/quiz');
-                }}
-                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
-              >
-                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Plus size={14} strokeWidth={3} />
+          {/* COURSE-LEVEL ASSIGNMENTS */}
+          {(course as any).final_assessment ? (
+            (() => {
+              const finalAssessment = (course as any).final_assessment;
+              const finalAssessmentId = String(finalAssessment.id ?? "");
+              const isAssignmentActive = activeAssignmentId === finalAssessmentId;
+              const title = finalAssessment.title || "Final Assessment";
+              return (
+                <div 
+                  key={`course-final-assessment-${finalAssessmentId}`}
+                  onClick={() => handleCourseAssignmentClick(finalAssessmentId)}
+                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
+                    isAssignmentActive 
+                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                      : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                    <ClipboardList className={isAssignmentActive ? "text-white" : "text-blue-600"} size={16} />
+                    <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isAssignmentActive ? "text-white" : "text-slate-800"}`}>
+                      {title}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold">Add Course Quiz</span>
-              </button>
-              <button 
-                onClick={() => {
-                  addCourseAssignment();
-                  router.push('/admin/courses/create/assignment');
-                }}
-                className="w-full flex items-center gap-3 border border-dashed border-blue-250 bg-blue-50/10 hover:bg-blue-50/20 px-4 py-3 rounded-xl hover:border-blue-300 transition-all text-left text-blue-600 mt-2"
-              >
-                <div className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center text-blue-600">
-                  <Plus size={14} strokeWidth={3} />
-                </div>
-                <span className="text-xs font-semibold">Add Course Assignment</span>
-              </button>
-            </>
-          )}
+              );
+            })()
+          ) : null}
+
         </div>
       </div>
+
 
       {/* 2. ADD CONTENT SECTION */}
       <div className="pt-4 border-t border-slate-200">
@@ -1195,7 +1646,15 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
           onClick={handleAddModule}
           disabled={createModuleMutation.isPending}
           className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={createModuleMutation.isPending}
+          className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {createModuleMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Plus size={16} />
+          )}
+          {createModuleMutation.isPending ? "Adding Module..." : "Add Another Module"}
           {createModuleMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -1205,6 +1664,52 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
         </button>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={deleteTargetId !== null} 
+        onClose={() => !isDeleting && (setDeleteTargetId(null), setDeleteTargetType(null), setDeleteTargetModuleId(null))}
+        title={deleteTargetType === 'module' ? "Delete Module" : "Delete Lesson"}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-650 leading-relaxed">
+            {deleteTargetType === 'module' 
+              ? "Are you sure you want to delete this module? This will permanently remove all lessons, topics, quizzes, and assignments under it."
+              : "Are you sure you want to delete this lesson? This will permanently remove all topics, quizzes, and assignments under it."
+            }
+          </p>
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+            <button
+              onClick={() => {
+                setDeleteTargetId(null);
+                setDeleteTargetType(null);
+                setDeleteTargetModuleId(null);
+              }}
+              disabled={isDeleting}
+              className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-650 hover:bg-slate-50 transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="px-5 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-md shadow-rose-600/10 flex items-center gap-2 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+        </div>
+      )}
       {/* Delete Confirmation Modal */}
       <Modal 
         isOpen={deleteTargetId !== null} 

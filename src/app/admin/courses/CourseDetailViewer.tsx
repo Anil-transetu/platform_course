@@ -13,14 +13,18 @@ import {
   Pencil,
   Clock,
   Play,
-  Award
+  Award,
+  Loader2,
+  ExternalLink
 } from "lucide-react";
 import { useCourseCurriculum, useUpdateCourse, useCourseModuleDetail, useCourseLessonDetail, useCourseTopicDetail } from "@/features/admin/courses/api/course-api";
 import { useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
 import { useAssignment } from "@/features/admin/assignments/api/use-assignments";
 import { Skeleton } from "@/components/ui/skeleton";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
-import { cn } from "@/lib/utils";
+import { cn, getDisplayThumbnailUrl, getDisplayMediaUrl } from "@/lib/utils";
+import { ContentBlocksRenderer } from "@/components/ui/ContentBlocksRenderer";
+import { toast } from "sonner";
 
 interface QuizItem {
   id: string | number;
@@ -51,15 +55,27 @@ interface TopicItem {
   duration_minutes?: number;
   video_url?: string;
   content_text?: string;
+  content_blocks?: any[];
+  lessons?: any[];
+  topics?: any[];
 }
 
 interface LessonItem {
   id: string | number;
   name: string;
   content_text?: string;
+  content?: string;
+  text?: string;
+  title?: string;
+  images?: string[];
+  videos?: string[];
+  pdfs?: string[];
+  urls?: string[];
   lessons?: TopicItem[];
+  topics?: TopicItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
+  content_blocks?: any[];
 }
 
 interface ModuleItem {
@@ -67,8 +83,10 @@ interface ModuleItem {
   name: string;
   description?: string;
   topics?: LessonItem[];
+  lessons?: LessonItem[];
   quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
+  content_blocks?: any[];
 }
 
 interface CourseDetailItem {
@@ -310,22 +328,22 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
 
   // Count stats
   const totalModules = modules.length;
-  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.topics?.length || 0), 0);
+  const totalLessons = modules.reduce((acc: number, m: ModuleItem) => acc + (m.lessons?.length || m.topics?.length || 0), 0);
   const totalTopics = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.lessons?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.topics?.length || t.lessons?.length || 0), 0) || 0), 0
   );
 
   const courseQuizzesCount = course.quizzes?.length || 0;
   const moduleQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.quizzes?.length || 0), 0);
   const lessonQuizzesCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.quizzes?.length || 0), 0) || 0), 0
   );
   const totalQuizzes = courseQuizzesCount + moduleQuizzesCount + lessonQuizzesCount;
 
   const courseAssignmentsCount = course.assignments?.length || 0;
   const moduleAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => acc + (m.assignments?.length || 0), 0);
   const lessonAssignmentsCount = modules.reduce((acc: number, m: ModuleItem) => 
-    acc + (m.topics?.reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
+    acc + ((m.lessons || m.topics || []).reduce((acc2: number, t: LessonItem) => acc2 + (t.assignments?.length || 0), 0) || 0), 0
   );
   const totalAssignments = courseAssignmentsCount + moduleAssignmentsCount + lessonAssignmentsCount;
 
@@ -339,7 +357,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
           <div className="bg-card border border-gray-100 dark:border-border/50 rounded-3xl shadow-sm overflow-hidden relative min-h-[220px] flex flex-col justify-end">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
-              src={course.thumbnail_url || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
+              src={getDisplayThumbnailUrl(course.thumbnail_url) || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"} 
               alt={course.name} 
               className="absolute inset-0 w-full h-full object-cover"
               onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop"; }}
@@ -477,7 +495,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <p className="text-sm text-gray-400 italic">No lessons in this module.</p>
             ) : (
               <div className="space-y-3">
-                {moduleData.topics.map((t: LessonItem) => (
+                {(moduleData.lessons || moduleData.topics || []).map((t: LessonItem) => (
                   <div 
                     key={t.id}
                     onClick={() => setActiveItem({ type: "lesson", id: t.id, data: t })}
@@ -549,7 +567,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <p className="text-sm text-gray-400 italic">No topics inside this lesson.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {lessonData.lessons.map((item: TopicItem) => (
+                {(lessonData.topics || lessonData.lessons || []).map((item: TopicItem) => (
                   <div 
                     key={item.id}
                     onClick={() => setActiveItem({ type: "topic", id: item.id, data: item })}
@@ -1020,10 +1038,10 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                       ))}
 
                       {/* Lessons (topics in API) */}
-                      {m.topics?.map((lesson: LessonItem) => {
+                      {(m.lessons || m.topics || []).map((lesson: LessonItem) => {
                         const isLessActive = 
                           (activeItem?.type === "lesson" && activeItem?.id === lesson.id) ||
-                          (activeItem?.type === "topic" && lesson.lessons?.some(t => String(t.id) === String(activeItem.id))) ||
+                          (activeItem?.type === "topic" && (lesson.topics || lesson.lessons || []).some(t => String(t.id) === String(activeItem.id))) ||
                           (activeItem?.type === "quiz" && lesson.quizzes?.some(q => String(q.id) === String(activeItem.id))) ||
                           (activeItem?.type === "assignment" && lesson.assignments?.some(a => String(a.id) === String(activeItem.id)));
                         
@@ -1043,7 +1061,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
                             {/* Lesson topics/quizzes/assignments (lessons inside topic in API) */}
                             {isLessActive && (
                               <div className="pl-4 border-l border-gray-100 ml-4 py-1 space-y-1">
-                                {lesson.lessons?.map((t: TopicItem) => (
+                                {(lesson.topics || lesson.lessons || []).map((t: TopicItem) => (
                                   <button
                                     key={t.id}
                                     onClick={() => setActiveItem({ type: "topic", id: t.id, data: t })}

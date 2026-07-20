@@ -49,7 +49,12 @@ export function useQuiz(id: string | number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quiz", id],
     queryFn: ({ signal }) => fetchQuizById(id, signal),
-    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
+    enabled: (options?.enabled ?? true) && isValidId,
   });
 }
 
@@ -61,6 +66,11 @@ export function useQuizStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizStats"],
     queryFn: ({ signal }) => fetchQuizStats(signal),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
     enabled: options?.enabled,
   });
 }

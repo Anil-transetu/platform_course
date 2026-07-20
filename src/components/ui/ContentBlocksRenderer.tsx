@@ -133,23 +133,21 @@ export function ContentBlocksRenderer({ blocks, images = [], videos = [], pdfs =
             );
           case "pdf":
             return (
-              <div key={blockKey} className="flex justify-center my-4 w-full">
-                <div className="w-full max-w-3xl border border-red-100 rounded-2xl p-4 sm:p-5 bg-red-50/20 hover:bg-red-50/45 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden">
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center border border-red-200/50 shrink-0">
-                      <FileText size={22} />
+              <div key={blockKey} className="flex justify-center my-4">
+                <div className="w-full max-w-3xl border border-red-100 rounded-2xl p-5 bg-red-50/20 hover:bg-red-50/45 hover:shadow-md transition-all flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center border border-red-200/50 shrink-0">
+                      <FileText size={24} />
                     </div>
-                    <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-red-500 uppercase tracking-wider">PDF Resource</p>
-                      <h4 className="text-sm font-bold text-slate-800 truncate block mt-0.5" title={getFileName(strValue)}>
-                        {getFileName(strValue)}
-                      </h4>
+                      <h4 className="text-sm font-bold text-slate-800 truncate block mt-0.5">{getFileName(strValue)}</h4>
                     </div>
                   </div>
                   <button 
                     type="button"
                     onClick={() => openPdf(strValue)}
-                    className="px-4 sm:px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider w-full sm:w-auto text-center"
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider"
                   >
                     Open PDF
                   </button>
@@ -158,20 +156,19 @@ export function ContentBlocksRenderer({ blocks, images = [], videos = [], pdfs =
             );
           case "url":
             return (
-              <div key={blockKey} className="flex justify-center my-4 w-full">
-                <div className="w-full max-w-3xl border border-blue-100 rounded-2xl p-4 sm:p-5 bg-blue-50/15 hover:bg-blue-50/30 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden">
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-650 flex items-center justify-center border border-blue-200/50 shrink-0">
-                      <ExternalLink size={22} />
+              <div key={blockKey} className="flex justify-center my-4">
+                <div className="w-full max-w-3xl border border-blue-100 rounded-2xl p-5 bg-blue-50/15 hover:bg-blue-50/30 hover:shadow-md transition-all flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-650 flex items-center justify-center border border-blue-200/50 shrink-0">
+                      <ExternalLink size={24} />
                     </div>
-                    <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-blue-600 uppercase tracking-wider">Reference Link</p>
                       <a 
                         href={strValue} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-sm font-bold text-slate-800 hover:underline truncate block mt-0.5 min-w-0"
-                        title={strValue}
                       >
                         {strValue}
                       </a>
@@ -181,7 +178,7 @@ export function ContentBlocksRenderer({ blocks, images = [], videos = [], pdfs =
                     href={strValue} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-4 sm:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider w-full sm:w-auto text-center"
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider"
                   >
                     Visit Link
                   </a>

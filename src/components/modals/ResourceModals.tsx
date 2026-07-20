@@ -64,6 +64,7 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +79,16 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
       alert("Please select a PDF file first.");
       return;
     }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("pdf", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
     setIsUploading(true);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -146,7 +157,10 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
           onClick={handleAttach}
           disabled={isUploading}
           className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isUploading}
+          className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isUploading ? "Reading..." : <><LinkIcon size={16} strokeWidth={2.5} /> Attach PDF</>}
           {isUploading ? "Reading..." : <><LinkIcon size={16} strokeWidth={2.5} /> Attach PDF</>}
         </button>
       </div>
@@ -159,7 +173,6 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = (selectedFile: File) => {
@@ -199,6 +212,16 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
       alert("Please select an image first.");
       return;
     }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("image", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
     setIsUploading(true);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -280,7 +303,10 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
           onClick={handleUpload}
           disabled={isUploading}
           className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isUploading ? "Reading..." : "Upload"}
           {isUploading ? "Reading..." : "Upload"}
         </button>
       </div>
@@ -293,6 +319,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,6 +337,22 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
     }
     
     if (file && !url) {
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (onAttach) {
+          onAttach("video", { url: reader.result as string, title });
+        }
+        setIsUploading(false);
+        onClose();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (onAttach) {
+        onAttach("video", { url, title });
+      }
+      onClose();
+    }
       setIsUploading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -406,7 +449,10 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
           onClick={handleAttach}
           disabled={isUploading}
           className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {isUploading ? "Reading..." : "Attach Video"}
           {isUploading ? "Reading..." : "Attach Video"}
         </button>
       </div>

@@ -123,9 +123,9 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
             : "bg-white border border-slate-200 hover:border-blue-200 hover:shadow-sm"
         )}
       >
-        {course.thumbnail_url && (
+        {getDisplayThumbnailUrl(course.thumbnail_url) && (
           <div className="w-full h-24 rounded-lg overflow-hidden bg-slate-100 shrink-0">
-            <img src={course.thumbnail_url} alt={course.name} className="w-full h-full object-cover" />
+            <img src={getDisplayThumbnailUrl(course.thumbnail_url)} alt={course.name} className="w-full h-full object-cover" />
           </div>
         )}
         <div className="flex flex-col gap-1 z-10">
@@ -394,57 +394,35 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
             })
           )}
 
-          {/* FINAL ASSESSMENT (as last item in the list) */}
-          {course.quizzes && course.quizzes.length > 0 ? (
-            course.quizzes.map((quiz: any) => {
-              const isQuizActive = activeItem?.type === "quiz" && String(activeItem.id) === String(quiz.id);
-              return (
-                <div 
-                  key={`course-quiz-${quiz.id}`}
-                  onClick={() => setActiveItem({ type: "quiz", id: quiz.id, data: quiz })}
-                  className={cn(
-                    "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all border mt-2",
-                    isQuizActive 
-                      ? 'bg-green-50 text-green-700 font-semibold border-green-200' 
-                      : 'bg-white border-slate-200 hover:border-green-200 hover:bg-green-50/50 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
-                  )}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                    <GraduationCap className={cn("shrink-0", isQuizActive ? "text-green-600" : "text-green-500")} size={16} />
-                    <span className={cn("text-[11px] font-bold truncate uppercase tracking-wider", isQuizActive ? "text-green-700" : "text-slate-800")}>
-                      {quiz.name || quiz.title || "Course Quiz"}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
-          ) : null}
 
-          {course.assignments && course.assignments.length > 0 ? (
-            (() => {
-              const assignment = course.assignments[0];
-              const isAssignmentActive = activeItem?.type === "assignment" && String(activeItem.id) === String(assignment.id);
-              return (
-                <div 
-                  key={`course-assignment-${assignment.id}`}
-                  onClick={() => setActiveItem({ type: "assignment", id: assignment.id, data: assignment, isFinal: true })}
-                  className={cn(
-                    "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all border mt-2",
-                    isAssignmentActive 
-                      ? 'bg-indigo-50 text-indigo-700 font-semibold border-indigo-200' 
-                      : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/50 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
-                  )}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                    <Award className={cn("shrink-0", isAssignmentActive ? "text-indigo-600" : "text-indigo-500")} size={16} />
-                    <span className={cn("text-[11px] font-bold truncate uppercase tracking-wider", isAssignmentActive ? "text-indigo-700" : "text-slate-800")}>
-                      {assignment.title || "Final Assessment"}
-                    </span>
-                  </div>
+          {(() => {
+            const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment || (course as any)?.final_assignment ||
+              ((course as any)?.final_assessment_id
+                ? ((course as any)?.assignments?.find((a: any) => String(a.id) === String((course as any).final_assessment_id)) || { id: (course as any).final_assessment_id, title: `Assignment ${(course as any).final_assessment_id}` })
+                : null);
+            if (!finalAssessment) return null;
+            const assignment = { id: finalAssessment.id, title: finalAssessment.title || finalAssessment.name };
+            const isAssignmentActive = activeItem?.type === "assignment" && String(activeItem.id) === String(assignment.id);
+            return (
+              <div 
+                key={`course-final-assessment-${assignment.id}`}
+                onClick={() => setActiveItem({ type: "assignment", id: assignment.id, data: assignment, isFinal: true })}
+                className={cn(
+                  "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all border mt-2",
+                  isAssignmentActive 
+                    ? 'bg-indigo-50 text-indigo-700 font-semibold border-indigo-200' 
+                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/50 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                )}
+              >
+                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                  <Award className={cn("shrink-0", isAssignmentActive ? "text-indigo-600" : "text-indigo-500")} size={16} />
+                  <span className={cn("text-[11px] font-bold truncate uppercase tracking-wider", isAssignmentActive ? "text-indigo-700" : "text-slate-800")}>
+                    {assignment.title || "Final Assessment"}
+                  </span>
                 </div>
-              );
-            })()
-          ) : null}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </aside>

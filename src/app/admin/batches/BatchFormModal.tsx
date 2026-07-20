@@ -5,16 +5,12 @@ import { Modal } from "@/components/ui/modal";
 import { FileText, Download, Search, ChevronDown, Info, X, Calendar as CalendarIcon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
+import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
+import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
+import { useTutors } from "@/features/admin/tutor/api/tutor-api";
+import { useStudents } from "@/hooks/use-students";
+import { useCourseLookup } from "@/features/admin/courses/api/course-api";
 import { useDebounce } from "@/hooks/use-debounce";
-import BatchInstitutionSelect from "./BatchInstitutionSelect";
-import CourseSelect from "./CourseSelect";
-import DomainSelect from "./DomainSelect";
-import TutorSelect from "./TutorSelect";
-import BulkUploadModal from "./BulkUploadModal";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
 
 interface Props {
   open: boolean;
@@ -47,9 +43,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     name: "",
     institution_id: "",
     tutor_id: "",
-    course_id: "",
-    domain_id: "",
-    department: "",
+    course_key: "",
     start_date: "",
     end_date: "",
     status: "",
@@ -58,13 +52,21 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [bulkOpen, setBulkOpen] = useState(false);
   
+  const [instructorSearch, setInstructorSearch] = useState("");
+  const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
+
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
+  const [selectedCourseName, setSelectedCourseName] = useState("");
+  const debouncedCourseSearch = useDebounce(courseSearch, 300);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
-
-  const debouncedSearch = useDebounce(studentSearch, 300);
+  const tutorDropdownRef = useRef<HTMLDivElement>(null);
+  const courseDropdownRef = useRef<HTMLDivElement>(null);
+  const prevInstitutionIdRef = useRef(form.institution_id);
 
   // API hooks
   const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
@@ -86,11 +88,17 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
   const allStudents = studentsLookupData || [];
 
-  // Click outside listener for student search dropdown
+  // Click outside listener for student, tutor and course search dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (tutorDropdownRef.current && !tutorDropdownRef.current.contains(event.target as Node)) {
+        setInstructorDropdownOpen(false);
+      }
+      if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+        setCourseDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -104,11 +112,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       if (activeBatch) {
         setForm({
           name: activeBatch.name || "",
-          institution_id: activeBatch.institution_id ? String(activeBatch.institution_id) : "",
-          tutor_id: activeBatch.tutor_id ? String(activeBatch.tutor_id) : "",
-          course_id: activeBatch.course_id ? String(activeBatch.course_id) : "",
-          domain_id: activeBatch.domain_id ? String(activeBatch.domain_id) : "",
-          department: activeBatch.department || "",
+          institution_id: String(activeBatch.institution_id || ""),
+          tutor_id: String(activeBatch.tutor_id || ""),
+          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
@@ -130,9 +136,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           name: "",
           institution_id: "",
           tutor_id: "",
-          course_id: "",
-          domain_id: "",
-          department: "",
+          course_key: "",
           start_date: "",
           end_date: "",
           status: "",
@@ -141,7 +145,11 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
         setSelectedStudents([]);
       }
       setStudentSearch("");
+      setInstructorSearch("");
+      setCourseSearch("");
       setDropdownOpen(false);
+      setInstructorDropdownOpen(false);
+      setCourseDropdownOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
@@ -199,9 +207,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: form.course_id ? Number(form.course_id) : null,
-      domain_id: form.domain_id ? Number(form.domain_id) : null,
-      department: form.department || undefined,
+      course_id: form.course_key ? Number(form.course_key) : null,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
@@ -272,40 +278,28 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* ROW 2: ASSOCIATION — Course OR Domain (mutually exclusive) */}
-        <div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                COURSE
-              </label>
-              <CourseSelect
-                value={form.course_id}
-                onChange={(val) => {
-                  // Selecting a course clears the domain
-                  setForm({ ...form, course_id: val, domain_id: "" });
-                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
+        {/* SELECT COURSE & STATUS */}
+        <div className="grid grid-cols-2 gap-4">
+          <div ref={courseDropdownRef} className="relative">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              SELECT COURSE <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                value={courseSearch || selectedCourseName}
+                onChange={(e) => {
+                  setCourseSearch(e.target.value);
+                  setCourseDropdownOpen(true);
                 }}
-                initialName={mode === "edit" && !form.domain_id ? (fullBatch || batch)?.course : undefined}
-                error={!!errors.association}
-                disabled={!!form.domain_id}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                DOMAIN
-              </label>
-              <DomainSelect
-                value={form.domain_id}
-                onChange={(val) => {
-                  // Selecting a domain clears the course
-                  setForm({ ...form, domain_id: val, course_id: "" });
-                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
+                onFocus={() => {
+                  setCourseSearch("");
+                  setCourseDropdownOpen(true);
                 }}
-                initialName={mode === "edit" && !form.course_id ? (fullBatch || batch)?.domain : undefined}
-                error={!!errors.association}
-                disabled={!!form.course_id}
+                placeholder="Search and select course..."
+                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.course_key ? "border-red-500" : "border-gray-200"}`}
               />
+              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
             </div>
           </div>
           {errors.association && (
