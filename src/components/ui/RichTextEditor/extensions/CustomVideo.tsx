@@ -3,6 +3,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 import { X } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
+import { getDisplayMediaUrl } from '@/lib/utils';
 
 const isEmbedUrl = (url: string) => {
   if (!url) return false;
@@ -28,7 +29,7 @@ const getEmbedUrl = (url: string) => {
 const VideoComponent = (props: any) => {
   const src = props.node.attrs.src || "";
   const isEmbed = isEmbedUrl(src);
-  const videoUrl = isEmbed ? getEmbedUrl(src) : src;
+  const videoUrl = isEmbed ? getEmbedUrl(src) : (getDisplayMediaUrl(src) || "");
 
   return (
     <NodeViewWrapper className="relative group inline-block max-w-full w-full mt-4 mb-4 select-none">

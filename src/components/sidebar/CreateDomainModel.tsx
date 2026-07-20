@@ -74,8 +74,8 @@ export default function CreateDomainModal({
   };
 
   // Fetch available assignments from the backend API using lookup and list
-  const { data: lookupRes } = useAssignmentsLookup();
-  const { data: listRes } = useAssignmentsList(1, 1000);
+  const { data: lookupRes } = useAssignmentsLookup({ enabled: isOpen });
+  const { data: listRes } = useAssignmentsList(1, 1000, undefined, { enabled: isOpen });
   
   const lookupAssignments = lookupRes || [];
   const listAssignments = listRes?.data || [];
@@ -88,7 +88,7 @@ export default function CreateDomainModal({
   const availableAssignments = Array.from(mergedAssignmentsMap.values());
 
   // Fetch available courses (published and draft) from the backend API
-  const { data: coursesRes } = useCourses(1, 1000);
+  const { data: coursesRes } = useCourses(1, 1000, undefined, undefined, { enabled: isOpen });
   const availableCourses = coursesRes?.data || [];
 
   // Listen to clicks outside tag dropdown to close it

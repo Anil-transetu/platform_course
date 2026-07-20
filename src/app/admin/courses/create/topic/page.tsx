@@ -1,24 +1,76 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { FileUp, Video, Globe, Image as ImageIcon } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { FileUp, Video, Globe, Image as ImageIcon, BookOpen, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import ResourceModals from "@/components/modals/ResourceModals";
 import { useCourseStore } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import { RichTextEditor, RichTextEditorRef } from "@/components/ui/RichTextEditor/RichTextEditor";
+import { useCourseTopicDetail } from "@/features/admin/courses/api/course-api";
+import { reconstructHtmlFromContentBlocks, parseHtmlToContentBlocks, matchBlocksWithIds } from "@/lib/utils";
+
+
 
 export default function TopicDetailsPage() {
   const router = useRouter();
 
-  const { course, activeModuleId, activeLessonId, activeTopicId, updateTopic } = useCourseStore();
+  const { 
+    course, 
+    activeModuleId, 
+    activeLessonId, 
+    activeTopicId, 
+    updateTopic,
+    setActiveTopic,
+    hydrateTopicFromDetail,
+  } = useCourseStore();
+
+  // Safe navigation: if activeTopicId is gone (e.g. after delete), select the first available topic.
+  // Never creates topics here — creation is owned entirely by CourseSidebar → handleAddTopic.
+  useEffect(() => {
+    const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
+    const activeLesson = activeModule?.lessons.find(l => String(l.id) === String(activeLessonId));
+    if (!activeModule || !activeLesson) return;
+
+    if (activeLesson.topics.length === 0) return; // nothing to select; sidebar will handle creation
+
+    const exists = activeLesson.topics.some(t => String(t.id) === String(activeTopicId));
+    if (!exists) {
+      setActiveTopic(String(activeLesson.topics[0].id));
+    }
+  }, [course.modules, activeModuleId, activeLessonId, activeTopicId, setActiveTopic]);
   
-  const activeModule = course.modules.find(m => m.id === activeModuleId);
-  const activeLesson = activeModule?.lessons.find(l => l.id === activeLessonId);
-  const activeTopic = activeLesson?.topics.find(t => t.id === activeTopicId);
+  const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
+  const activeLesson = activeModule?.lessons.find(l => String(l.id) === String(activeLessonId));
+  const activeTopic = activeLesson?.topics.find(t => String(t.id) === String(activeTopicId));
 
   const topicTitle = activeTopic?.title || "";
-  const topicContent = activeTopic?.content || "";
+  const topicContent = activeTopic?.content_blocks && activeTopic.content_blocks.length > 0
+    ? reconstructHtmlFromContentBlocks(activeTopic.content_blocks)
+    : activeTopic?.content || "";
+
+  const editorRef = useRef<RichTextEditorRef>(null);
+  const lastSyncedTopicIdRef = useRef<string | null>(null);
+
+  // Lazy loading hook for active topic details
+  const { data: topicDetail } = useCourseTopicDetail(
+    course.id, 
+    activeTopicId ?? undefined, 
+    { enabled: !!activeTopicId && !String(activeTopicId).startsWith("temp-") }
+  );
+
+  // Sync lazy-loaded topic detail back to the store
+  useEffect(() => {
+    if (!topicDetail || !activeTopicId || !activeLessonId || !activeModuleId) return;
+    const detailId = String(topicDetail.id ?? activeTopicId);
+    if (lastSyncedTopicIdRef.current === detailId) return;
+
+    lastSyncedTopicIdRef.current = detailId;
+    hydrateTopicFromDetail(activeModuleId, activeLessonId, activeTopicId, topicDetail);
+  }, [topicDetail, activeTopicId, activeLessonId, activeModuleId, hydrateTopicFromDetail]);
+
+  useEffect(() => {
+    lastSyncedTopicIdRef.current = null;
+  }, [activeTopicId]);
 
   const setTopicTitle = (val: string) => {
     if (activeModuleId && activeLessonId && activeTopicId) {
@@ -27,15 +79,18 @@ export default function TopicDetailsPage() {
   };
   
   const setTopicContent = (val: string) => {
-    if (activeModuleId && activeLessonId && activeTopicId) {
-      updateTopic(activeModuleId, activeLessonId, activeTopicId, { content: val });
+    if (activeModuleId && activeLessonId && activeTopicId && activeTopic) {
+      const parsedBlocks = parseHtmlToContentBlocks(val);
+      const matchedBlocks = matchBlocksWithIds(parsedBlocks, activeTopic.content_blocks || []);
+      updateTopic(activeModuleId, activeLessonId, activeTopicId, { 
+        content: val,
+        content_blocks: matchedBlocks
+      });
     }
   };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"pdf" | "image" | "video" | "url" | null>(null);
-
-  const editorRef = useRef<RichTextEditorRef>(null);
 
   const openModal = (type: "pdf" | "image" | "video" | "url") => {
     setModalType(type);
@@ -43,29 +98,47 @@ export default function TopicDetailsPage() {
   };
 
   const handleAttach = (type: string, payload: { url: string; title?: string }) => {
-    if (type === 'image') editorRef.current?.insertImage(payload.url);
-    if (type === 'video') editorRef.current?.insertVideo(payload.url);
-    if (type === 'pdf') editorRef.current?.insertPdf(payload.url, payload.title || "");
-    if (type === 'link') editorRef.current?.insertLink(payload.url, payload.title || "");
+    if (editorRef.current) {
+      if (type === "image") {
+        editorRef.current.insertImage(payload.url);
+      } else if (type === "video") {
+        editorRef.current.insertVideo(payload.url);
+      } else if (type === "pdf") {
+        editorRef.current.insertPdf(payload.url, payload.title || "PDF Resource");
+      } else if (type === "url" || type === "link") {
+        editorRef.current.insertLink(payload.url, payload.title || payload.url);
+      }
+    }
   };
+
+  if (!activeModule || !activeLesson) {
+    return (
+      <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-4 text-center p-6">
+        <p className="text-slate-555 font-semibold text-sm">No active lesson selected.</p>
+        <button 
+          onClick={() => router.push(course.id ? `/admin/courses/edit/${course.id}/lesson` : '/admin/courses/create/lesson')} 
+          className="text-blue-600 underline font-bold hover:text-blue-700 transition-colors text-xs uppercase tracking-wider"
+        >
+          Go to Lessons
+        </button>
+      </div>
+    );
+  }
+
+
 
   if (!activeTopic) {
     return (
-      <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-4">
-        <p className="text-slate-500 font-medium">No active topic selected.</p>
-        <button onClick={() => router.push('/admin/courses/create')} className="text-blue-600 underline font-semibold hover:text-blue-700 transition-colors">Go back to Course</button>
+      <div className="bg-slate-100 min-h-screen flex-1 flex-col flex items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p className="text-slate-500 font-semibold text-sm">Loading topic details...</p>
       </div>
     );
   }
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="flex p-8 gap-8 items-start min-h-full">
-        {/* LEFT SIDEBAR */}
-        <CourseSidebar />
-
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-8 min-w-0">
+      <div className="p-8 flex flex-col gap-8 max-w-4xl">
           {/* TOPIC DETAILS CARD */}
           <div className="bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
             <div className="p-8 border-b border-slate-100/80 flex justify-between items-center">
@@ -86,14 +159,17 @@ export default function TopicDetailsPage() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Topic Content</label>
                 <RichTextEditor
+                  key={activeTopic.id}
                   ref={editorRef}
                   value={topicContent}
+                  itemId={activeTopic.id}
                   onChange={(html) => setTopicContent(html)}
                   placeholder="Write your topic content here..."
                 />
               </div>
             </div>
           </div>
+
 
           {/* TOPIC RESOURCES CARD */}
           <div className="bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
@@ -109,7 +185,6 @@ export default function TopicDetailsPage() {
               </div>
             </div>
           </div>
-        </div>
       </div>
 
 

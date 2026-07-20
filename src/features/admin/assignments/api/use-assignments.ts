@@ -26,7 +26,11 @@ export function useAssignments(
   return useQuery<{ data: Assignment[]; total?: number }, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, page, limit, search, statusFilter],
     queryFn: ({ signal }) => fetchAssignments(page, limit, search, statusFilter, signal),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
     enabled: options?.enabled,
   });
 }
@@ -39,6 +43,10 @@ export function useAssignmentStats(options?: { enabled?: boolean }) {
     queryKey: ASSIGNMENT_STATS_QUERY_KEY,
     queryFn: ({ signal }) => fetchAssignmentStats(signal),
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
     enabled: options?.enabled,
   });
 }
@@ -46,12 +54,17 @@ export function useAssignmentStats(options?: { enabled?: boolean }) {
 /**
  * Hook to fetch a single assignment by ID
  */
-export function useAssignment(id: string | number | undefined) {
+export function useAssignment(id: string | number | undefined, options?: { enabled?: boolean }) {
+  const isValidId = id !== undefined && id !== null && String(id).trim() !== "" && String(id) !== "null" && String(id) !== "undefined";
   return useQuery<Assignment, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, id],
     queryFn: ({ signal }) => fetchAssignmentById(id!, signal),
-    enabled: !!id,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
+    enabled: (options?.enabled ?? true) && isValidId,
   });
 }
 

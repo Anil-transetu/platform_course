@@ -220,22 +220,44 @@ export default function CoursesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const debouncedSearch = useDebounce(search, 300);
+  const [queriesReady, setQueriesReady] = useState(false);
+
+  useEffect(() => {
+    setQueriesReady(true);
+  }, []);
   
   // Courses React Query hook
   const {
     data: coursesResponse,
     isLoading: isLoadingCourses,
-    isFetching: isFetchingCourses
+    isFetching: isFetchingCourses,
+    error: coursesError
   } = useCourses(
     activeTab === "courses" ? page : 1,
     rowsPerPage,
     debouncedSearch,
     statusFilter,
-    { enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
+    { enabled: queriesReady && activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId && !viewId }
   );
 
+  useEffect(() => {
+    if (coursesError && activeTab === "courses") {
+      toast.error(coursesError.message || "Failed to load courses");
+    }
+  }, [coursesError, activeTab]);
+
+  const getEmptyStateMessage = () => {
+    if (activeTab === "courses") {
+      return coursesError
+        ? "Failed to load courses. Please try again."
+        : "No courses found.";
+    } else {
+      return "No domains found.";
+    }
+  };
+
   const { data: courseStatsRaw } = useCourseStats({
-    enabled: activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId
+    enabled: queriesReady && activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId && !viewId
   });
   const deleteCourseMutation = useDeleteCourse();
 
@@ -276,13 +298,6 @@ export default function CoursesPage() {
   const coursesList = coursesResponse?.data || [];
   const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
 
-  // Reset page & filters when switching tabs
-  useEffect(() => {
-    setPage(1);
-    setStatusFilter("All");
-    setSearch("");
-  }, [activeTab]);
-
   const handleSaveDomain = async (data: Record<string, unknown>) => {
     try {
       if (domainModal.mode === "add") {
@@ -316,10 +331,16 @@ export default function CoursesPage() {
   };
 
   const handleDelete = async () => {
+    const isOffline = typeof window !== "undefined" && !navigator.onLine;
+    if (isOffline) {
+      toast.error("Network disconnected. Please check your connection.");
+      return;
+    }
     if (deleteDialog.type === "course" && deleteDialog.item) {
       try {
         await deleteCourseMutation.mutateAsync(deleteDialog.item.id);
         toast.success("Course deleted successfully!");
+        setDeleteDialog({ open: false, item: null, type: "course" });
       } catch (err) {
         const error = err as Error;
         toast.error(error.message || "Failed to delete course");
@@ -331,6 +352,7 @@ export default function CoursesPage() {
         if (viewingDomain && viewingDomain.id === deleteDialog.item.id) {
           setViewingDomain(null);
         }
+        setDeleteDialog({ open: false, item: null, type: "domain" });
       } catch (err) {
         const error = err as Error;
         toast.error(error.message || "Failed to delete domain");
@@ -427,7 +449,7 @@ export default function CoursesPage() {
           setViewingCourse(null);
           router.push("/admin/courses");
         }} 
-        onEdit={() => router.push(`/admin/courses/create?id=${viewingCourse.id}`)}
+        onEdit={() => router.push(`/admin/courses/edit/${viewingCourse.id}`)}
       />
     );
   }
@@ -723,7 +745,12 @@ export default function CoursesPage() {
         {/* TABS */}
         <div className="flex gap-6 border-b flex-shrink-0">
           <button
-            onClick={() => setActiveTab("courses")}
+            onClick={() => {
+              setActiveTab("courses");
+              setPage(1);
+              setStatusFilter("All");
+              setSearch("");
+            }}
             className={`pb-2 font-medium transition-all text-sm ${
               activeTab === "courses"
                 ? "text-blue-600 border-b-2 border-blue-600"
@@ -733,7 +760,12 @@ export default function CoursesPage() {
             Courses
           </button>
           <button
-            onClick={() => setActiveTab("domains")}
+            onClick={() => {
+              setActiveTab("domains");
+              setPage(1);
+              setStatusFilter("All");
+              setSearch("");
+            }}
             className={`pb-2 font-medium transition-all text-sm ${
               activeTab === "domains"
                 ? "text-blue-600 border-b-2 border-blue-600"
@@ -749,7 +781,7 @@ export default function CoursesPage() {
           <DataTable<Course | Domain>
             data={visibleData}
             columns={(activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()) as unknown as Column<Course | Domain>[]}
-            loading={activeTab === "courses" ? (isLoadingCourses || isFetchingCourses) : (isDomainsLoading || isDomainsFetching)}
+            loading={activeTab === "courses" ? (isLoadingCourses || isFetchingCourses || search !== debouncedSearch) : (isDomainsLoading || isDomainsFetching || search !== debouncedSearch)}
             rowKey={(item) => String(item.id)}
             search={searchConfig}
             filters={filterConfig}
@@ -765,7 +797,7 @@ export default function CoursesPage() {
                   }}
                   onEdit={() => {
                     if (activeTab === "courses") {
-                      router.push(`/admin/courses/create?id=${item.id}`);
+                      router.push(`/admin/courses/edit/${item.id}`);
                     } else {
                       setDomainModal({ open: true, mode: "edit", domain: item as Domain });
                     }
@@ -785,6 +817,7 @@ export default function CoursesPage() {
             }}
             paginationInfo={paginationInfo}
             showPagination={true}
+            emptyStateMessage={getEmptyStateMessage()}
           />
         </div>
       </div>
@@ -806,6 +839,7 @@ export default function CoursesPage() {
         type={deleteDialog.type}
         onClose={() => setDeleteDialog({ open: false, item: null, type: "course" })}
         onConfirm={handleDelete}
+        loading={deleteCourseMutation.isPending || deleteDomainMutation.isPending}
       />
 
     </ListingScreenTemplate>

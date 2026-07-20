@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useAssignments, useAssignment } from "@/features/admin/assignments/api/use-assignments";
+import { useUpdateModule, useUpdateLesson, useUpdateCourse, useUnlinkAssignment } from '@/features/admin/courses/api/course-api';
+import { toast } from 'sonner';
 import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,39 +45,72 @@ export default function AssignmentLibraryPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
-  // 1. Fetch real list of assignments
+  // 2. Fetch specific assignment details from backend if ID is a real backend ID
+  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
+  const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
+  const isLibraryEnabled = !isRealId || forceLibraryView;
+
+  // 1. Fetch real list of assignments — only when library view is active
   const { data: assignmentsData, isLoading: listLoading } = useAssignments(
     currentPage, 
     6, 
     debouncedSearch || undefined, 
-    statusFilter === "All" ? undefined : statusFilter
+    statusFilter === "All" ? undefined : statusFilter,
+    { enabled: isLibraryEnabled }
   );
   const assignmentItems = assignmentsData?.data || [];
   const totalItems = assignmentsData?.total || 0;
   const totalPages = Math.ceil(totalItems / 6);
 
-  // 2. Fetch specific assignment details from backend if ID is a real backend ID
-  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
-  const isRealId = activeAssignmentIdStr && !activeAssignmentIdStr.includes("-");
-  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined);
+  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
 
   const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || "";
   const shouldShowPreview = !!assignmentTitle && !forceLibraryView;
 
-  const handleAddToCourse = (assignment: ApiAssignment) => {
-    if (activeAssignmentId) {
-      const assignmentIdStr = String(assignment.id);
-      if (!activeModuleId) {
-        updateCourseAssignment(activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
-      } else {
-        updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
-      }
-      setActiveAssignment(assignmentIdStr);
-      setForceLibraryView(false);
-      setSuccessMsg(`"${assignment.title}" added to course successfully!`);
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } else {
+  const updateModuleMutation = useUpdateModule();
+  const updateLessonMutation = useUpdateLesson();
+  const updateCourseMutation = useUpdateCourse();
+  const unlinkAssignmentMutation = useUnlinkAssignment();
+
+  const handleAddToCourse = async (assignment: ApiAssignment) => {
+    if (!activeAssignmentId) {
       alert("Please ensure you have an active assignment selected in the sidebar to replace.");
+      return;
+    }
+
+    const assignmentIdStr = String(assignment.id);
+
+    // Optimistic local update
+    if (!activeModuleId) {
+      // Course final assessment (only one)
+      updateCourseAssignment(activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+    } else {
+      updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+    }
+    setActiveAssignment(assignmentIdStr);
+    setForceLibraryView(false);
+    setSuccessMsg(`"${assignment.title}" added to course successfully!`);
+    setTimeout(() => setSuccessMsg(""), 3000);
+
+    // Persist change via a single API request
+    if (!course.id) {
+      toast.error('Course ID is not available');
+      return;
+    }
+
+    try {
+      if (!activeModuleId) {
+        // Course final assessment: PUT /courses/:id with assignment_ids
+        await updateCourseMutation.mutateAsync({ id: course.id, data: { assignment_ids: [assignment.id] } });
+      } else if (!activeLessonId) {
+        // Module-level
+        await updateModuleMutation.mutateAsync({ id: activeModuleId, courseId: course.id, data: { assignment_ids: [assignment.id] } });
+      } else {
+        // Lesson-level
+        await updateLessonMutation.mutateAsync({ id: activeLessonId, courseId: course.id, data: { assignment_ids: [assignment.id] } });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to add assignment');
     }
   };
 
@@ -142,12 +176,7 @@ export default function AssignmentLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="flex p-8 gap-8 items-start min-h-full">
-        {/* LEFT SIDEBAR */}
-        <CourseSidebar />
-
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0 max-w-5xl">
+      <div className="p-8 flex flex-col gap-6 max-w-5xl">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
@@ -184,22 +213,33 @@ export default function AssignmentLibraryPage() {
                     Change Assignment
                   </button>
                   <button 
-                    onClick={() => {
-                      if (activeAssignment?.id) {
-                        const assignmentIdStr = String(activeAssignment.id);
-                        if (!activeModuleId) {
-                          deleteCourseAssignment(assignmentIdStr);
-                        } else {
-                          deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
-                        }
-                        // Clear active assignment and return to library — do NOT navigate away
-                        setActiveAssignment(null);
-                        setForceLibraryView(false);
-                      }
-                    }}
-                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                   onClick={async () => {
+                     if (!activeAssignment?.id) return;
+                     const assignmentIdStr = String(activeAssignment.id);
+
+                     // Determine level
+                     const level = !activeModuleId ? 'course' : (activeLessonId ? 'lesson' : 'module');
+
+                     try {
+                       // Optimistically update local store
+                       if (!activeModuleId) {
+                         deleteCourseAssignment(assignmentIdStr);
+                       } else {
+                         deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
+                       }
+
+                       // Single unlink API call
+                       await unlinkAssignmentMutation.mutateAsync({ assignmentId: assignmentIdStr, level: level as 'course' | 'module' | 'lesson', courseId: course.id, moduleId: activeModuleId || undefined, lessonId: activeLessonId || undefined });
+
+                       setActiveAssignment(null);
+                       setForceLibraryView(false);
+                     } catch (err: any) {
+                       toast.error(err?.message || 'Failed to unlink assignment');
+                     }
+                   }}
+                   className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
-                    Remove Association
+                   Remove Association
                   </button>
                 </div>
               </div>
@@ -401,7 +441,6 @@ export default function AssignmentLibraryPage() {
               )}
             </>
           )}
-        </div>
       </div>
     </div>
   );

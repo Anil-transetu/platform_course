@@ -3,13 +3,14 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import React from 'react';
 import { X } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
+import { getDisplayMediaUrl } from '@/lib/utils';
 
 const ImageComponent = (props: any) => {
   return (
     <NodeViewWrapper className="relative group inline-block max-w-full select-none">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={props.node.attrs.src}
+        src={getDisplayMediaUrl(props.node.attrs.src)}
         alt={props.node.attrs.alt}
         className="rounded-xl border border-gray-100 dark:border-border/50 shadow-sm max-w-full h-auto mt-4 mb-4"
       />

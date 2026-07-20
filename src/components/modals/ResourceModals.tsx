@@ -63,6 +63,7 @@ export default function ResourceModals({ isOpen, type, onClose, onAttach }: Reso
 function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,11 +78,16 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
       alert("Please select a PDF file first.");
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    if (onAttach) {
-      onAttach("pdf", { url: objectUrl, title });
-    }
-    onClose();
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("pdf", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -138,9 +144,10 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
-          className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+          disabled={isUploading}
+          className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <LinkIcon size={16} strokeWidth={2.5} /> Attach PDF
+          {isUploading ? "Reading..." : <><LinkIcon size={16} strokeWidth={2.5} /> Attach PDF</>}
         </button>
       </div>
     </div>
@@ -151,6 +158,7 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
 function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,11 +173,16 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
       alert("Please select an image first.");
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    if (onAttach) {
-      onAttach("image", { url: objectUrl, title });
-    }
-    onClose();
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("image", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -223,9 +236,10 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleUpload}
-          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Upload
+          {isUploading ? "Reading..." : "Upload"}
         </button>
       </div>
     </div>
@@ -237,6 +251,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,15 +267,23 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
       return;
     }
     
-    let videoUrl = url;
     if (file && !url) {
-      videoUrl = URL.createObjectURL(file);
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (onAttach) {
+          onAttach("video", { url: reader.result as string, title });
+        }
+        setIsUploading(false);
+        onClose();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (onAttach) {
+        onAttach("video", { url, title });
+      }
+      onClose();
     }
-
-    if (onAttach) {
-      onAttach("video", { url: videoUrl, title });
-    }
-    onClose();
   };
 
   return (
@@ -339,9 +362,10 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
-          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Attach Video
+          {isUploading ? "Reading..." : "Attach Video"}
         </button>
       </div>
     </div>

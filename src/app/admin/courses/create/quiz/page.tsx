@@ -4,13 +4,14 @@ import { useState } from "react";
 import { Search, HelpCircle, Clock, CheckSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useQuizzes, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { useUpdateModule, useUpdateLesson, useUnlinkQuiz } from '@/features/admin/courses/api/course-api';
 import { Quiz as ApiQuiz, QuizQuestion, QuizQuestionOption } from "@/features/admin/quizzes/api/quiz-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from 'sonner';
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -46,39 +47,67 @@ export default function QuizLibraryPage() {
 
   const debouncedSearch = useDebounce(search, 300);
 
+  const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : (activeQuizId ? String(activeQuizId) : "");
+  const isRealId = !!(activeQuizIdStr && !activeQuizIdStr.startsWith("temp-"));
+  const isLibraryEnabled = !isRealId || forceLibraryView;
+
   // 1. Fetch real list of quizzes with pagination & search
   const { data: quizzesData, isLoading: listLoading } = useQuizzes(
     currentPage, 
     6, 
     debouncedSearch || undefined, 
-    statusFilter === "ALL" ? undefined : statusFilter
+    statusFilter === "ALL" ? undefined : statusFilter,
+    { enabled: isLibraryEnabled }
   );
   const quizItems = quizzesData?.data || [];
   const totalItems = quizzesData?.total || 0;
   const totalPages = Math.ceil(totalItems / 6);
 
   // 2. Fetch specific quiz details if it is a real database ID
-  const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : "";
-  const isRealId = activeQuizIdStr && !activeQuizIdStr.includes("-");
-  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? activeQuizIdStr : "");
+  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? activeQuizIdStr : "", { enabled: isRealId });
 
-  const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || "";
-  const shouldShowPreview = !!quizTitle && !forceLibraryView;
+  const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || (activeQuiz as any)?.name || quizDetail?.title || quizDetail?.quiz_title || quizDetail?.name || (isRealId ? `Quiz #${activeQuizIdStr}` : "");
+  const shouldShowPreview = isRealId && !forceLibraryView;
 
-  const handleAddToCourse = (quiz: ApiQuiz) => {
-    if (activeQuizId) {
-      const newId = String(quiz.id);
-      if (!activeModuleId) {
-        updateCourseQuiz(activeQuizId, { id: newId, title: quiz.title });
-      } else {
-        updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
-      }
-      setActiveQuiz(newId);
-      setForceLibraryView(false);
-      setSuccessMsg(`"${quiz.title}" added to course successfully!`);
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } else {
+  const updateModuleMutation = useUpdateModule();
+  const updateLessonMutation = useUpdateLesson();
+  const unlinkQuizMutation = useUnlinkQuiz();
+
+  const handleAddToCourse = async (quiz: ApiQuiz) => {
+    if (!activeQuizId) {
       alert("Please ensure you have an active quiz selected in the sidebar to replace.");
+      return;
+    }
+
+    // Course level does not support quizzes
+    if (!activeModuleId) {
+      alert("Course-level quizzes are not supported. Please select a module or lesson.");
+      return;
+    }
+
+    const newId = String(quiz.id);
+
+    // Optimistically update local store so UI updates immediately
+    if (!activeLessonId) {
+      updateQuiz(activeModuleId, null, activeQuizId, { id: newId, title: quiz.title });
+    } else {
+      updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
+    }
+    setActiveQuiz(newId);
+    setForceLibraryView(false);
+    setSuccessMsg(`"${quiz.title}" added to course successfully!`);
+    setTimeout(() => setSuccessMsg(""), 3000);
+
+    // Persist by calling appropriate backend PUT endpoint once
+    try {
+      if (!activeLessonId) {
+        await updateModuleMutation.mutateAsync({ id: activeModuleId, courseId: course.id, data: { quizzes: [quiz.id] } });
+      } else {
+        await updateLessonMutation.mutateAsync({ id: activeLessonId, courseId: course.id, data: { quizzes: [quiz.id] } });
+      }
+    } catch (err: any) {
+      // revert optimistic update by refetching curriculum
+      toast.error(err?.message || 'Failed to add quiz to course');
     }
   };
 
@@ -115,12 +144,7 @@ export default function QuizLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="flex p-8 gap-8 items-start min-h-full">
-        {/* LEFT SIDEBAR */}
-        <CourseSidebar />
-
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0 max-w-5xl">
+      <div className="p-8 flex flex-col gap-6 max-w-5xl">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
@@ -157,15 +181,30 @@ export default function QuizLibraryPage() {
                     Change Quiz
                   </button>
                   <button 
-                    onClick={() => {
-                      if (activeQuiz?.id) {
+                    onClick={async () => {
+                      if (!activeQuiz?.id) return;
+                      const quizIdStr = String(activeQuiz.id);
+
+                      // Determine level
+                      const level = activeLessonId ? 'lesson' : 'module';
+
+                      try {
+                        // Optimistically remove from local store immediately
                         if (!activeModuleId) {
-                          deleteCourseQuiz(String(activeQuiz.id));
+                          // Course level not supported for quizzes — fallback to clearing local selection
+                          setActiveQuiz(null);
                         } else {
-                          deleteQuiz(activeModuleId, activeLessonId || null, String(activeQuiz.id));
+                          deleteQuiz(activeModuleId, activeLessonId || null, quizIdStr);
                         }
+
+                        // Call unlink API (single request)
+                        await unlinkQuizMutation.mutateAsync({ quizId: quizIdStr, level: level as 'module' | 'lesson', courseId: course.id, moduleId: activeModuleId || undefined, lessonId: activeLessonId || undefined });
+
+                        setActiveQuiz(null);
+                        setForceLibraryView(false);
+                      } catch (err: any) {
+                        toast.error(err?.message || 'Failed to unlink quiz');
                       }
-                      router.push('/admin/courses/create');
                     }}
                     className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
@@ -345,7 +384,6 @@ export default function QuizLibraryPage() {
               )}
             </>
           )}
-        </div>
       </div>
     </div>
   );

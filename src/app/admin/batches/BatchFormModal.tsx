@@ -9,6 +9,8 @@ import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
 import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
 import { useTutors } from "@/features/admin/tutor/api/tutor-api";
 import { useStudents } from "@/hooks/use-students";
+import { useCourseLookup } from "@/features/admin/courses/api/course-api";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface Props {
   open: boolean;
@@ -22,7 +24,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     name: "",
     institution_id: "",
     tutor_id: "",
-    course_key: "java-dev",
+    course_key: "",
     start_date: "",
     end_date: "",
     status: "active",
@@ -35,10 +37,16 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [instructorSearch, setInstructorSearch] = useState("");
   const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
 
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
+  const [selectedCourseName, setSelectedCourseName] = useState("");
+  const debouncedCourseSearch = useDebounce(courseSearch, 300);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
   const tutorDropdownRef = useRef<HTMLDivElement>(null);
+  const courseDropdownRef = useRef<HTMLDivElement>(null);
   const prevInstitutionIdRef = useRef(form.institution_id);
 
   // API hooks
@@ -53,6 +61,12 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     form.institution_id || undefined
   );
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
+  
+  const { data: lookupCourses } = useCourseLookup(
+    debouncedCourseSearch,
+    10,
+    { enabled: open && (courseDropdownOpen || !!debouncedCourseSearch) }
+  );
 
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
@@ -62,7 +76,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     ? (studentsData?.data || (Array.isArray(studentsData) ? studentsData : []))
     : [];
 
-  // Click outside listener for student and tutor search dropdowns
+  // Click outside listener for student, tutor and course search dropdowns
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
@@ -70,6 +84,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       }
       if (tutorDropdownRef.current && !tutorDropdownRef.current.contains(event.target as Node)) {
         setInstructorDropdownOpen(false);
+      }
+      if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+        setCourseDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -85,11 +102,12 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           name: activeBatch.name || "",
           institution_id: String(activeBatch.institution_id || ""),
           tutor_id: String(activeBatch.tutor_id || ""),
-          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "java-dev",
+          course_key: activeBatch.course_id ? String(activeBatch.course_id) : "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
         });
+        setSelectedCourseName(activeBatch.course || activeBatch.Course?.name || "");
 
         if (activeBatch.Enrollments) {
           setSelectedStudents(
@@ -107,18 +125,21 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           name: "",
           institution_id: "",
           tutor_id: "",
-          course_key: "java-dev",
+          course_key: "",
           start_date: "",
           end_date: "",
           status: "active",
         });
+        setSelectedCourseName("");
         setSelectedStudents([]);
         prevInstitutionIdRef.current = "";
       }
       setStudentSearch("");
       setInstructorSearch("");
+      setCourseSearch("");
       setDropdownOpen(false);
       setInstructorDropdownOpen(false);
+      setCourseDropdownOpen(false);
       setErrors({});
     }
   }, [open, mode, batch, fullBatch]);
@@ -184,7 +205,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       name: form.name,
       institution_id: form.institution_id ? Number(form.institution_id) : null,
       tutor_id: form.tutor_id ? Number(form.tutor_id) : null,
-      course_id: null,
+      course_id: form.course_key ? Number(form.course_key) : null,
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
@@ -254,20 +275,52 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
         {/* SELECT COURSE & STATUS */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div ref={courseDropdownRef} className="relative">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               SELECT COURSE <span className="text-red-500">*</span>
             </label>
-            <Select value={form.course_key} onValueChange={(val) => setForm({...form, course_key: val})}>
-              <SelectTrigger className="w-full h-[42px] px-4 rounded-xl border border-gray-200 bg-gray-50/50 text-slate-700 text-sm">
-                <SelectValue placeholder="Select Course" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="java-dev">Java Development</SelectItem>
-                <SelectItem value="web-dev">Web Development</SelectItem>
-                <SelectItem value="data-science">Data Science</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                value={courseSearch || selectedCourseName}
+                onChange={(e) => {
+                  setCourseSearch(e.target.value);
+                  setCourseDropdownOpen(true);
+                }}
+                onFocus={() => {
+                  setCourseSearch("");
+                  setCourseDropdownOpen(true);
+                }}
+                placeholder="Search and select course..."
+                className={`w-full border rounded-xl pl-10 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50/50 transition-colors ${errors.course_key ? "border-red-500" : "border-gray-200"}`}
+              />
+              <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            </div>
+            {errors.course_key && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.course_key}</p>}
+
+            {/* Course Lookup Dropdown */}
+            {courseDropdownOpen && (
+              <div className="absolute left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg z-50 p-1">
+                {(!lookupCourses || lookupCourses.length === 0) ? (
+                  <div className="p-3 text-sm text-gray-500 text-center">No courses found</div>
+                ) : (
+                  lookupCourses.map((c: any) => (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        setForm({ ...form, course_key: String(c.id) });
+                        setSelectedCourseName(c.name);
+                        setCourseSearch("");
+                        setCourseDropdownOpen(false);
+                      }}
+                      className="px-3 py-2 text-sm rounded-lg cursor-pointer hover:bg-slate-50 text-slate-800 transition-colors"
+                    >
+                      {c.name}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">

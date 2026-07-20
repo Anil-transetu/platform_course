@@ -31,8 +31,11 @@ import {
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
+  itemId?: string;
 }
 
 export interface RichTextEditorRef {
@@ -276,7 +279,7 @@ const ColorDropdown: React.FC<ColorDropdownProps> = ({
 };
 
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
-  ({ value, onChange, placeholder, className }, ref) => {
+  ({ value, onChange, placeholder, className, onBlur, disabled, itemId }, ref) => {
     const editor = useEditor({
       extensions: [
         StarterKit,
@@ -294,8 +297,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         Indent,
       ],
       content: value,
+      editable: !disabled,
       onUpdate: ({ editor }) => {
-        onChange(editor.getHTML());
+        if (editor.isFocused) {
+          onChange(editor.getHTML());
+        }
+      },
+      onBlur: () => {
+        onBlur?.();
       },
       editorProps: {
         attributes: {
@@ -304,20 +313,26 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       },
     });
 
+    useEffect(() => {
+      if (editor && disabled !== undefined) {
+        editor.setEditable(!disabled);
+      }
+    }, [editor, disabled]);
+
     useImperativeHandle(ref, () => ({
       insertImage: (url: string) => {
         if (editor) {
-          editor.commands.insertContent(`<img src="${url}" />`);
+          editor.chain().focus().insertContent(`<img src="${url}" />`).run();
         }
       },
       insertVideo: (url: string) => {
         if (editor) {
-          editor.commands.insertContent(`<iframe src="${url}"></iframe>`);
+          editor.chain().focus().insertContent(`<iframe src="${url}"></iframe>`).run();
         }
       },
       insertPdf: (url: string, title: string) => {
         if (editor) {
-          editor.commands.insertContent(`<div data-pdf-resource src="${url}" title="${title}"></div>`);
+          editor.chain().focus().insertContent(`<div data-pdf-resource src="${url}" title="${title}"></div>`).run();
         }
       },
       insertLink: (url: string, title: string) => {
@@ -327,15 +342,36 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       }
     }));
 
+    const lastItemIdRef = useRef(itemId);
+    const isHydratedRef = useRef(false);
+
     useEffect(() => {
       if (!editor) return;
-      
-      // Update editor content only if it is different and the editor is not focused.
-      // This preserves user selections, active styles, and list editing contexts.
-      if (value !== editor.getHTML() && !editor.isFocused) {
-        editor.commands.setContent(value);
+
+      const isDifferentItem = itemId !== undefined && itemId !== lastItemIdRef.current;
+      if (isDifferentItem) {
+        lastItemIdRef.current = itemId;
+        isHydratedRef.current = false;
       }
-    }, [value, editor]);
+
+      const targetValue = value || "";
+      const currentContent = editor.getHTML();
+      const isEditorEmpty = !currentContent || currentContent === "<p></p>" || currentContent === "<p><br></p>";
+      const needsHydration =
+        isDifferentItem ||
+        (!isHydratedRef.current && !!targetValue) ||
+        (isEditorEmpty && !!targetValue && currentContent !== targetValue);
+
+      if (!needsHydration) return;
+
+      isHydratedRef.current = !!targetValue;
+      setTimeout(() => {
+        if (editor && !editor.isDestroyed && editor.getHTML() !== targetValue) {
+          editor.commands.setContent(targetValue, { emitUpdate: false });
+          isHydratedRef.current = true;
+        }
+      }, 0);
+    }, [value, itemId, editor]);
 
 
     if (!editor) {

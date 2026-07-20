@@ -64,7 +64,7 @@ export const buildCourseColumns = (): Column<Course>[] => [
   },
   {
     key: "category",
-    label: "CATEGORY",
+    label: "COURSE DESCRIPTION",
     render: (value, row) => (
       <span className="text-slate-500 text-sm">{row.category}</span>
     ),
