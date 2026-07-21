@@ -55,7 +55,13 @@ async function handleResponse(response: Response) {
       response.status === 401;
 
     if (!isTokenExpired) {
-      console.error("API ERROR:", err);
+      console.error("API ERROR DETAILED:", {
+        url: response.url,
+        status: response.status,
+        statusText: response.statusText,
+        err,
+        envHost: process.env.NEXT_PUBLIC_API_URL
+      });
     } else {
       if (typeof document !== "undefined") {
         document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";

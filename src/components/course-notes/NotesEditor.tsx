@@ -2,21 +2,26 @@ import React, { useEffect, useRef, useState } from "react";
 import { CourseNote } from "./types";
 import { NotesToolbar } from "./NotesToolbar";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save } from "lucide-react";
 
 interface NotesEditorProps {
   note: CourseNote;
   onChange: (updates: Partial<Pick<CourseNote, "title" | "content">>) => void;
+  onSave: () => void;
+  isSaving: boolean;
 }
 
-export function NotesEditor({ note, onChange }: NotesEditorProps) {
+export function NotesEditor({ note, onChange, onSave, isSaving }: NotesEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const [title, setTitle] = useState(note.title);
+  const [title, setTitle] = useState(note.title || "");
 
   // Sync internal state if active note changes from outside
   useEffect(() => {
-    setTitle(note.title);
-    if (editorRef.current && editorRef.current.innerHTML !== note.content) {
-      editorRef.current.innerHTML = note.content;
+    setTitle(note.title || "");
+    const newContent = note.content || "";
+    if (editorRef.current && editorRef.current.innerHTML !== newContent) {
+      editorRef.current.innerHTML = newContent;
     }
   }, [note.id]); // only when the note instance changes
 
@@ -57,10 +62,31 @@ export function NotesEditor({ note, onChange }: NotesEditorProps) {
           ref={editorRef}
           contentEditable
           onInput={handleContentInput}
-          className="flex-1 overflow-y-auto p-5 text-base text-foreground/90 focus:outline-none prose prose-sm prose-p:leading-relaxed prose-headings:font-semibold dark:prose-invert max-w-none"
+          style={{ color: "black", caretColor: "black" }}
+          className="flex-1 overflow-y-auto p-5 text-base focus:outline-none prose prose-sm prose-p:leading-relaxed prose-headings:font-semibold max-w-none"
           data-placeholder="Start typing your notes here..."
           suppressContentEditableWarning
         />
+      </div>
+
+      <div className="flex justify-end pt-2">
+        <Button 
+          onClick={onSave} 
+          disabled={isSaving} 
+          className="rounded-md px-6 shadow-sm hover:shadow-md transition-all"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4 mr-2" />
+              Save Notes
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );

@@ -116,7 +116,7 @@ export default function StudentCoursePage() {
           <CourseViewer courseId={courseId} activeItem={activeItem} />
         </main>
       </div>
-      <CourseNotes />
+      <CourseNotes courseId={courseId} activeItem={activeItem} />
     </ListingScreenTemplate>
   );
 }
