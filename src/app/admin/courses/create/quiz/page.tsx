@@ -73,7 +73,7 @@ export default function QuizLibraryPage() {
   const updateLessonMutation = useUpdateLesson();
   const unlinkQuizMutation = useUnlinkQuiz();
 
-  const handleAddToCourse = async (quiz: ApiQuiz) => {
+  const handleAddToCourse = (quiz: ApiQuiz) => {
     if (!activeQuizId) {
       alert("Please ensure you have an active quiz selected in the sidebar to replace.");
       return;
@@ -87,28 +87,16 @@ export default function QuizLibraryPage() {
 
     const newId = String(quiz.id);
 
-    // Optimistically update local store so UI updates immediately
+    // Update local store so UI updates immediately
     if (!activeLessonId) {
-      updateQuiz(activeModuleId, null, activeQuizId, { id: newId, title: quiz.title });
+      updateQuiz(activeModuleId, null, activeQuizId, { id: newId, title: quiz.title }, { isLocalOnly: true });
     } else {
-      updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
+      updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title }, { isLocalOnly: true });
     }
     setActiveQuiz(newId);
     setForceLibraryView(false);
     setSuccessMsg(`"${quiz.title}" added to course successfully!`);
     setTimeout(() => setSuccessMsg(""), 3000);
-
-    // Persist by calling appropriate backend PUT endpoint once
-    try {
-      if (!activeLessonId) {
-        await updateModuleMutation.mutateAsync({ id: activeModuleId, courseId: course.id, data: { quizzes: [quiz.id] } });
-      } else {
-        await updateLessonMutation.mutateAsync({ id: activeLessonId, courseId: course.id, data: { quizzes: [quiz.id] } });
-      }
-    } catch (err: any) {
-      // revert optimistic update by refetching curriculum
-      toast.error(err?.message || 'Failed to add quiz to course');
-    }
   };
 
   const truncateText = (text?: string, limit: number = 120) => {
@@ -181,30 +169,20 @@ export default function QuizLibraryPage() {
                     Change Quiz
                   </button>
                   <button 
-                    onClick={async () => {
+                    onClick={() => {
                       if (!activeQuiz?.id) return;
                       const quizIdStr = String(activeQuiz.id);
 
-                      // Determine level
-                      const level = activeLessonId ? 'lesson' : 'module';
-
-                      try {
-                        // Optimistically remove from local store immediately
-                        if (!activeModuleId) {
-                          // Course level not supported for quizzes — fallback to clearing local selection
-                          setActiveQuiz(null);
-                        } else {
-                          deleteQuiz(activeModuleId, activeLessonId || null, quizIdStr);
-                        }
-
-                        // Call unlink API (single request)
-                        await unlinkQuizMutation.mutateAsync({ quizId: quizIdStr, level: level as 'module' | 'lesson', courseId: course.id, moduleId: activeModuleId || undefined, lessonId: activeLessonId || undefined });
-
+                      // Remove from local store immediately
+                      if (!activeModuleId) {
+                        // Course level not supported for quizzes — fallback to clearing local selection
                         setActiveQuiz(null);
-                        setForceLibraryView(false);
-                      } catch (err: any) {
-                        toast.error(err?.message || 'Failed to unlink quiz');
+                      } else {
+                        deleteQuiz(activeModuleId, activeLessonId || null, quizIdStr);
                       }
+
+                      setActiveQuiz(null);
+                      setForceLibraryView(false);
                     }}
                     className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >

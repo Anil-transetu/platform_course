@@ -67,7 +67,7 @@ export const buildCourseColumns = (): Column<Course>[] => [
   {
     key: "category",
     label: "COURSE DESCRIPTION",
-    width: "max-w-[280px]",
+    width: "max-w-[220px] lg:max-w-[240px]",
     render: (value, row) => {
       const descriptionText = (row.description || row.category || "").trim() || "N/A";
       return (
@@ -75,14 +75,14 @@ export const buildCourseColumns = (): Column<Course>[] => [
           <Tooltip>
             <TooltipTrigger asChild>
               <div
-                className="max-w-[280px] truncate overflow-hidden whitespace-nowrap text-ellipsis text-gray-500 dark:text-muted-foreground text-sm"
+                className="max-w-[220px] lg:max-w-[240px] truncate overflow-hidden whitespace-nowrap text-ellipsis text-gray-500 dark:text-muted-foreground text-sm block"
                 title={descriptionText}
               >
                 {descriptionText}
               </div>
             </TooltipTrigger>
             {descriptionText !== "N/A" && (
-              <TooltipContent className="max-w-xs sm:max-w-sm break-words">
+              <TooltipContent className="max-w-xs sm:max-w-sm break-words hidden md:block">
                 <p className="text-xs">{descriptionText}</p>
               </TooltipContent>
             )}

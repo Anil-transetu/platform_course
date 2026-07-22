@@ -830,6 +830,10 @@ const removeCurriculumAssignmentReferences = (course: any, assignmentId: string 
 
   if (level === 'course') {
     newCourse.assignments = (newCourse.assignments || []).filter((a: any) => String(a.id) !== String(assignmentId));
+    if (newCourse.final_assessment && String(newCourse.final_assessment.id) === String(assignmentId)) {
+      newCourse.final_assessment = null;
+      newCourse.final_assessment_id = null;
+    }
     return newCourse;
   }
 
