@@ -74,7 +74,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   );
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
-
+  
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
 
@@ -307,7 +307,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
         {/* ROW 3: INSTRUCTOR & STATUS */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               INSTRUCTOR <span className="text-red-500">*</span>
             </label>

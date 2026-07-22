@@ -4,27 +4,29 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
+const BACKEND_URL = `${API_HOST}/api/v1/courses/lookup`;
 
 const getAuth = (req: NextRequest) => req.headers.get("Authorization");
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id: moduleId } = await params;
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const search = searchParams.get("search");
+  const limit = searchParams.get("limit");
   const auth = getAuth(request);
-  const BACKEND_URL = `${API_HOST}/api/v1/modules/${moduleId}/topics`;
 
   try {
-    const body = await request.json();
-    const response = await fetch(BACKEND_URL, {
-      method: "POST",
+    const query = new URLSearchParams();
+    if (search) query.append("search", search);
+    if (limit) query.append("limit", limit);
+
+    const url = query.toString() ? `${BACKEND_URL}?${query.toString()}` : BACKEND_URL;
+
+    const response = await fetch(url, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...(auth ? { "Authorization": auth } : {}),
       },
-      body: JSON.stringify(body),
     });
 
     const data = await response.json();
@@ -38,9 +40,9 @@ export async function POST(
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`POST Module Topic proxy error [${BACKEND_URL}]:`, message);
+    console.error(`GET Course Lookup proxy error [${BACKEND_URL}]:`, message);
     return NextResponse.json(
-      { message: "Failed to create topic in module" },
+      { message: "Failed to fetch course lookup details" },
       { status: 502 }
     );
   }

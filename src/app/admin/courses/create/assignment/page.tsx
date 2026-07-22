@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { Search, FileText, Code, Palette, BarChart, Plus, RefreshCcw, Edit3, ClipboardList, Clock, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useAssignments, useAssignment } from "@/features/admin/assignments/api/use-assignments";
+import { useUpdateModule, useUpdateLesson, useUpdateCourse, useUnlinkAssignment } from '@/features/admin/courses/api/course-api';
+import { toast } from 'sonner';
+import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export default function AssignmentLibraryPage() {
-  const router = useRouter();
   const { 
     course, 
     activeModuleId, 
@@ -19,12 +20,32 @@ export default function AssignmentLibraryPage() {
     activeAssignmentId, 
     updateAssignment, 
     updateCourseAssignment,
-    setActiveAssignment
+    setActiveAssignment,
+    deleteAssignment,
+    deleteCourseAssignment
   } = useCourseStore();
   
-  let activeAssignment: any;
+  const finalAssessmentId = (course as any)?.final_assessment_id || (course as any)?.finalAssessmentId;
+
+  // Sync activeAssignmentId on course-level assignment if it is null or different
+  useEffect(() => {
+    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== String(finalAssessmentId)) {
+      setActiveAssignment(String(finalAssessmentId));
+    }
+  }, [activeModuleId, finalAssessmentId, activeAssignmentId, setActiveAssignment]);
+
+  let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
   if (!activeModuleId) {
-    activeAssignment = course.assignments?.find(a => String(a.id) === String(activeAssignmentId));
+    const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
+    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
+
+    if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment;
+    } else if (finalAssessmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment || { id: finalAssessmentId };
+    } else {
+      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
+    }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
     activeAssignment = activeModule?.assignments?.find(a => String(a.id) === String(activeAssignmentId));
@@ -38,47 +59,75 @@ export default function AssignmentLibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
 
-  // 1. Fetch real list of assignments
+  const debouncedSearch = useDebounce(search, 300);
+
+  // 2. Fetch specific assignment details from backend if ID is a real backend ID
+  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
+  const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
+  const isLibraryEnabled = !isRealId || forceLibraryView;
+
+  // 1. Fetch real list of assignments — only when library view is active
   const { data: assignmentsData, isLoading: listLoading } = useAssignments(
     currentPage, 
     6, 
-    search || undefined, 
-    statusFilter === "All" ? undefined : statusFilter
+    debouncedSearch || undefined, 
+    statusFilter === "All" ? undefined : statusFilter,
+    { enabled: isLibraryEnabled }
   );
   const assignmentItems = assignmentsData?.data || [];
   const totalItems = assignmentsData?.total || 0;
   const totalPages = Math.ceil(totalItems / 6);
 
-  // 2. Fetch specific assignment details from backend if ID is a real backend ID
-  const isRealId = activeAssignment?.id && !String(activeAssignment.id).includes("-");
-  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? String(activeAssignment.id) : undefined);
+  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
 
-  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || "";
-  const shouldShowPreview = !!assignmentTitle;
+  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || activeAssignment?.name || assignmentDetail?.title || "";
+  const shouldShowPreview = (isRealId || !!assignmentTitle) && !forceLibraryView;
 
-  const handleAddToCourse = (assignment: any) => {
-    if (activeAssignmentId) {
-      const assignmentIdStr = String(assignment.id);
-      if (!activeModuleId) {
-        updateCourseAssignment(activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
-      } else {
-        updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
-      }
-      setActiveAssignment(assignmentIdStr);
-      setSuccessMsg(`"${assignment.title}" added to course successfully!`);
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } else {
+  const updateModuleMutation = useUpdateModule();
+  const updateLessonMutation = useUpdateLesson();
+  const updateCourseMutation = useUpdateCourse();
+  const unlinkAssignmentMutation = useUnlinkAssignment();
+
+  const handleAddToCourse = (assignment: ApiAssignment) => {
+    if (!activeAssignmentId) {
       alert("Please ensure you have an active assignment selected in the sidebar to replace.");
+      return;
     }
+
+    const assignmentIdStr = String(assignment.id);
+
+    // Optimistic local update
+    if (!activeModuleId) {
+      // Course final assessment (only one)
+      useCourseStore.setState((state) => ({
+        course: {
+          ...state.course,
+          final_assessment: {
+            id: assignmentIdStr,
+            title: assignment.title,
+            assignment_title: assignment.title
+          },
+          final_assessment_id: assignmentIdStr
+        }
+      }));
+    } else {
+      updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title }, { isLocalOnly: true });
+    }
+    setActiveAssignment(assignmentIdStr);
+    setForceLibraryView(false);
+    setSuccessMsg(`"${assignment.title}" added to course successfully!`);
+    setTimeout(() => setSuccessMsg(""), 3000);
   };
 
   const truncateText = (text?: string, limit: number = 120) => {
     if (!text) return "";
-    if (text.length > limit) {
-      return text.substring(0, limit) + "...";
+    const cleanText = text.replace(/<[^>]*>?/gm, '');
+    if (cleanText.length > limit) {
+      return cleanText.substring(0, limit) + "...";
     }
-    return text;
+    return cleanText;
   };
 
   const getStatusBadge = (status?: string) => {
@@ -134,12 +183,7 @@ export default function AssignmentLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="flex p-8 gap-8 items-start min-h-full">
-        {/* LEFT SIDEBAR */}
-        <CourseSidebar />
-
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0 max-w-5xl">
+      <div className="p-8 flex flex-col gap-6 max-w-5xl">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
@@ -165,6 +209,41 @@ export default function AssignmentLibraryPage() {
                       This assignment has been added to your lesson. Students must submit their deliverables before passing.
                     </p>
                   </div>
+                </div>
+                
+                {/* ACTION BUTTONS */}
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                  <button 
+                    onClick={() => setForceLibraryView(true)}
+                    className="px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-355 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
+                  >
+                    Change Assignment
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (!activeAssignment?.id) return;
+                      const assignmentIdStr = String(activeAssignment.id);
+
+                      // Update local store
+                      if (!activeModuleId) {
+                        useCourseStore.setState((state) => ({
+                          course: {
+                            ...state.course,
+                            final_assessment: null,
+                            final_assessment_id: null
+                          }
+                        }));
+                      } else {
+                        deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
+                      }
+
+                      setActiveAssignment(null);
+                      setForceLibraryView(false);
+                    }}
+                   className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                  >
+                   Remove Association
+                  </button>
                 </div>
               </div>
 
@@ -219,7 +298,7 @@ export default function AssignmentLibraryPage() {
                       </h4>
                       {assignmentDetail?.evaluation_matrix && assignmentDetail.evaluation_matrix.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {assignmentDetail.evaluation_matrix.map((criteria: any, cIdx: number) => (
+                          {assignmentDetail.evaluation_matrix.map((criteria, cIdx: number) => (
                             <div key={cIdx} className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
                               <span className="font-bold text-sm text-slate-800 block mb-1">{criteria.name}</span>
                               <span className="text-xs text-slate-500">Marks: {criteria.marks}</span>
@@ -304,7 +383,7 @@ export default function AssignmentLibraryPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {assignmentItems.map((assignment: any) => {
+                    {assignmentItems.map((assignment: ApiAssignment) => {
                       const details = getSubmissionTypeDetails(assignment.submissionType || assignment.submission_type);
                       const badge = getStatusBadge(assignment.status);
                       const IconComponent = details.icon;
@@ -365,7 +444,6 @@ export default function AssignmentLibraryPage() {
               )}
             </>
           )}
-        </div>
       </div>
     </div>
   );

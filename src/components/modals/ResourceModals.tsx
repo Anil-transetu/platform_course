@@ -63,6 +63,7 @@ export default function ResourceModals({ isOpen, type, onClose, onAttach }: Reso
 function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,11 +78,16 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
       alert("Please select a PDF file first.");
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    if (onAttach) {
-      onAttach("pdf", { url: objectUrl, title });
-    }
-    onClose();
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("pdf", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -126,7 +132,7 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
             <div className="w-14 h-14 rounded-2xl bg-card shadow-md flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <UploadCloud className={file ? "text-green-500" : "text-blue-500"} size={28} strokeWidth={1.5} />
             </div>
-            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors">
+            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors truncate max-w-full px-4 text-center block" title={file ? file.name : undefined}>
               {file ? file.name : "Click to upload or drag and drop"}
             </p>
             <p className="text-[10px] text-gray-400 mt-2 font-medium">Maximum file size: 50MB</p>
@@ -138,9 +144,10 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
-          className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2"
+          disabled={isUploading}
+          className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <LinkIcon size={16} strokeWidth={2.5} /> Attach PDF
+          {isUploading ? "Reading..." : <><LinkIcon size={16} strokeWidth={2.5} /> Attach PDF</>}
         </button>
       </div>
     </div>
@@ -151,12 +158,39 @@ function PdfModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?
 function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttach?: (type: string, payload: any) => void }) {
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const processFile = (selectedFile: File) => {
+    // 1. File Size Validation (Max 5 MB)
+    const MAX_SIZE_MB = 5;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    if (selectedFile.size > MAX_SIZE_BYTES) {
+      alert(`File size exceeds maximum limit of ${MAX_SIZE_MB} MB.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // 2. Format Validation (PNG, JPG, JPEG, WEBP)
+    const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const fileExtension = selectedFile.name.split(".").pop()?.toLowerCase();
+    const isAllowedType = ALLOWED_TYPES.includes(selectedFile.type.toLowerCase()) ||
+      ["png", "jpg", "jpeg", "webp"].includes(fileExtension || "");
+
+    if (!isAllowedType) {
+      alert("Invalid file format. Please upload a PNG, JPG, JPEG, or WEBP image.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setFile(selectedFile);
+    if (!title) setTitle(selectedFile.name);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      if (!title) setTitle(e.target.files[0].name);
+      processFile(e.target.files[0]);
     }
   };
 
@@ -165,11 +199,16 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
       alert("Please select an image first.");
       return;
     }
-    const objectUrl = URL.createObjectURL(file);
-    if (onAttach) {
-      onAttach("image", { url: objectUrl, title });
-    }
-    onClose();
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (onAttach) {
+        onAttach("image", { url: reader.result as string, title });
+      }
+      setIsUploading(false);
+      onClose();
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -202,13 +241,29 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
             className="hidden"
           />
           <div 
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processFile(e.dataTransfer.files[0]);
+              }
+            }}
             onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-border rounded-2xl p-10 flex flex-col items-center justify-center bg-muted/50 hover:bg-blue-50/20 hover:border-blue-200 transition-all group cursor-pointer"
+            className={`border border-dashed rounded-2xl p-10 flex flex-col items-center justify-center transition-all group cursor-pointer ${
+              isDragging 
+                ? "border-blue-500 bg-blue-50/20 scale-[1.01]" 
+                : "border-border bg-muted/50 hover:bg-blue-50/20 hover:border-blue-200"
+            }`}
           >
             <div className="w-14 h-14 rounded-2xl bg-blue-50/50 flex items-center justify-center mb-6">
               <ImageIcon className={file ? "text-green-600" : "text-blue-600"} size={28} strokeWidth={1.5} />
             </div>
-            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors">
+            <p className="text-sm font-bold text-card-foreground group-hover:text-blue-700 transition-colors truncate max-w-full px-4 text-center block" title={file ? file.name : undefined}>
               {file ? file.name : "Drag & drop your image here"}
             </p>
             <p className="text-[10px] text-gray-400 mt-2 font-medium">Supports PNG, JPG or WEBP (Max 5MB)</p>
@@ -223,9 +278,10 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleUpload}
-          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Upload
+          {isUploading ? "Reading..." : "Upload"}
         </button>
       </div>
     </div>
@@ -237,6 +293,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,15 +309,23 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
       return;
     }
     
-    let videoUrl = url;
     if (file && !url) {
-      videoUrl = URL.createObjectURL(file);
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (onAttach) {
+          onAttach("video", { url: reader.result as string, title });
+        }
+        setIsUploading(false);
+        onClose();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      if (onAttach) {
+        onAttach("video", { url, title });
+      }
+      onClose();
     }
-
-    if (onAttach) {
-      onAttach("video", { url: videoUrl, title });
-    }
-    onClose();
   };
 
   return (
@@ -305,7 +370,7 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
             <div className="w-12 h-12 rounded-2xl bg-card shadow-md flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
               <Video className={file ? "text-green-500" : "text-blue-500"} size={24} strokeWidth={1.5} />
             </div>
-            <p className="text-xs font-bold text-card-foreground group-hover:text-blue-700 transition-colors text-center">
+            <p className="text-xs font-bold text-card-foreground group-hover:text-blue-700 transition-colors text-center truncate max-w-full px-4 block" title={file ? file.name : undefined}>
               {file ? file.name : "Click to select video from computer"}
             </p>
           </div>
@@ -339,9 +404,10 @@ function VideoModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
         <button onClick={onClose} className="px-6 py-2.5 rounded-xl font-bold text-muted-foreground hover:bg-muted transition-all text-sm">Cancel</button>
         <button 
           onClick={handleAttach}
-          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm"
+          disabled={isUploading}
+          className="px-10 py-2.5 rounded-xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/25 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Attach Video
+          {isUploading ? "Reading..." : "Attach Video"}
         </button>
       </div>
     </div>

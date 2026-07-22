@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Search, HelpCircle, Clock, RefreshCcw, Edit3, CheckCircle2, CheckSquare, Loader2 } from "lucide-react";
+import { Search, HelpCircle, Clock, CheckSquare, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
-import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import Pagination from "@/components/ui/Pagination/Pagination";
 import { useQuizzes, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { useUpdateModule, useUpdateLesson, useUnlinkQuiz } from '@/features/admin/courses/api/course-api';
+import { Quiz as ApiQuiz, QuizQuestion, QuizQuestionOption } from "@/features/admin/quizzes/api/quiz-api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDebounce } from "@/hooks/use-debounce";
+import { toast } from 'sonner';
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -19,10 +22,12 @@ export default function QuizLibraryPage() {
     activeQuizId, 
     updateQuiz, 
     updateCourseQuiz,
-    setActiveQuiz
+    setActiveQuiz,
+    deleteQuiz,
+    deleteCourseQuiz
   } = useCourseStore();
   
-  let activeQuiz: any;
+  let activeQuiz: { id: string | number; title?: string; quiz_title?: string } | undefined;
   if (!activeModuleId) {
     activeQuiz = course.quizzes?.find(q => String(q.id) === String(activeQuizId));
   } else if (!activeLessonId) {
@@ -38,39 +43,60 @@ export default function QuizLibraryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 300);
+
+  const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : (activeQuizId ? String(activeQuizId) : "");
+  const isRealId = !!(activeQuizIdStr && !activeQuizIdStr.startsWith("temp-"));
+  const isLibraryEnabled = !isRealId || forceLibraryView;
 
   // 1. Fetch real list of quizzes with pagination & search
   const { data: quizzesData, isLoading: listLoading } = useQuizzes(
     currentPage, 
     6, 
-    search || undefined, 
-    statusFilter === "ALL" ? undefined : statusFilter
+    debouncedSearch || undefined, 
+    statusFilter === "ALL" ? undefined : statusFilter,
+    { enabled: isLibraryEnabled }
   );
   const quizItems = quizzesData?.data || [];
   const totalItems = quizzesData?.total || 0;
   const totalPages = Math.ceil(totalItems / 6);
 
   // 2. Fetch specific quiz details if it is a real database ID
-  const isRealId = activeQuiz?.id && !String(activeQuiz.id).includes("-");
-  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? String(activeQuiz.id) : "");
+  const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? activeQuizIdStr : "", { enabled: isRealId });
 
-  const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || "";
-  const shouldShowPreview = !!quizTitle;
+  const quizTitle = activeQuiz?.title || activeQuiz?.quiz_title || (activeQuiz as any)?.name || quizDetail?.title || quizDetail?.quiz_title || quizDetail?.name || (isRealId ? `Quiz #${activeQuizIdStr}` : "");
+  const shouldShowPreview = isRealId && !forceLibraryView;
 
-  const handleAddToCourse = (quiz: any) => {
-    if (activeQuizId) {
-      const newId = String(quiz.id);
-      if (!activeModuleId) {
-        updateCourseQuiz(activeQuizId, { id: newId, title: quiz.title });
-      } else {
-        updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title });
-      }
-      setActiveQuiz(newId);
-      setSuccessMsg(`"${quiz.title}" added to course successfully!`);
-      setTimeout(() => setSuccessMsg(""), 3000);
-    } else {
+  const updateModuleMutation = useUpdateModule();
+  const updateLessonMutation = useUpdateLesson();
+  const unlinkQuizMutation = useUnlinkQuiz();
+
+  const handleAddToCourse = (quiz: ApiQuiz) => {
+    if (!activeQuizId) {
       alert("Please ensure you have an active quiz selected in the sidebar to replace.");
+      return;
     }
+
+    // Course level does not support quizzes
+    if (!activeModuleId) {
+      alert("Course-level quizzes are not supported. Please select a module or lesson.");
+      return;
+    }
+
+    const newId = String(quiz.id);
+
+    // Update local store so UI updates immediately
+    if (!activeLessonId) {
+      updateQuiz(activeModuleId, null, activeQuizId, { id: newId, title: quiz.title }, { isLocalOnly: true });
+    } else {
+      updateQuiz(activeModuleId, activeLessonId || null, activeQuizId, { id: newId, title: quiz.title }, { isLocalOnly: true });
+    }
+    setActiveQuiz(newId);
+    setForceLibraryView(false);
+    setSuccessMsg(`"${quiz.title}" added to course successfully!`);
+    setTimeout(() => setSuccessMsg(""), 3000);
   };
 
   const truncateText = (text?: string, limit: number = 120) => {
@@ -106,12 +132,7 @@ export default function QuizLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="flex p-8 gap-8 items-start min-h-full">
-        {/* LEFT SIDEBAR */}
-        <CourseSidebar />
-
-        {/* MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col gap-6 min-w-0 max-w-5xl">
+      <div className="p-8 flex flex-col gap-6 max-w-5xl">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
@@ -138,6 +159,36 @@ export default function QuizLibraryPage() {
                     </p>
                   </div>
                 </div>
+                
+                {/* ACTION BUTTONS */}
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                  <button 
+                    onClick={() => setForceLibraryView(true)}
+                    className="px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
+                  >
+                    Change Quiz
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (!activeQuiz?.id) return;
+                      const quizIdStr = String(activeQuiz.id);
+
+                      // Remove from local store immediately
+                      if (!activeModuleId) {
+                        // Course level not supported for quizzes — fallback to clearing local selection
+                        setActiveQuiz(null);
+                      } else {
+                        deleteQuiz(activeModuleId, activeLessonId || null, quizIdStr);
+                      }
+
+                      setActiveQuiz(null);
+                      setForceLibraryView(false);
+                    }}
+                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                  >
+                    Remove Association
+                  </button>
+                </div>
               </div>
 
               {/* QUESTIONS LIST CARD */}
@@ -154,7 +205,7 @@ export default function QuizLibraryPage() {
                       Loading quiz questions...
                     </div>
                   ) : quizDetail?.questions && quizDetail.questions.length > 0 ? (
-                    quizDetail.questions.map((q: any, idx: number) => (
+                    quizDetail.questions.map((q: QuizQuestion, idx: number) => (
                       <div key={q.id || idx} className="p-6 border border-slate-100 bg-slate-50/40 rounded-2xl flex flex-col gap-4 shadow-xs">
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-bold tracking-widest text-blue-650 uppercase bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md">
@@ -166,7 +217,7 @@ export default function QuizLibraryPage() {
                         </h4>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
-                          {q.options?.map((opt: any, optIdx: number) => (
+                          {q.options?.map((opt: QuizQuestionOption, optIdx: number) => (
                             <div 
                               key={optIdx} 
                               className="flex items-center gap-3 p-3.5 rounded-xl border transition-all border-slate-200 bg-white text-slate-700"
@@ -249,7 +300,7 @@ export default function QuizLibraryPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {quizItems.map((quiz: any) => {
+                    {quizItems.map((quiz: ApiQuiz) => {
                       const badge = getStatusBadge(quiz.status);
                       return (
                         <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.045)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
@@ -311,7 +362,6 @@ export default function QuizLibraryPage() {
               )}
             </>
           )}
-        </div>
       </div>
     </div>
   );

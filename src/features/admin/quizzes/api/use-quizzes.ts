@@ -12,33 +12,56 @@ import {
 /**
  * Fetch all quizzes with search and filter
  */
-export function useQuizzes(page: number = 1, limit: number = 50, search?: string, statusFilter?: string) {
+export function useQuizzes(
+  page: number = 1,
+  limit: number = 50,
+  search?: string,
+  statusFilter?: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["quizzes", { page, limit, search, statusFilter }],
-    queryFn: () => fetchQuizzes(page, limit, search, statusFilter),
+    queryFn: ({ signal }) => fetchQuizzes(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
     placeholderData: keepPreviousData,
+    enabled: options?.enabled,
   });
 }
 
 /**
  * Fetch a single quiz by ID
  */
-export function useQuiz(id: string | number) {
+export function useQuiz(id: string | number, options?: { enabled?: boolean }) {
+  const isValidId = id !== undefined && id !== null && String(id).trim() !== "" && String(id) !== "null" && String(id) !== "undefined";
   return useQuery({
     queryKey: ["quiz", id],
-    queryFn: () => fetchQuizById(id),
-    enabled: !!id,
+    queryFn: ({ signal }) => fetchQuizById(id, signal),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
+    enabled: (options?.enabled ?? true) && isValidId,
   });
 }
 
 /**
  * Fetch quiz statistics
  */
-export function useQuizStats() {
+export function useQuizStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizStats"],
-    queryFn: () => fetchQuizStats(),
+    queryFn: ({ signal }) => fetchQuizStats(signal),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: false,
+    enabled: options?.enabled,
   });
 }
 

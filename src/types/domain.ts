@@ -1,4 +1,4 @@
-export interface Domain {
+export interface Domain extends Record<string, any> {
   id: number;
   name: string;
   category: string;
@@ -11,6 +11,7 @@ export interface Domain {
   assignment_ids?: number[];
   courses_list?: any[];
   assignments_list?: any[];
+  domain_image_url?: string;
   view?: number;
 }
 

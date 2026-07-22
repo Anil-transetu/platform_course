@@ -4,28 +4,15 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
-const BACKEND_URL = `${API_HOST}/api/v1/courses`;
+const BACKEND_URL = `${API_HOST}/api/v1/topics`;
 
 const getAuth = (req: NextRequest) => req.headers.get("Authorization");
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = searchParams.get("page");
-  const limit = searchParams.get("limit");
-  const status = searchParams.get("status");
-  const search = searchParams.get("search");
   const auth = getAuth(request);
 
   try {
-    const query = new URLSearchParams();
-    if (page) query.append("page", page);
-    if (limit) query.append("limit", limit);
-    if (status !== null) query.append("status", status);
-    if (search) query.append("search", search);
-
-    const url = query.toString() ? `${BACKEND_URL}?${query.toString()}` : BACKEND_URL;
-
-    const response = await fetch(url, {
+    const response = await fetch(BACKEND_URL, {
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
@@ -51,9 +38,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`GET Courses proxy error [${BACKEND_URL}]:`, message);
+    console.error(`GET Topics proxy error [${BACKEND_URL}]:`, message);
     return NextResponse.json(
-      { message: "Failed to connect to backend courses endpoint" },
+      { message: "Failed to fetch topics from backend" },
       { status: 502 }
     );
   }
@@ -83,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error(`POST Course backend error:`, data);
+      console.error(`POST Topic backend error:`, data);
     }
     return NextResponse.json(data, {
       headers: {
@@ -95,9 +82,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`POST Courses proxy error [${BACKEND_URL}]:`, message);
+    console.error(`POST Topic proxy error [${BACKEND_URL}]:`, message);
     return NextResponse.json(
-      { message: "Failed to create course in backend" },
+      { message: "Failed to create topic in backend" },
       { status: 502 }
     );
   }

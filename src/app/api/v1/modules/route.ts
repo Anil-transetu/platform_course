@@ -4,16 +4,12 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
+const BACKEND_URL = `${API_HOST}/api/v1/modules`;
 
 const getAuth = (req: NextRequest) => req.headers.get("Authorization");
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id: moduleId } = await params;
+export async function POST(request: NextRequest) {
   const auth = getAuth(request);
-  const BACKEND_URL = `${API_HOST}/api/v1/modules/${moduleId}/topics`;
 
   try {
     const body = await request.json();
@@ -38,9 +34,9 @@ export async function POST(
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`POST Module Topic proxy error [${BACKEND_URL}]:`, message);
+    console.error(`POST Module proxy error [${BACKEND_URL}]:`, message);
     return NextResponse.json(
-      { message: "Failed to create topic in module" },
+      { message: "Failed to create module in backend" },
       { status: 502 }
     );
   }
