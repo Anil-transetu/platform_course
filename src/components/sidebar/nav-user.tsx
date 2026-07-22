@@ -13,17 +13,28 @@ import {
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserDetails } from "@/features/profile/api/profile-api";
+import { useNotificationUnreadCount } from "@/features/notifications/api/notification-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NavUser() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout, role: storeRole } = useAuthStore();
   const { data: userDetails, isLoading } = useUserDetails();
+  const cachedUnreadCount = useNotificationUnreadCount();
+  const effectiveUnreadCount = unreadCount !== undefined ? unreadCount : cachedUnreadCount;
+
+  const handleOpenChange = async (open: boolean) => {
+    setIsOpen(open);
+    if (open && onDropdownOpen) {
+      await onDropdownOpen();
+    }
+  };
 
   const data = userDetails?.data || userDetails; 
   const displayName = data?.name || data?.full_name || data?.email?.split('@')[0] || "User";
   const displaySubtitle = data?.email || data?.role || storeRole || "Guest";
   const avatarUrl = data?.avatar || data?.profile_image || `https://ui-avatars.com/api/?name=${displayName.replace(/\s+/g, '+')}&background=random`;
+
 
   return (
     <SidebarMenu>

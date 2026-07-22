@@ -84,12 +84,19 @@ export async function markAllNotificationsRead() {
 /**
  * React Query Hooks
  */
-export function useNotifications(page: number = 1, limit: number = 20, isRead?: boolean) {
+export function useNotifications(
+  page: number = 1,
+  limit: number = 20,
+  isRead?: boolean,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["notifications", { page, limit, isRead }],
     queryFn: () => fetchNotifications(page, limit, isRead),
     placeholderData: keepPreviousData,
-    staleTime: 1 * 60 * 1000, // 1 minute
+    staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent duplicate requests
+    refetchOnWindowFocus: false,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -97,7 +104,18 @@ export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => markNotificationRead(id),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      queryClient.setQueriesData({ queryKey: ["notifications"] }, (oldData: any) => {
+        if (!oldData || !oldData.data) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((n: Notification) =>
+            String(n.id) === String(variables)
+              ? { ...n, is_read: true, read_at: new Date().toISOString() }
+              : n
+          ),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -108,7 +126,26 @@ export function useMarkAllNotificationsRead() {
   return useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => {
+      queryClient.setQueriesData({ queryKey: ["notifications"] }, (oldData: any) => {
+        if (!oldData || !oldData.data) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((n: Notification) => ({
+            ...n,
+            is_read: true,
+            read_at: new Date().toISOString(),
+          })),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
+
+export function useNotificationUnreadCount() {
+  const { data } = useNotifications(1, 20);
+  const notifications = data?.data || [];
+  return notifications.filter((n) => !n.is_read).length;
+}
+
+
