@@ -1205,3 +1205,4 @@ export function useCourseTopicDetail(courseId: string | number | undefined, topi
     enabled: (options?.enabled ?? true) && isValidId,
   });
 }
+

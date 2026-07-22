@@ -1,3 +1,5 @@
+"use client";
+
 import RolesSidebar from "@/components/sidebar/roles-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -17,3 +19,5 @@ export default function InstitutionalRepresentativeLayout({
     </SidebarProvider>
   );
 }
+
+

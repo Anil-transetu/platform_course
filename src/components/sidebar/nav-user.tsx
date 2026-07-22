@@ -13,12 +13,14 @@ import {
 import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useUserDetails } from "@/features/profile/api/profile-api";
+import { useNotificationUnreadCount } from "@/features/notifications/api/notification-api";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function NavUser() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout, role: storeRole } = useAuthStore();
   const { data: userDetails, isLoading } = useUserDetails();
+  const unreadCount = useNotificationUnreadCount();
 
   const data = userDetails?.data || userDetails; 
   const displayName = data?.name || data?.full_name || data?.email?.split('@')[0] || "User";
@@ -42,14 +44,19 @@ export default function NavUser() {
                   </>
                 ) : (
                   <>
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 shrink-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
-                      <Image 
-                        src={avatarUrl} 
-                        alt={displayName} 
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
+                    <div className="relative shrink-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-600 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 relative bg-slate-800">
+                        <Image 
+                          src={avatarUrl} 
+                          alt={displayName} 
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900 z-10" />
+                      )}
                     </div>
 
                     <div className="flex-1 text-left group-data-[collapsible=icon]:hidden truncate">
@@ -78,9 +85,14 @@ export default function NavUser() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
-              <Link href="/settings/notifications" className="flex items-center gap-3 w-full">
-                <Bell className="w-5 h-5 shrink-0" />
-                <span>Notifications</span>
+              <Link href="/settings/notifications" className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <Bell className="w-5 h-5 shrink-0" />
+                  <span>Notifications</span>
+                </div>
+                {unreadCount > 0 && (
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full shrink-0" />
+                )}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="rounded-xl hover:scale-[1.02] hover:bg-slate-800/50 hover:border-slate-600 border border-transparent transition-all duration-300 cursor-pointer py-3">
@@ -106,4 +118,3 @@ export default function NavUser() {
     </SidebarMenu>
   );
 }
-

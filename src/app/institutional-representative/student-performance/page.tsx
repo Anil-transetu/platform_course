@@ -7,7 +7,6 @@ import CircleChart from "@/components/reusable/CircleChart";
 import DataTable, { FilterConfig } from "@/components/reusable/DataTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { toast } from "react-hot-toast";
 import {
   useStudentPerformanceSummary,
   useTopStudents,
@@ -18,47 +17,29 @@ import { useStudentProfiles, useStudentProfile, enrichStudentData } from "@/feat
 
 export default function StudentPerformancePage() {
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedBatch, setSelectedBatch] = useState<string>("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isLocalFiltering, setIsLocalFiltering] = useState(false);
 
-  // Debounce search — 300ms delay matching the Admin module pattern
+  // Trigger loading effect when search, selectedBatch, page, or rowsPerPage changes
   useEffect(() => {
+    setIsLocalFiltering(true);
     const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 300);
+      setIsLocalFiltering(false);
+    }, 450);
     return () => clearTimeout(timer);
-  }, [search]);
-
-  // Reset to page 1 only when the debounced value actually changes (not every keystroke)
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch]);
+  }, [search, selectedBatch, page, rowsPerPage]);
 
   // API query integrations
-  const { data: summaryData, isLoading: isSummaryLoading, error: summaryError } = useStudentPerformanceSummary();
+  const { data: summaryData, isLoading: isSummaryLoading } = useStudentPerformanceSummary();
 
-  // Fetch top students — uses debouncedSearch so the API is only called after the user stops typing
+  // Fetch top students based on page, rowsPerPage (limit), search, and selectedBatch to trigger API calls on actions.
   const { 
     data: topStudentsData, 
     isLoading: isTopStudentsLoading, 
-    isFetching: isTopStudentsFetching,
-    error: topStudentsError,
-  } = useTopStudents(page, rowsPerPage, debouncedSearch || undefined, selectedBatch);
-
-  // Surface API errors via toast — avoids silent failures
-  useEffect(() => {
-    if (summaryError) {
-      toast.error((summaryError as Error).message || "Failed to load performance summary.");
-    }
-  }, [summaryError]);
-
-  useEffect(() => {
-    if (topStudentsError) {
-      toast.error((topStudentsError as Error).message || "Failed to load top students.");
-    }
-  }, [topStudentsError]);
+    isFetching: isTopStudentsFetching 
+  } = useTopStudents(page, rowsPerPage, search, selectedBatch);
 
   const kpis = summaryData?.kpi;
   const tiers = summaryData?.distribution_tiers || [];
@@ -179,7 +160,7 @@ export default function StudentPerformancePage() {
     value: search,
     onChange: (val: string) => {
       setSearch(val);
-      // Page reset is handled by the debouncedSearch useEffect above.
+      setPage(1);
     },
   };
 
@@ -384,7 +365,7 @@ export default function StudentPerformancePage() {
               search={searchConfig}
               filters={filterConfig}
               bodyHeight="h-full"
-              loading={isTopStudentsFetching}
+              loading={isTopStudentsFetching || isLocalFiltering}
             />
           </div>
         </div>
