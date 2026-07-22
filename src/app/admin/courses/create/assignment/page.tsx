@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import Pagination from "@/components/ui/Pagination/Pagination";
@@ -25,9 +25,27 @@ export default function AssignmentLibraryPage() {
     deleteCourseAssignment
   } = useCourseStore();
   
-  let activeAssignment: { id: string | number; title?: string; assignment_title?: string } | undefined;
+  const finalAssessmentId = (course as any)?.final_assessment_id || (course as any)?.finalAssessmentId;
+
+  // Sync activeAssignmentId on course-level assignment if it is null or different
+  useEffect(() => {
+    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== String(finalAssessmentId)) {
+      setActiveAssignment(String(finalAssessmentId));
+    }
+  }, [activeModuleId, finalAssessmentId, activeAssignmentId, setActiveAssignment]);
+
+  let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
   if (!activeModuleId) {
-    activeAssignment = course.assignments?.find(a => String(a.id) === String(activeAssignmentId));
+    const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
+    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
+
+    if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment;
+    } else if (finalAssessmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment || { id: finalAssessmentId };
+    } else {
+      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
+    }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
     activeAssignment = activeModule?.assignments?.find(a => String(a.id) === String(activeAssignmentId));
@@ -64,15 +82,15 @@ export default function AssignmentLibraryPage() {
 
   const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
 
-  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || "";
-  const shouldShowPreview = !!assignmentTitle && !forceLibraryView;
+  const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || activeAssignment?.name || assignmentDetail?.title || "";
+  const shouldShowPreview = (isRealId || !!assignmentTitle) && !forceLibraryView;
 
   const updateModuleMutation = useUpdateModule();
   const updateLessonMutation = useUpdateLesson();
   const updateCourseMutation = useUpdateCourse();
   const unlinkAssignmentMutation = useUnlinkAssignment();
 
-  const handleAddToCourse = async (assignment: ApiAssignment) => {
+  const handleAddToCourse = (assignment: ApiAssignment) => {
     if (!activeAssignmentId) {
       alert("Please ensure you have an active assignment selected in the sidebar to replace.");
       return;
@@ -83,35 +101,24 @@ export default function AssignmentLibraryPage() {
     // Optimistic local update
     if (!activeModuleId) {
       // Course final assessment (only one)
-      updateCourseAssignment(activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+      useCourseStore.setState((state) => ({
+        course: {
+          ...state.course,
+          final_assessment: {
+            id: assignmentIdStr,
+            title: assignment.title,
+            assignment_title: assignment.title
+          },
+          final_assessment_id: assignmentIdStr
+        }
+      }));
     } else {
-      updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title });
+      updateAssignment(activeModuleId, activeLessonId || null, activeAssignmentId, { id: assignmentIdStr, title: assignment.title }, { isLocalOnly: true });
     }
     setActiveAssignment(assignmentIdStr);
     setForceLibraryView(false);
     setSuccessMsg(`"${assignment.title}" added to course successfully!`);
     setTimeout(() => setSuccessMsg(""), 3000);
-
-    // Persist change via a single API request
-    if (!course.id) {
-      toast.error('Course ID is not available');
-      return;
-    }
-
-    try {
-      if (!activeModuleId) {
-        // Course final assessment: PUT /courses/:id with assignment_ids
-        await updateCourseMutation.mutateAsync({ id: course.id, data: { assignment_ids: [assignment.id] } });
-      } else if (!activeLessonId) {
-        // Module-level
-        await updateModuleMutation.mutateAsync({ id: activeModuleId, courseId: course.id, data: { assignment_ids: [assignment.id] } });
-      } else {
-        // Lesson-level
-        await updateLessonMutation.mutateAsync({ id: activeLessonId, courseId: course.id, data: { assignment_ids: [assignment.id] } });
-      }
-    } catch (err: any) {
-      toast.error(err?.message || 'Failed to add assignment');
-    }
   };
 
   const truncateText = (text?: string, limit: number = 120) => {
@@ -213,30 +220,26 @@ export default function AssignmentLibraryPage() {
                     Change Assignment
                   </button>
                   <button 
-                   onClick={async () => {
-                     if (!activeAssignment?.id) return;
-                     const assignmentIdStr = String(activeAssignment.id);
+                    onClick={() => {
+                      if (!activeAssignment?.id) return;
+                      const assignmentIdStr = String(activeAssignment.id);
 
-                     // Determine level
-                     const level = !activeModuleId ? 'course' : (activeLessonId ? 'lesson' : 'module');
+                      // Update local store
+                      if (!activeModuleId) {
+                        useCourseStore.setState((state) => ({
+                          course: {
+                            ...state.course,
+                            final_assessment: null,
+                            final_assessment_id: null
+                          }
+                        }));
+                      } else {
+                        deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
+                      }
 
-                     try {
-                       // Optimistically update local store
-                       if (!activeModuleId) {
-                         deleteCourseAssignment(assignmentIdStr);
-                       } else {
-                         deleteAssignment(activeModuleId, activeLessonId || null, assignmentIdStr);
-                       }
-
-                       // Single unlink API call
-                       await unlinkAssignmentMutation.mutateAsync({ assignmentId: assignmentIdStr, level: level as 'course' | 'module' | 'lesson', courseId: course.id, moduleId: activeModuleId || undefined, lessonId: activeLessonId || undefined });
-
-                       setActiveAssignment(null);
-                       setForceLibraryView(false);
-                     } catch (err: any) {
-                       toast.error(err?.message || 'Failed to unlink assignment');
-                     }
-                   }}
+                      setActiveAssignment(null);
+                      setForceLibraryView(false);
+                    }}
                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
                    Remove Association

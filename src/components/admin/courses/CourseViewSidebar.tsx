@@ -21,11 +21,21 @@ interface CourseViewSidebarProps {
   course: any;
   activeItem: any;
   setActiveItem: (item: any) => void;
+  expandedModules: Record<string, boolean>;
+  setExpandedModules: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  expandedLessons: Record<string, boolean>;
+  setExpandedLessons: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }
 
-export default function CourseViewSidebar({ course, activeItem, setActiveItem }: CourseViewSidebarProps) {
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
-  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
+export default function CourseViewSidebar({ 
+  course, 
+  activeItem, 
+  setActiveItem,
+  expandedModules,
+  setExpandedModules,
+  expandedLessons,
+  setExpandedLessons
+}: CourseViewSidebarProps) {
 
   useEffect(() => {
     if (activeItem) {
@@ -46,7 +56,9 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
 
         // Check if it's a course-level quiz or assignment first
         const isCourseQuiz = (course.quizzes || []).some((q: any) => String(q.id) === String(activeItem.id));
-        const isCourseAssignment = (course.assignments || []).some((a: any) => String(a.id) === String(activeItem.id));
+        const isCourseAssignment = (course.assignments || []).some((a: any) => String(a.id) === String(activeItem.id)) ||
+                                   !!activeItem.isFinal ||
+                                   String((course.final_assessment || course.finalAssessment || course.final_assignment)?.id) === String(activeItem.id);
         if (isCourseQuiz || isCourseAssignment) {
           // No need to expand modules
           return;
@@ -139,26 +151,26 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
               const isExpanded = !!expandedModules[module.id];
               
               return (
-                <div key={`module-${module.id}`} className="flex flex-col gap-0.5">
+                <div key={`module-${module.id}`} className="flex flex-col gap-0.5 mb-3 border-b border-slate-100/60 pb-3 last:border-0 last:pb-0 last:mb-0">
                   <div 
                     onClick={() => setActiveItem({ type: "module", id: module.id, data: module })}
                     className={cn(
-                      "group/module rounded-xl px-3 py-2.5 flex items-center justify-between cursor-pointer transition-colors",
+                      "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all duration-150 mb-1 border border-transparent",
                       isModuleActive 
-                        ? 'bg-blue-50 text-blue-700 font-semibold' 
-                        : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        ? 'bg-white border-blue-200/85 border-l-4 border-l-blue-600 text-blue-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                        : 'hover:bg-slate-50/60 text-slate-700 font-semibold hover:border-slate-100 hover:shadow-[0_2px_6px_rgba(0,0,0,0.01)] hover:translate-x-0.5'
                     )}
                   >
-                    <div className="flex items-center gap-3 overflow-hidden flex-1">
+                    <div className="flex items-center gap-2.5 overflow-hidden flex-1">
                       <button
                         onClick={(e) => toggleModuleExpand(module.id, e)}
-                        className="p-0.5 rounded-md text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+                        className="p-0.5 rounded-md text-slate-400 hover:text-slate-650 hover:bg-slate-100 transition-colors shrink-0"
                       >
                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </button>
                       <div className="flex items-center gap-2 overflow-hidden flex-1">
-                        <Folder className={cn("shrink-0", isModuleActive ? "text-blue-600" : "text-slate-400")} size={16} />
-                        <span className="text-sm truncate">
+                        <Folder className={cn("shrink-0", isModuleActive ? "text-blue-600" : "text-slate-400")} size={15} />
+                        <span className="text-[13.5px] font-semibold truncate text-slate-800">
                           {module.name || `Module ${mIdx + 1}`}
                         </span>
                       </div>
@@ -175,7 +187,7 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                     ];
 
                     return (
-                      <div className="flex flex-col pl-4 ml-5 border-l border-slate-100 gap-0.5 mt-0.5">
+                      <div className="flex flex-col pl-3.5 ml-4 border-l border-slate-150/60 gap-1 mt-0.5 mb-1.5">
                         {items.map((item: any) => {
                           if (item.type === 'lesson' || item.type === 'topic') {
                             const lesson = lessonsArray.find((l: any) => String(l.id) === String(item.id));
@@ -183,27 +195,26 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                             const isLessonActive = activeItem?.type === "lesson" && String(activeItem.id) === String(lesson.id);
                             const isLessonExpanded = !!expandedLessons[lesson.id];
 
-                            return (
+                             return (
                               <div key={`lesson-${lesson.id}`} className="flex flex-col gap-0.5">
                                 <div 
                                   onClick={() => setActiveItem({ type: "lesson", id: lesson.id, data: lesson })}
                                   className={cn(
-                                    "group/lesson rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-colors relative",
+                                    "group/lesson rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                     isLessonActive
-                                      ? 'bg-blue-50 text-blue-700 font-semibold' 
-                                      : 'hover:bg-slate-50 text-slate-600 font-medium'
+                                      ? 'bg-white border-indigo-200/85 border-l-4 border-l-indigo-500 text-indigo-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                      : 'hover:bg-slate-50/60 text-slate-650 hover:text-slate-800 font-medium hover:border-slate-100 hover:translate-x-0.5'
                                   )}
                                 >
-                                  {isLessonActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-600 rounded-r-md" />}
-                                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-0.5">
                                     <button
                                       onClick={(e) => toggleLessonExpand(lesson.id, e)}
-                                      className="p-0.5 rounded-md text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+                                      className="p-0.5 rounded-md text-slate-400 hover:text-slate-650 hover:bg-slate-100 transition-colors shrink-0"
                                     >
                                       {isLessonExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </button>
-                                    <BookOpen className={cn("shrink-0", isLessonActive ? "text-blue-600" : "text-slate-400")} size={15} />
-                                    <span className="text-[13px] truncate flex-1">
+                                    <BookOpen className={cn("shrink-0", isLessonActive ? "text-indigo-650" : "text-slate-400")} size={14} />
+                                    <span className="text-[13px] font-semibold truncate flex-1">
                                       {lesson.name || lesson.title}
                                     </span>
                                   </div>
@@ -219,7 +230,7 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                   ];
                                   
                                   return (
-                                    <div className="flex flex-col pl-4 ml-6 border-l border-slate-100 gap-0.5">
+                                    <div className="flex flex-col pl-3.5 ml-4 border-l border-slate-150/60 gap-1 mb-1.5">
                                       {lessonItems.map((lItem: any) => {
                                         if (lItem.type === 'topic' || lItem.type === 'lesson') {
                                           const topic = subTopicsArray.find((t: any) => String(t.id) === String(lItem.id));
@@ -230,16 +241,15 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                               key={`topic-${topic.id}`}
                                               onClick={() => setActiveItem({ type: "topic", id: topic.id, data: topic })}
                                               className={cn(
-                                                "group/item rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-colors relative",
+                                                "group/item rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                                 isTopicActive 
-                                                  ? 'text-blue-700 font-semibold bg-blue-50/50' 
-                                                  : 'hover:bg-slate-50 text-slate-500 hover:text-slate-700 font-medium'
+                                                  ? 'bg-white border-blue-200/85 border-l-4 border-l-blue-400 text-blue-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                                  : 'hover:bg-slate-50/65 text-slate-500 hover:text-slate-750 font-normal hover:translate-x-0.5'
                                               )}
                                             >
-                                              {isTopicActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-blue-600 rounded-r-md" />}
-                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-2">
-                                                <PlayCircle className={cn("shrink-0", isTopicActive ? "text-blue-600" : "text-slate-400")} size={14} />
-                                                <span className="text-[13px] truncate flex-1">
+                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-1">
+                                                <PlayCircle className={cn("shrink-0", isTopicActive ? "text-blue-500" : "text-slate-400")} size={13} />
+                                                <span className="text-[13px] font-normal truncate flex-1">
                                                   {topic.name || topic.title}
                                                 </span>
                                               </div>
@@ -256,23 +266,22 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                               key={`quiz-${quiz.id}`}
                                               onClick={() => setActiveItem({ type: "quiz", id: quiz.id, data: quiz })}
                                               className={cn(
-                                                "group/item rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-colors relative",
+                                                "group/item rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                                 isQuizActive 
-                                                  ? 'text-blue-700 font-semibold bg-blue-50/50' 
-                                                  : 'hover:bg-slate-50 text-slate-500 hover:text-slate-700 font-medium'
+                                                  ? 'bg-white border-emerald-200/85 border-l-4 border-l-emerald-500 text-emerald-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                                  : 'hover:bg-slate-50/65 text-slate-500 hover:text-slate-750 font-normal hover:translate-x-0.5'
                                               )}
                                             >
-                                              {isQuizActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-blue-600 rounded-r-md" />}
-                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-2">
-                                                <GraduationCap className={cn("shrink-0", isQuizActive ? "text-blue-600" : "text-slate-400")} size={14} />
-                                                <span className="text-[13px] truncate flex-1">
+                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-1">
+                                                <GraduationCap className={cn("shrink-0", isQuizActive ? "text-emerald-600" : "text-slate-400")} size={13} />
+                                                <span className="text-[13px] font-normal truncate flex-1">
                                                   {quiz.name || quiz.title || quiz.quiz_title}
                                                 </span>
                                               </div>
                                             </div>
                                           );
                                         }
-
+  
                                         if (lItem.type === 'assignment') {
                                           const assignment = (lesson.assignments || []).find((a: any) => String(a.id) === String(lItem.id));
                                           if (!assignment) return null;
@@ -282,16 +291,15 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                               key={`assignment-${assignment.id}`}
                                               onClick={() => setActiveItem({ type: "assignment", id: assignment.id, data: assignment })}
                                               className={cn(
-                                                "group/item rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-colors relative",
+                                                "group/item rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                                 isAssignmentActive 
-                                                  ? 'text-blue-700 font-semibold bg-blue-50/50' 
-                                                  : 'hover:bg-slate-50 text-slate-500 hover:text-slate-700 font-medium'
+                                                  ? 'bg-white border-violet-200/85 border-l-4 border-l-violet-500 text-violet-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                                  : 'hover:bg-slate-50/65 text-slate-500 hover:text-slate-750 font-normal hover:translate-x-0.5'
                                               )}
                                             >
-                                              {isAssignmentActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3 bg-blue-600 rounded-r-md" />}
-                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-2">
-                                                <FileText className={cn("shrink-0", isAssignmentActive ? "text-blue-600" : "text-slate-400")} size={14} />
-                                                <span className="text-[13px] truncate flex-1">
+                                              <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-1">
+                                                <FileText className={cn("shrink-0", isAssignmentActive ? "text-violet-600" : "text-slate-400")} size={13} />
+                                                <span className="text-[13px] font-normal truncate flex-1">
                                                   {assignment.title || assignment.name}
                                                 </span>
                                               </div>
@@ -304,7 +312,7 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                   );
                                 })()}
                               </div>
-                            );
+                             );
                           }
 
                           if (item.type === 'quiz') {
@@ -316,16 +324,15 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                 key={`quiz-${quiz.id}`}
                                 onClick={() => setActiveItem({ type: "quiz", id: quiz.id, data: quiz })}
                                 className={cn(
-                                  "group/item rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-colors relative",
+                                  "group/item rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                   isQuizActive 
-                                    ? 'bg-blue-50 text-blue-700 font-semibold' 
-                                    : 'hover:bg-slate-50 text-slate-600 font-medium'
+                                    ? 'bg-white border-emerald-200/85 border-l-4 border-l-emerald-500 text-emerald-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                    : 'hover:bg-slate-50/60 text-slate-600 hover:text-slate-800 font-medium hover:border-slate-100 hover:translate-x-0.5'
                                 )}
                               >
-                                {isQuizActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-600 rounded-r-md" />}
-                                <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-3">
-                                  <GraduationCap className={cn("shrink-0", isQuizActive ? "text-blue-600" : "text-slate-400")} size={15} />
-                                  <span className="text-[13px] truncate flex-1">
+                                <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-1">
+                                  <GraduationCap className={cn("shrink-0", isQuizActive ? "text-emerald-600" : "text-slate-400")} size={14} />
+                                  <span className="text-[13px] font-medium truncate flex-1">
                                     {quiz.name || quiz.title || quiz.quiz_title}
                                   </span>
                                 </div>
@@ -342,16 +349,15 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                                 key={`assignment-${assignment.id}`}
                                 onClick={() => setActiveItem({ type: "assignment", id: assignment.id, data: assignment })}
                                 className={cn(
-                                  "group/item rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-colors relative",
+                                  "group/item rounded-xl px-3 py-1.5 flex items-center justify-between cursor-pointer transition-all duration-150 relative mb-1 border border-transparent",
                                   isAssignmentActive 
-                                    ? 'bg-blue-50 text-blue-700 font-semibold' 
-                                    : 'hover:bg-slate-50 text-slate-600 font-medium'
+                                    ? 'bg-white border-violet-200/85 border-l-4 border-l-violet-500 text-violet-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                                    : 'hover:bg-slate-50/60 text-slate-600 hover:text-slate-800 font-medium hover:border-slate-100 hover:translate-x-0.5'
                                 )}
                               >
-                                {isAssignmentActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-600 rounded-r-md" />}
-                                <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-3">
-                                  <FileText className={cn("shrink-0", isAssignmentActive ? "text-blue-600" : "text-slate-400")} size={15} />
-                                  <span className="text-[13px] truncate flex-1">
+                                <div className="flex items-center gap-2.5 overflow-hidden flex-1 pl-1">
+                                  <FileText className={cn("shrink-0", isAssignmentActive ? "text-violet-600" : "text-slate-400")} size={14} />
+                                  <span className="text-[13px] font-medium truncate flex-1">
                                     {assignment.title || assignment.name}
                                   </span>
                                 </div>
@@ -382,15 +388,15 @@ export default function CourseViewSidebar({ course, activeItem, setActiveItem }:
                 key={`course-final-assessment-${assignment.id}`}
                 onClick={() => setActiveItem({ type: "assignment", id: assignment.id, data: assignment, isFinal: true })}
                 className={cn(
-                  "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all border mt-2",
+                  "group/module rounded-xl px-3 py-2 flex items-center justify-between cursor-pointer transition-all duration-150 border mt-2",
                   isAssignmentActive 
-                    ? 'bg-indigo-50 text-indigo-700 font-semibold border-indigo-200' 
-                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/50 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                    ? 'bg-white border-indigo-200 border-l-4 border-l-indigo-600 text-indigo-700 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.03)] pl-2' 
+                    : 'bg-white border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/5 text-slate-800 font-semibold shadow-xs hover:translate-x-0.5'
                 )}
               >
                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                  <Award className={cn("shrink-0", isAssignmentActive ? "text-indigo-600" : "text-indigo-500")} size={16} />
-                  <span className={cn("text-[11px] font-bold truncate uppercase tracking-wider", isAssignmentActive ? "text-indigo-700" : "text-slate-800")}>
+                  <Award className={cn("shrink-0", isAssignmentActive ? "text-indigo-650" : "text-indigo-500")} size={15} />
+                  <span className={cn("text-[11px] font-bold truncate uppercase tracking-wider", isAssignmentActive ? "text-indigo-700" : "text-slate-700")}>
                     {assignment.title || "Final Assessment"}
                   </span>
                 </div>

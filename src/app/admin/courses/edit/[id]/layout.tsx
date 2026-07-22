@@ -45,7 +45,11 @@ export default function CourseEditLayout({ children }: { children: React.ReactNo
 
   // Sync course details API → store (configuration page)
   useEffect(() => {
-    if (!isConfigPage || !courseDetails) return;
+    if (!isConfigPage) {
+      lastSyncedDetailsJsonRef.current = null;
+      return;
+    }
+    if (!courseDetails) return;
 
     const detailsJson = JSON.stringify(courseDetails);
     if (detailsJson === lastSyncedDetailsJsonRef.current) return;

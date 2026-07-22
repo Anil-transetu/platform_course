@@ -51,6 +51,269 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
     data: course
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hasRestored, setHasRestored] = useState(false);
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setHasRestored(false);
+  }, [course?.id]);
+
+  // Save active selection state to sessionStorage
+  useEffect(() => {
+    if (!hasRestored) return;
+    if (!course || !course.id) return;
+    const sessionKey = `course-view-active-${course.id}`;
+    
+    // Calculate context IDs to restore matching layouts
+    let resolvedModuleId: string | number | null = null;
+    let resolvedLessonId: string | number | null = null;
+    let resolvedTopicId: string | number | null = null;
+    let resolvedQuizId: string | number | null = null;
+    let resolvedAssignmentId: string | number | null = null;
+    let resolvedFinalAssessment: boolean = false;
+
+    if (activeItem) {
+      if (activeItem.type === "module") {
+        resolvedModuleId = activeItem.id;
+      } else if (activeItem.type === "lesson") {
+        resolvedLessonId = activeItem.id;
+        const mod = course.modules?.find((m: any) => 
+          (m.lessons || m.topics || []).some((l: any) => String(l.id) === String(activeItem.id))
+        );
+        if (mod) resolvedModuleId = mod.id;
+      } else if (activeItem.type === "topic") {
+        resolvedTopicId = activeItem.id;
+        let foundLesson: any = null;
+        let foundModule: any = null;
+        for (const m of course.modules || []) {
+          const l = (m.lessons || m.topics || []).find((les: any) => 
+            (les.topics || []).some((t: any) => String(t.id) === String(activeItem.id))
+          );
+          if (l) {
+            foundLesson = l;
+            foundModule = m;
+            break;
+          }
+        }
+        if (foundLesson) resolvedLessonId = foundLesson.id;
+        if (foundModule) resolvedModuleId = foundModule.id;
+      } else if (activeItem.type === "quiz") {
+        resolvedQuizId = activeItem.id;
+        let foundLesson: any = null;
+        let foundModule: any = null;
+        for (const m of course.modules || []) {
+          const l = (m.lessons || m.topics || []).find((les: any) => 
+            (les.quizzes || []).some((q: any) => String(q.id) === String(activeItem.id))
+          );
+          if (l) {
+            foundLesson = l;
+            foundModule = m;
+            break;
+          }
+        }
+        if (foundLesson) {
+          resolvedLessonId = foundLesson.id;
+          resolvedModuleId = foundModule.id;
+        } else {
+          const mod = course.modules?.find((m: any) => 
+            (m.quizzes || []).some((q: any) => String(q.id) === String(activeItem.id))
+          );
+          if (mod) resolvedModuleId = mod.id;
+        }
+      } else if (activeItem.type === "assignment") {
+        resolvedAssignmentId = activeItem.id;
+        resolvedFinalAssessment = !!activeItem.isFinal;
+        
+        if (!resolvedFinalAssessment) {
+          let foundLesson: any = null;
+          let foundModule: any = null;
+          for (const m of course.modules || []) {
+            const l = (m.lessons || m.topics || []).find((les: any) => 
+              (les.assignments || []).some((a: any) => String(a.id) === String(activeItem.id))
+            );
+            if (l) {
+               foundLesson = l;
+               foundModule = m;
+               break;
+            }
+          }
+          if (foundLesson) {
+            resolvedLessonId = foundLesson.id;
+            resolvedModuleId = foundModule.id;
+          } else {
+            const mod = course.modules?.find((m: any) => 
+              (m.assignments || []).some((a: any) => String(a.id) === String(activeItem.id))
+            );
+            if (mod) resolvedModuleId = mod.id;
+          }
+        }
+      }
+    }
+
+    const data = {
+      activeItemType: activeItem?.type || "course",
+      activeItemId: activeItem?.id || course.id,
+      activeModuleId: resolvedModuleId,
+      activeLessonId: resolvedLessonId,
+      activeTopicId: resolvedTopicId,
+      activeQuizId: resolvedQuizId,
+      activeAssignmentId: resolvedAssignmentId,
+      activeFinalAssessment: resolvedFinalAssessment,
+      expandedModules,
+      expandedLessons
+    };
+    sessionStorage.setItem(sessionKey, JSON.stringify(data));
+  }, [activeItem, course, expandedModules, expandedLessons, hasRestored]);
+
+  // Restore active selection state from sessionStorage once curriculum is loaded
+  useEffect(() => {
+    if (!course || !course.id || hasRestored) return;
+    const sessionKey = `course-view-active-${course.id}`;
+    const stored = sessionStorage.getItem(sessionKey);
+    if (!stored) {
+      setHasRestored(true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      let targetItem: ActiveItem | null = null;
+
+      if (parsed.activeItemType === "course") {
+        targetItem = { type: "course", id: course.id, data: course };
+      } else if (parsed.activeItemType === "module") {
+        const mod = course.modules?.find((m: any) => String(m.id) === String(parsed.activeItemId));
+        if (mod) {
+          targetItem = { type: "module", id: mod.id, data: mod };
+        }
+      } else if (parsed.activeItemType === "lesson") {
+        let foundLesson: any = null;
+        for (const m of course.modules || []) {
+          const l = (m.lessons || m.topics || []).find((l: any) => String(l.id) === String(parsed.activeItemId));
+          if (l) {
+            foundLesson = l;
+            break;
+          }
+        }
+        if (foundLesson) {
+          targetItem = { type: "lesson", id: foundLesson.id, data: foundLesson };
+        }
+      } else if (parsed.activeItemType === "topic") {
+        let foundTopic: any = null;
+        for (const m of course.modules || []) {
+          if (Array.isArray(m.topics)) {
+            foundTopic = m.topics.find((t: any) => String(t.id) === String(parsed.activeItemId));
+            if (foundTopic) break;
+          }
+          for (const l of m.lessons || []) {
+            if (String(l.id) === String(parsed.activeItemId)) {
+              foundTopic = l;
+              break;
+            }
+            const t = (l.topics || l.lessons || []).find((t: any) => String(t.id) === String(parsed.activeItemId));
+            if (t) {
+              foundTopic = t;
+              break;
+            }
+          }
+          if (foundTopic) break;
+        }
+        targetItem = { 
+          type: "topic", 
+          id: foundTopic ? foundTopic.id : parsed.activeItemId, 
+          data: foundTopic || { id: parsed.activeItemId, name: `Topic ${parsed.activeItemId}` } 
+        };
+      } else if (parsed.activeItemType === "quiz") {
+        let foundQuiz: any = (course.quizzes || []).find((q: any) => String(q.id) === String(parsed.activeItemId));
+        if (!foundQuiz) {
+          for (const m of course.modules || []) {
+            foundQuiz = (m.quizzes || []).find((q: any) => String(q.id) === String(parsed.activeItemId));
+            if (foundQuiz) break;
+            for (const l of m.lessons || m.topics || []) {
+              foundQuiz = (l.quizzes || []).find((q: any) => String(q.id) === String(parsed.activeItemId));
+              if (foundQuiz) break;
+            }
+            if (foundQuiz) break;
+          }
+        }
+        targetItem = { 
+          type: "quiz", 
+          id: foundQuiz ? foundQuiz.id : parsed.activeItemId, 
+          data: foundQuiz || { id: parsed.activeItemId, title: `Quiz ${parsed.activeItemId}` } 
+        };
+      } else if (parsed.activeItemType === "assignment") {
+        let foundAssignment: any = null;
+        if (parsed.activeFinalAssessment) {
+          foundAssignment = (course as any)?.final_assessment || (course as any)?.finalAssessment || (course as any)?.final_assignment ||
+            ((course as any)?.final_assessment_id
+              ? ((course as any)?.assignments?.find((a: any) => String(a.id) === String((course as any).final_assessment_id)) || { id: (course as any).final_assessment_id, title: `Assignment ${(course as any).final_assessment_id}` })
+              : null);
+          if (foundAssignment && parsed.activeItemId && String(foundAssignment.id) !== String(parsed.activeItemId)) {
+            foundAssignment = null;
+          }
+        }
+
+        if (!foundAssignment) {
+          foundAssignment = (course.assignments || []).find((a: any) => String(a.id) === String(parsed.activeItemId));
+        }
+        if (!foundAssignment) {
+          for (const m of course.modules || []) {
+            foundAssignment = (m.assignments || []).find((a: any) => String(a.id) === String(parsed.activeItemId));
+            if (foundAssignment) break;
+            for (const l of m.lessons || m.topics || []) {
+              foundAssignment = (l.assignments || []).find((a: any) => String(a.id) === String(parsed.activeItemId));
+              if (foundAssignment) break;
+            }
+            if (foundAssignment) break;
+          }
+        }
+        targetItem = { 
+          type: "assignment", 
+          id: foundAssignment ? foundAssignment.id : parsed.activeItemId, 
+          data: foundAssignment || { id: parsed.activeItemId, title: `Assignment ${parsed.activeItemId}` },
+          isFinal: parsed.activeFinalAssessment 
+        };
+      }
+
+      // Validate and restore expansion states
+      if (parsed.expandedModules) {
+        const validatedModules: Record<string, boolean> = {};
+        Object.keys(parsed.expandedModules).forEach((modId) => {
+          const exists = course.modules?.some((m: any) => String(m.id) === String(modId));
+          if (exists) {
+            validatedModules[modId] = !!parsed.expandedModules[modId];
+          }
+        });
+        setExpandedModules(validatedModules);
+      }
+
+      if (parsed.expandedLessons) {
+        const validatedLessons: Record<string, boolean> = {};
+        Object.keys(parsed.expandedLessons).forEach((lesId) => {
+          let exists = false;
+          for (const m of course.modules || []) {
+            if ((m.lessons || m.topics || []).some((l: any) => String(l.id) === String(lesId))) {
+              exists = true;
+              break;
+            }
+          }
+          if (exists) {
+            validatedLessons[lesId] = !!parsed.expandedLessons[lesId];
+          }
+        });
+        setExpandedLessons(validatedLessons);
+      }
+
+      if (targetItem) {
+        setActiveItem(targetItem);
+      }
+    } catch (e) {
+      console.error("Failed to restore active selection in course view", e);
+    } finally {
+      setHasRestored(true);
+    }
+  }, [course, hasRestored]);
 
   const updateCourseMutation = useUpdateCourse();
 
@@ -90,101 +353,117 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
   };
 
   useEffect(() => {
-    if (course && activeItem) {
-      if (activeItem.type === "course") {
+    if (!hasRestored || !course || !activeItem) return;
+    if (activeItem.type === "course") {
+      setActiveItem({
+        type: "course",
+        id: course.id,
+        data: course
+      });
+    } else if (activeItem.type === "module") {
+      const found = course.modules?.find((m: any) => String(m.id) === String(activeItem.id));
+      if (found) {
         setActiveItem({
-          type: "course",
-          id: course.id,
-          data: course
+          type: "module",
+          id: found.id,
+          data: found
         });
-      } else if (activeItem.type === "module") {
-        const found = course.modules?.find((m: any) => String(m.id) === String(activeItem.id));
-        if (found) {
-          setActiveItem({
-            type: "module",
-            id: found.id,
-            data: found
-          });
+      }
+    } else if (activeItem.type === "lesson") {
+      let foundLesson: any = null;
+      for (const m of course.modules || []) {
+        const l = (m.lessons || m.topics || []).find((l: any) => String(l.id) === String(activeItem.id));
+        if (l) {
+          foundLesson = l;
+          break;
         }
-      } else if (activeItem.type === "lesson") {
-        let foundLesson: any = null;
-        for (const m of course.modules || []) {
-          const l = (m.lessons || m.topics || []).find((l: any) => String(l.id) === String(activeItem.id));
-          if (l) {
-            foundLesson = l;
+      }
+      if (foundLesson) {
+        setActiveItem({
+          type: "lesson",
+          id: foundLesson.id,
+          data: foundLesson
+        });
+      }
+    } else if (activeItem.type === "topic") {
+      let foundTopic: any = null;
+      for (const m of course.modules || []) {
+        if (Array.isArray(m.topics)) {
+          foundTopic = m.topics.find((t: any) => String(t.id) === String(activeItem.id));
+          if (foundTopic) break;
+        }
+        for (const l of m.lessons || []) {
+          if (String(l.id) === String(activeItem.id)) {
+            foundTopic = l;
+            break;
+          }
+          const t = (l.topics || l.lessons || []).find((t: any) => String(t.id) === String(activeItem.id));
+          if (t) {
+            foundTopic = t;
             break;
           }
         }
-        if (foundLesson) {
-          setActiveItem({
-            type: "lesson",
-            id: foundLesson.id,
-            data: foundLesson
-          });
-        }
-      } else if (activeItem.type === "topic") {
-        let foundTopic: any = null;
+        if (foundTopic) break;
+      }
+      if (foundTopic) {
+        setActiveItem({
+          type: "topic",
+          id: foundTopic.id,
+          data: foundTopic
+        });
+      }
+    } else if (activeItem.type === "quiz") {
+      let foundQuiz: any = (course.quizzes || []).find((q: any) => String(q.id) === String(activeItem.id));
+      if (!foundQuiz) {
         for (const m of course.modules || []) {
+          foundQuiz = (m.quizzes || []).find((q: any) => String(q.id) === String(activeItem.id));
+          if (foundQuiz) break;
           for (const l of m.lessons || m.topics || []) {
-            const t = (l.topics || []).find((t: any) => String(t.id) === String(activeItem.id));
-            if (t) {
-              foundTopic = t;
-              break;
-            }
-          }
-          if (foundTopic) break;
-        }
-        if (foundTopic) {
-          setActiveItem({
-            type: "topic",
-            id: foundTopic.id,
-            data: foundTopic
-          });
-        }
-      } else if (activeItem.type === "quiz") {
-        let foundQuiz: any = course.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
-        if (!foundQuiz) {
-          for (const m of course.modules || []) {
-            foundQuiz = m.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
-            if (foundQuiz) break;
-            for (const l of m.lessons || m.topics || []) {
-              foundQuiz = l.quizzes?.find((q: any) => String(q.id) === String(activeItem.id));
-              if (foundQuiz) break;
-            }
+            foundQuiz = (l.quizzes || []).find((q: any) => String(q.id) === String(activeItem.id));
             if (foundQuiz) break;
           }
-        }
-        if (foundQuiz) {
-          setActiveItem({
-            type: "quiz",
-            id: foundQuiz.id,
-            data: foundQuiz
-          });
-        }
-      } else if (activeItem.type === "assignment") {
-        let foundAssignment: any = course.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
-        if (!foundAssignment) {
-          for (const m of course.modules || []) {
-            foundAssignment = m.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
-            if (foundAssignment) break;
-            for (const l of m.lessons || m.topics || []) {
-              foundAssignment = l.assignments?.find((a: any) => String(a.id) === String(activeItem.id));
-              if (foundAssignment) break;
-            }
-            if (foundAssignment) break;
-          }
-        }
-        if (foundAssignment) {
-          setActiveItem({
-            type: "assignment",
-            id: foundAssignment.id,
-            data: foundAssignment,
-            isFinal: activeItem.isFinal
-          });
+          if (foundQuiz) break;
         }
       }
+      if (foundQuiz) {
+        setActiveItem({
+          type: "quiz",
+          id: foundQuiz.id,
+          data: foundQuiz
+        });
+      }
+    } else if (activeItem.type === "assignment") {
+      let foundAssignment: any = null;
+      if (activeItem.isFinal) {
+        foundAssignment = (course as any)?.final_assessment || (course as any)?.finalAssessment || (course as any)?.final_assignment ||
+          ((course as any)?.final_assessment_id
+            ? ((course as any)?.assignments?.find((a: any) => String(a.id) === String((course as any).final_assessment_id)) || { id: (course as any).final_assessment_id, title: `Assignment ${(course as any).final_assessment_id}` })
+            : null);
+      }
+      if (!foundAssignment) {
+        foundAssignment = (course.assignments || []).find((a: any) => String(a.id) === String(activeItem.id));
+      }
+      if (!foundAssignment) {
+        for (const m of course.modules || []) {
+          foundAssignment = (m.assignments || []).find((a: any) => String(a.id) === String(activeItem.id));
+          if (foundAssignment) break;
+          for (const l of m.lessons || m.topics || []) {
+            foundAssignment = (l.assignments || []).find((a: any) => String(a.id) === String(activeItem.id));
+            if (foundAssignment) break;
+          }
+          if (foundAssignment) break;
+        }
+      }
+      if (foundAssignment) {
+        setActiveItem({
+          type: "assignment",
+          id: foundAssignment.id,
+          data: foundAssignment,
+          isFinal: activeItem.isFinal
+        });
+      }
     }
-  }, [course]);
+  }, [course, hasRestored]);
 
   const modules = course.modules || [];
 
@@ -888,6 +1167,10 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
               setActiveItem(item);
               setIsSidebarOpen(false); // Close sidebar on mobile when item selected
             }}
+            expandedModules={expandedModules}
+            setExpandedModules={setExpandedModules}
+            expandedLessons={expandedLessons}
+            setExpandedLessons={setExpandedLessons}
           />
         </div>
         
@@ -968,20 +1251,20 @@ function CourseViewMedia({ media }: { media: { image_url?: string; video_url?: s
 
         {/* PDF Document */}
         {pdf_url && (
-          <div className="border border-red-100 rounded-2xl p-5 bg-red-50/20 hover:bg-red-50/45 hover:shadow-md transition-all flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center border border-red-200/50 shrink-0">
-                <FileText size={24} />
+          <div className="border border-red-100 rounded-2xl p-4 sm:p-5 bg-red-50/20 hover:bg-red-50/45 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center border border-red-200/50 shrink-0">
+                <FileText size={22} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="text-xs font-bold text-red-500 uppercase tracking-wider">PDF Resource</p>
-                <h4 className="text-sm font-bold text-slate-800 truncate block mt-0.5">{getFileName(pdf_url)}</h4>
+                <h4 className="text-sm font-bold text-slate-800 truncate block mt-0.5" title={getFileName(pdf_url)}>{getFileName(pdf_url)}</h4>
               </div>
             </div>
             <button 
               type="button"
               onClick={() => openPdf(pdf_url)}
-              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider"
+              className="px-4 sm:px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider w-full sm:w-auto text-center"
             >
               Open PDF
             </button>
@@ -990,18 +1273,19 @@ function CourseViewMedia({ media }: { media: { image_url?: string; video_url?: s
 
         {/* External URL */}
         {url && (
-          <div className="border border-blue-100 rounded-2xl p-5 bg-blue-50/15 hover:bg-blue-50/30 hover:shadow-md transition-all flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-650 flex items-center justify-center border border-blue-200/50 shrink-0">
-                <ExternalLink size={24} />
+          <div className="border border-blue-100 rounded-2xl p-4 sm:p-5 bg-blue-50/15 hover:bg-blue-50/30 hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 overflow-hidden">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 w-full">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-650 flex items-center justify-center border border-blue-200/50 shrink-0">
+                <ExternalLink size={22} />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <p className="text-xs font-bold text-blue-650 uppercase tracking-wider">Reference Link</p>
                 <a 
                   href={url} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-sm font-bold text-slate-800 hover:underline truncate block mt-0.5 min-w-0"
+                  title={url}
                 >
                   {url}
                 </a>
@@ -1011,7 +1295,7 @@ function CourseViewMedia({ media }: { media: { image_url?: string; video_url?: s
               href={url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider"
+              className="px-4 sm:px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm shrink-0 uppercase tracking-wider w-full sm:w-auto text-center"
             >
               Visit Link
             </a>

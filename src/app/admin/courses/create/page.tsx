@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, UploadCloud, Image as ImageIcon, BookOpen, Sparkles, Tag, Globe, Loader2, Search, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, UploadCloud, Image as ImageIcon, BookOpen, Sparkles, Tag, Globe, Loader2, Search, Check, ChevronDown, Info } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useCreateCourse, useUpdateCourse, useAssignmentsLookup } from "@/features/admin/courses/api/course-api";
-import { getDefaultEditorRoute } from "@/lib/utils";
+import { getDefaultEditorRoute, cn } from "@/lib/utils";
 import { useDomains } from "@/features/admin/domains/api/domain-api";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Static domain list — will be replaced by API data in Phase 1
 const DOMAIN_OPTIONS = [
@@ -40,6 +41,7 @@ export default function CreateCoursePage() {
   const { course, cleanCourse, setCourseDetails, resetCourse } = useCourseStore();
   const { title, thumbnail_url = "", description = "", domain = "", tags = [] } = course;
   const [tagInput, setTagInput] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +88,6 @@ export default function CreateCoursePage() {
     const selected = (course as any).final_assessment_id ?? (course as any).finalAssessment?.id ?? (course as any).final_assessment?.id ?? "";
     if (selected) {
       setFinalAssessmentId(String(selected));
-      setFinalAssessmentsRequested(true);
     } else {
       setFinalAssessmentId("");
     }
@@ -233,7 +234,7 @@ export default function CreateCoursePage() {
         break;
       case "description":
         if (isEmpty(value)) error = "Course description is required";
-        else if (value.trim().length < 10) error = "Description must be at least 10 characters";
+        else if (value.length > 50) error = "Maximum 50 characters allowed.";
         break;
     }
     setErrors((prev) => {
@@ -290,17 +291,71 @@ export default function CreateCoursePage() {
     setTagInput(value);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          handleFieldChange("thumbnail_url", reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+  const validateAndProcessImage = (file: File) => {
+    // 1. File Size Validation (Max 5 MB)
+    const MAX_SIZE_MB = 5;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      toast.error(`File size exceeds maximum limit of ${MAX_SIZE_MB} MB.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
+
+    // 2. Format Validation (PNG, JPG, JPEG, WEBP)
+    const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const fileExtension = file.name.split(".").pop()?.toLowerCase();
+    const isAllowedType = ALLOWED_TYPES.includes(file.type.toLowerCase()) ||
+      ["png", "jpg", "jpeg", "webp"].includes(fileExtension || "");
+
+    if (!isAllowedType) {
+      toast.error("Invalid file format. Please upload a PNG, JPG, JPEG, or WEBP image.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // 3. Image Dimensions & Aspect Ratio Validation
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result !== "string") return;
+      const dataUrl = event.target.result;
+      const img = new Image();
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const aspectRatio = width / height;
+
+        // Minimum Resolution: 1280 x 720 px
+        const MIN_WIDTH = 1280;
+        const MIN_HEIGHT = 720;
+        // 16:9 Aspect Ratio (1.777...) with 5% tolerance
+        const TARGET_RATIO = 16 / 9;
+        const RATIO_TOLERANCE = 0.1;
+
+        const isMinRes = width >= MIN_WIDTH && height >= MIN_HEIGHT;
+        const isCorrectRatio = Math.abs(aspectRatio - TARGET_RATIO) <= RATIO_TOLERANCE;
+
+        if (!isMinRes || !isCorrectRatio) {
+          toast.error(
+            `Invalid image dimensions. Please upload an image with recommended resolution (1280 × 720 px, 16:9 aspect ratio, min 1280×720). Uploaded: ${width} × ${height} px.`
+          );
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+
+        handleFieldChange("thumbnail_url", dataUrl);
+      };
+      img.onerror = () => {
+        toast.error("Failed to load image for validation.");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    validateAndProcessImage(e.target.files[0]);
   };
 
   const getInputClass = (field: string, base: string) => {
@@ -463,19 +518,37 @@ export default function CreateCoursePage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Course Description <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Course Description <span className="text-rose-500">*</span>
+                    </label>
+                    <span className={`text-xs font-semibold ${description.length >= 50 ? "text-rose-500" : "text-slate-400"}`}>
+                      {description.length} / 50 characters
+                    </span>
+                  </div>
                   <textarea
                     value={description}
-                    onChange={(e) => handleFieldChange("description", e.target.value)}
+                    maxLength={50}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleFieldChange("description", val);
+                      if (val.length >= 50) {
+                        setErrors((prev) => ({ ...prev, description: "Maximum 50 characters allowed." }));
+                      } else {
+                        setErrors((prev) => {
+                          const n = { ...prev };
+                          delete n.description;
+                          return n;
+                        });
+                      }
+                    }}
                     onBlur={() => handleBlur("description", description)}
-                    rows={5}
+                    rows={3}
                     className={getInputClass(
                       "description",
                       "w-full px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold text-slate-800 placeholder-slate-400 resize-none leading-relaxed"
                     )}
-                    placeholder="Provide a comprehensive introduction to the course topics, goals, and targets..."
+                    placeholder="Maximum 50 characters."
                   />
                   <ErrorMsg field="description" />
                 </div>
@@ -750,9 +823,40 @@ export default function CreateCoursePage() {
 
             {/* THUMBNAIL CARD */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-5">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-100">
-                <ImageIcon className="text-blue-500" size={15} />
-                Course Artwork
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between pb-3 border-b border-slate-100">
+                <span className="flex items-center gap-2">
+                  <ImageIcon className="text-blue-500" size={15} />
+                  Course Artwork
+                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="text-slate-400 hover:text-blue-600 transition-colors p-0.5 rounded-md hover:bg-slate-100"
+                        aria-label="Upload Guidelines"
+                      >
+                        <Info size={15} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent align="end" className="p-3.5 max-w-xs text-xs space-y-2 bg-slate-900 text-slate-100 border-slate-800 shadow-xl rounded-xl z-50">
+                      <div>
+                        <p className="font-bold text-white uppercase tracking-wider text-[10px] text-blue-400">Recommended Image</p>
+                        <p className="font-semibold text-slate-200 mt-0.5">Width: 1280 px</p>
+                        <p className="font-semibold text-slate-200">Height: 720 px</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">(16:9 Aspect Ratio)</p>
+                      </div>
+                      <div className="border-t border-slate-800 pt-2">
+                        <p className="font-bold text-white uppercase tracking-wider text-[10px] text-blue-400">Supported Formats</p>
+                        <p className="text-slate-300">PNG, JPG, JPEG, WEBP</p>
+                      </div>
+                      <div className="border-t border-slate-800 pt-2">
+                        <p className="font-bold text-white uppercase tracking-wider text-[10px] text-blue-400">Maximum Size</p>
+                        <p className="text-slate-300">5 MB</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </h3>
 
               {thumbnail_url ? (
@@ -789,8 +893,25 @@ export default function CreateCoursePage() {
                     className="hidden"
                   />
                   <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        validateAndProcessImage(e.dataTransfer.files[0]);
+                      }
+                    }}
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 hover:border-blue-500 hover:bg-blue-50/5 rounded-xl p-6 flex flex-col items-center justify-center bg-slate-50/30 transition-all cursor-pointer group text-center"
+                    className={cn(
+                      "border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all cursor-pointer group text-center",
+                      isDragging 
+                        ? "border-blue-500 bg-blue-50/10 scale-[1.02]" 
+                        : "border-slate-200 hover:border-blue-500 hover:bg-blue-50/5 bg-slate-50/30"
+                    )}
                   >
                     <div className="w-10 h-10 rounded-xl bg-white shadow-xs border border-slate-200/60 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform duration-300">
                       <UploadCloud className="text-blue-500" size={20} />
