@@ -18,7 +18,7 @@ import {
   Book,
   BookOpen,
   GraduationCap,
-  GripVertical
+  Award
 } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useRouter, usePathname } from "next/navigation";
@@ -128,9 +128,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   const [deleteTargetLessonId, setDeleteTargetLessonId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Drag state tracking
-  const dragItem = useRef<{ type: 'module' | 'moduleItem' | 'lessonItem'; index: number; moduleId?: string; lessonId?: string } | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<string | null>(null);
+
 
   const navigateTo = (subPath: string) => {
     const basePath = course.id ? `/admin/courses/edit/${course.id}` : '/admin/courses/create';
@@ -265,48 +263,13 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     });
   };
 
-  const handleAddModule = async () => {
+  const handleAddModule = () => {
     if (!course.id) {
       toast.error("Please save the course details first.");
       return;
     }
-    
-    if (createModuleMutation.isPending) return;
-
-    const execute = async () => {
-      const tempId = addModule();
-      navigateTo("module");
-
-      const currentCourse = useCourseStore.getState().course;
-      const orderNum = currentCourse.modules.length;
-
-      try {
-        const response = await createModuleMutation.mutateAsync({
-          courseId: currentCourse.id!,
-          data: {
-            name: "New Module",
-            description: "",
-            order_num: orderNum
-          }
-        });
-        const newModule = response.data || response;
-        const backendId = String(newModule.id);
-        mapTemporaryModuleId(tempId, backendId);
-      } catch (err) {
-        deleteModule(tempId);
-        toastApiError(err, "Failed to create module");
-      }
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingNavigation({
-        type: "action",
-        action: execute
-      });
-      return;
-    }
-
-    await execute();
+    addModule();
+    navigateTo("module");
   };
 
   const handleDeleteModuleClick = (moduleId: string) => {
@@ -573,8 +536,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     }
   };
 
-  const handleAddLesson = async () => {
-    if (!activeModuleId) {
+  const handleAddLesson = () => {
+    const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+    if (!currentActiveModuleId) {
       toast.error("Please select a module first.");
       return;
     }
@@ -582,78 +546,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       toast.error("Please save the course details first.");
       return;
     }
-    if (createLessonMutation.isPending) return;
-
-    const execute = async () => {
-      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
-      const currentCourse = useCourseStore.getState().course;
-      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
-      const orderNum = (activeModule?.lessons?.length || 0) + 1;
-
-      const tempId = addLesson(currentActiveModuleId);
-      navigateTo("lesson");
-
-      try {
-        const response = await createLessonMutation.mutateAsync({
-          moduleId: currentActiveModuleId,
-          courseId: currentCourse.id!,
-          data: {
-            name: "New Lesson",
-            type: "text",
-            order_num: orderNum
-          }
-        });
-        const newLesson = response.data || response;
-        const backendId = String(newLesson.id);
-        useCourseStore.setState((state) => {
-          const updatedModules = state.course.modules.map(m => {
-            if (m.id === currentActiveModuleId) {
-              const updatedLessons = m.lessons.map(l => l.id === tempId ? { ...l, id: backendId } : l);
-              let updatedOrder = m.order;
-              if (updatedOrder) {
-                updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
-              }
-              return { ...m, lessons: updatedLessons, order: updatedOrder };
-            }
-            return m;
-          });
-          const updatedActiveLessonId = state.activeLessonId === tempId ? backendId : state.activeLessonId;
-          const updatedExpandedLessons: Record<string, boolean> = {};
-          Object.entries(state.expandedLessons).forEach(([k, v]) => {
-            if (k === tempId) {
-              updatedExpandedLessons[backendId] = v;
-            } else {
-              updatedExpandedLessons[k] = v;
-            }
-          });
-          const nextCourse = { ...state.course, modules: updatedModules };
-          return {
-            course: nextCourse,
-            activeLessonId: updatedActiveLessonId,
-            expandedLessons: updatedExpandedLessons,
-            cleanCourse: nextCourse,
-            lastSavedCourseJson: JSON.stringify(nextCourse)
-          };
-        });
-      } catch (err) {
-        deleteLesson(currentActiveModuleId, tempId);
-        toastApiError(err, "Failed to create lesson");
-      }
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingNavigation({
-        type: "action",
-        action: execute
-      });
-      return;
-    }
-
-    await execute();
+    addLesson(currentActiveModuleId);
+    navigateTo("lesson");
   };
 
-  const handleAddTopic = async () => {
-    if (!activeModuleId || !activeLessonId) {
+  const handleAddTopic = () => {
+    const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
+    const currentActiveLessonId = useCourseStore.getState().activeLessonId || activeLessonId;
+    if (!currentActiveModuleId || !currentActiveLessonId) {
       toast.error("Please select a lesson first.");
       return;
     }
@@ -661,74 +561,8 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       toast.error("Please save the course details first.");
       return;
     }
-    if (createTopicMutation.isPending) return;
-
-    const execute = async () => {
-      const currentActiveModuleId = useCourseStore.getState().activeModuleId || activeModuleId;
-      const currentActiveLessonId = useCourseStore.getState().activeLessonId || activeLessonId;
-      const currentCourse = useCourseStore.getState().course;
-      const activeModule = currentCourse.modules.find(m => m.id === currentActiveModuleId);
-      const activeLesson = activeModule?.lessons.find(l => l.id === currentActiveLessonId);
-      const orderNum = (activeLesson?.topics?.length || 0) + 1;
-
-      const tempId = addTopic(currentActiveModuleId, currentActiveLessonId);
-      navigateTo("topic");
-
-      try {
-        const response = await createTopicMutation.mutateAsync({
-          lessonId: currentActiveLessonId,
-          courseId: currentCourse.id!,
-          moduleId: currentActiveModuleId,
-          data: {
-            name: "New Topic",
-            content_text: "",
-            order_num: orderNum
-          }
-        });
-        const newTopic = response.data || response;
-        const backendId = String(newTopic.id);
-        useCourseStore.setState((state) => {
-          const updatedModules = state.course.modules.map(m => {
-            if (m.id === currentActiveModuleId) {
-              const updatedLessons = m.lessons.map(l => {
-                if (l.id === currentActiveLessonId) {
-                  const updatedTopics = l.topics.map(t => t.id === tempId ? { ...t, id: backendId } : t);
-                  let updatedOrder = l.order;
-                  if (updatedOrder) {
-                    updatedOrder = updatedOrder.map(o => o.id === tempId ? { ...o, id: backendId } : o);
-                  }
-                  return { ...l, topics: updatedTopics, order: updatedOrder };
-                }
-                return l;
-              });
-              return { ...m, lessons: updatedLessons };
-            }
-            return m;
-          });
-          const updatedActiveTopicId = state.activeTopicId === tempId ? backendId : state.activeTopicId;
-          const nextCourse = { ...state.course, modules: updatedModules };
-          return {
-            course: nextCourse,
-            activeTopicId: updatedActiveTopicId,
-            cleanCourse: nextCourse,
-            lastSavedCourseJson: JSON.stringify(nextCourse)
-          };
-        });
-      } catch (err) {
-        deleteTopic(currentActiveModuleId, currentActiveLessonId, tempId);
-        toastApiError(err, "Failed to create topic");
-      }
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingNavigation({
-        type: "action",
-        action: execute
-      });
-      return;
-    }
-
-    await execute();
+    addTopic(currentActiveModuleId, currentActiveLessonId);
+    navigateTo("topic");
   };
 
   const handleAddQuiz = () => {
@@ -918,43 +752,15 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                 <div
                   key={`module-${module.id}`}
                   className="flex flex-col gap-1 mb-1"
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverIndex(`module-${mIdx}`);
-                  }}
-                  onDragLeave={() => setDragOverIndex(null)}
-                  onDrop={() => {
-                    if (dragItem.current?.type === 'module' && dragItem.current.index !== mIdx) {
-                      handleModuleReorder(dragItem.current.index, mIdx);
-                    }
-                    setDragOverIndex(null);
-                    dragItem.current = null;
-                  }}
-                  onDragEnd={() => {
-                    setDragOverIndex(null);
-                    dragItem.current = null;
-                  }}
                 >
                   <div 
                     onClick={() => handleModuleClick(module.id)}
-                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${dragOverIndex === `module-${mIdx}` ? 'border-blue-400 bg-blue-50 shadow-md' : isModuleActive && !activeLessonId 
+                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${isModuleActive && !activeLessonId 
                         ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
                         : 'bg-white border-slate-200/80 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
                     }`}
                   >
-                    <div className="flex items-center gap-2 overflow-hidden flex-1">
-                      {/* Drag Handle — only the grip triggers module drag */}
-                      <span
-                        draggable
-                        onDragStart={(e) => {
-                          e.stopPropagation();
-                          dragItem.current = { type: 'module', index: mIdx };
-                        }}
-                        className={`cursor-grab opacity-0 group-hover/module:opacity-50 shrink-0 ${isModuleActive && !activeLessonId ? 'text-white/60' : 'text-slate-400'}`}
-                      >
-                        <GripVertical size={14} />
-                      </span>
-
+                    <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
                       {/* Expand Arrow */}
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
@@ -988,25 +794,11 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                     </div>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/module:opacity-100 transition-opacity">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx - 1); }}
-                        disabled={mIdx === 0}
-                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
-                      >
-                        <ChevronUp size={12} />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleModuleReorder(mIdx, mIdx + 1); }}
-                        disabled={mIdx === course.modules.length - 1}
-                        className={`p-0.5 disabled:opacity-20 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-blue-600 text-slate-400'}`}
-                      >
-                        <ChevronDown size={12} />
-                      </button>
-                      <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteModuleClick(module.id);
                         }}
-                        className={`p-0.5 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-450'}`}
+                        className={`p-0.5 ${isModuleActive && !activeLessonId ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-455'}`}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -1026,8 +818,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                         {items.map((item, itemIdx) => {
-                          const dropKey = `moduleItem-${module.id}-${itemIdx}`;
-                          const isDropTarget = dragOverIndex === dropKey;
                           if (item.type === 'lesson') {
                             const lesson = module.lessons.find(l => l.id === item.id);
                             if (!lesson) return null;
@@ -1038,48 +828,16 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                             return (
                               <div
                                 key={`lesson-${lesson.id}`}
-                                className="flex flex-col gap-1.5"
-                                onDragOver={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setDragOverIndex(dropKey);
-                                }}
-                                onDragLeave={(e) => {
-                                  e.stopPropagation();
-                                  setDragOverIndex(null);
-                                }}
-                                onDrop={(e) => {
-                                  e.stopPropagation();
-                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
-                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
-                                  }
-                                  setDragOverIndex(null);
-                                  dragItem.current = null;
-                                }}
-                                onDragEnd={() => {
-                                  setDragOverIndex(null);
-                                  dragItem.current = null;
-                                }}
+                                className="flex flex-col gap-1"
                               >
                                 <div
                                   onClick={() => handleLessonClick(module.id, lesson.id)}
-                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isDropTarget ? 'border-blue-400 bg-blue-50/40' : isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
+                                  className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
                                       ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20'
                                       : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-700 hover:text-slate-900'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                    {/* Drag Handle — only the grip triggers lesson drag */}
-                                    <span
-                                      draggable
-                                      onDragStart={(e) => {
-                                        e.stopPropagation();
-                                        dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
-                                      }}
-                                      className={`cursor-grab opacity-0 group-hover/lesson:opacity-50 shrink-0 ${isLessonActive ? 'text-white/60' : 'text-slate-400'}`}
-                                    >
-                                      <GripVertical size={12} />
-                                    </span>
+                                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
                                     {/* Lesson Expand Toggle */}
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
@@ -1137,8 +895,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                       {lessonItems.map((lItem, lItemIdx) => {
-                                        const lessonDropKey = `lessonItem-${lesson.id}-${lItemIdx}`;
-                                        const isLessonDropTarget = dragOverIndex === lessonDropKey;
                                         if (lItem.type === 'topic') {
                                           const topic = lesson.topics.find(t => t.id === lItem.id);
                                           if (!topic) return null;
@@ -1147,32 +903,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`topic-${topic.id}`}
-                                              draggable
-                                              onDragStart={(e) => {
-                                                e.stopPropagation();
-                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
-                                              }}
-                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
-                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
-                                              onDrop={(e) => {
-                                                e.stopPropagation();
-                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
-                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
-                                                }
-                                                setDragOverIndex(null);
-                                                dragItem.current = null;
-                                              }}
-                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleTopicClick(module.id, lesson.id, topic.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isTopicActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isTopicActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                                 <Target className={isTopicActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {(() => {
@@ -1207,32 +945,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`quiz-${quiz.id}`}
-                                              draggable
-                                              onDragStart={(e) => {
-                                                e.stopPropagation();
-                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
-                                              }}
-                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
-                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
-                                              onDrop={(e) => {
-                                                e.stopPropagation();
-                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
-                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
-                                                }
-                                                setDragOverIndex(null);
-                                                dragItem.current = null;
-                                              }}
-                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleQuizClick(module.id, lesson.id, quiz.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isQuizActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                                 <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-semibold truncate flex-1">
                                                 <span className="text-xs font-semibold truncate flex-1">
@@ -1244,9 +964,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteQuiz(module.id, lesson.id, quiz.id);
-                                                     if (activeQuizId === quiz.id) {
-                                                       navigateTo("lesson");
-                                                     }
+                                                    if (activeQuizId === quiz.id) {
+                                                      navigateTo("lesson");
+                                                    }
                                                   }}
                                                   className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -1265,32 +985,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                           return (
                                             <div 
                                               key={`assignment-${assignment.id}`}
-                                              draggable
-                                              onDragStart={(e) => {
-                                                e.stopPropagation();
-                                                dragItem.current = { type: 'lessonItem', index: lItemIdx, moduleId: module.id, lessonId: lesson.id };
-                                              }}
-                                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverIndex(lessonDropKey); }}
-                                              onDragLeave={(e) => { e.stopPropagation(); setDragOverIndex(null); }}
-                                              onDrop={(e) => {
-                                                e.stopPropagation();
-                                                if (dragItem.current?.type === 'lessonItem' && dragItem.current.lessonId === lesson.id && dragItem.current.index !== lItemIdx) {
-                                                  reorderLessonItems(module.id, lesson.id, dragItem.current.index, lItemIdx);
-                                                }
-                                                setDragOverIndex(null);
-                                                dragItem.current = null;
-                                              }}
-                                              onDragEnd={() => { setDragOverIndex(null); dragItem.current = null; }}
                                               onClick={() => handleAssignmentClick(module.id, lesson.id, assignment.id)}
                                               className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                                isLessonDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                                 isAssignmentActive 
                                                   ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                                   : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                               }`}
                                             >
-                                              <div className="flex items-center gap-2 overflow-hidden flex-1">
-                                                <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
+                                              <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                                 <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                                 <span className="text-xs font-medium truncate flex-1">
                                                   {assignment.title || `Assignment ${aIdx + 1}`}
@@ -1333,42 +1035,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                              return (
                                <div 
                                  key={`quiz-${quiz.id}`}
-                                 draggable
-                                 onDragStart={(e) => {
-                                   e.stopPropagation();
-                                   dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
-                                 }}
-                                 onDragOver={(e) => {
-                                   e.preventDefault();
-                                   e.stopPropagation();
-                                   setDragOverIndex(dropKey);
-                                 }}
-                                 onDragLeave={(e) => {
-                                   e.stopPropagation();
-                                   setDragOverIndex(null);
-                                 }}
-                                 onDrop={(e) => {
-                                   e.stopPropagation();
-                                   if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
-                                     reorderModuleItems(module.id, dragItem.current.index, itemIdx);
-                                   }
-                                   setDragOverIndex(null);
-                                   dragItem.current = null;
-                                 }}
-                                 onDragEnd={() => {
-                                   setDragOverIndex(null);
-                                   dragItem.current = null;
-                                 }}
                                  onClick={() => handleQuizClick(module.id, undefined, quiz.id)}
                                  className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                   isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                    isQuizActive 
                                      ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                      : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                  }`}
                                >
-                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                                   <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isQuizActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
+                                 <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                    <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
                                    <span className="text-xs font-semibold truncate flex-1">
                                      {quiz.title || `Module Quiz ${qIdx + 1}`}
@@ -1403,42 +1077,14 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                             return (
                               <div 
                                 key={`assignment-${assignment.id}`}
-                                draggable
-                                onDragStart={(e) => {
-                                  e.stopPropagation();
-                                  dragItem.current = { type: 'moduleItem', index: itemIdx, moduleId: module.id };
-                                }}
-                                onDragOver={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setDragOverIndex(dropKey);
-                                }}
-                                onDragLeave={(e) => {
-                                  e.stopPropagation();
-                                  setDragOverIndex(null);
-                                }}
-                                onDrop={(e) => {
-                                  e.stopPropagation();
-                                  if (dragItem.current?.type === 'moduleItem' && dragItem.current.moduleId === module.id && dragItem.current.index !== itemIdx) {
-                                    handleModuleItemReorder(module.id, dragItem.current.index, itemIdx);
-                                  }
-                                  setDragOverIndex(null);
-                                  dragItem.current = null;
-                                }}
-                                onDragEnd={() => {
-                                  setDragOverIndex(null);
-                                  dragItem.current = null;
-                                }}
                                 onClick={() => handleAssignmentClick(module.id, undefined, assignment.id)}
                                 className={`group/item rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${
-                                  isDropTarget ? 'border-blue-400 bg-blue-50/40' :
                                   isAssignmentActive 
                                     ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-xs' 
                                     : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-600 hover:text-slate-900'
                                 }`}
                               >
-                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                                  <span className={`cursor-grab opacity-0 group-hover/item:opacity-50 shrink-0 ${isAssignmentActive ? 'text-white/60' : 'text-slate-400'}`}><GripVertical size={12} /></span>
+                                <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                   <ClipboardList className={isAssignmentActive ? "text-white" : "text-slate-400"} size={14} />
                                   <span className="text-xs font-semibold truncate flex-1">
                                     {assignment.title || `Module Assignment ${aIdx + 1}`}
@@ -1521,24 +1167,26 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
               const finalAssessment = (course as any).final_assessment;
               const finalAssessmentId = String(finalAssessment.id ?? "");
               const isAssignmentActive = activeAssignmentId === finalAssessmentId;
-              const title = finalAssessment.title || "Final Assessment";
+              const title = finalAssessment.title || finalAssessment.assignment_title || "Final Assessment";
               return (
-                <div 
-                  key={`course-final-assessment-${finalAssessmentId}`}
-                  onClick={() => handleCourseAssignmentClick(finalAssessmentId)}
-                  className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border mt-2 ${
-                    isAssignmentActive 
-                      ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
-                      : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
-                    <ClipboardList className={isAssignmentActive ? "text-white" : "text-blue-600"} size={16} />
-                    <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isAssignmentActive ? "text-white" : "text-slate-800"}`}>
-                      {title}
-                    </span>
+                <React.Fragment key={`course-final-assessment-wrapper-${finalAssessmentId}`}>
+                  <div className="my-4 border-t border-slate-200/80" />
+                  <div 
+                    onClick={() => handleCourseAssignmentClick(finalAssessmentId)}
+                    className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${
+                      isAssignmentActive 
+                        ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
+                        : 'bg-white border-slate-200 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-bold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
+                      <Award className={isAssignmentActive ? "text-white" : "text-slate-500"} size={16} />
+                      <span className={`text-[11px] font-bold truncate uppercase tracking-wider ${isAssignmentActive ? "text-white" : "text-slate-800"}`}>
+                        {title}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             })()
           ) : null}

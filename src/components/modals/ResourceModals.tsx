@@ -173,6 +173,7 @@ function ImageModalContent({ onClose, onAttach }: { onClose: () => void; onAttac
   const [title, setTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = (selectedFile: File) => {

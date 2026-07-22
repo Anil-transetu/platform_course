@@ -167,28 +167,12 @@ export default function ModuleDetailsPage() {
     lastSyncedModuleIdRef.current = null;
   }, [activeModuleId]);
 
-  const handleAddFirstModule = async () => {
+  const handleAddFirstModule = () => {
     if (!course.id) {
       toast.error("Please save the course details first.");
       return;
     }
-    const tempId = addModule();
-    try {
-      const response = await createModuleMutation.mutateAsync({
-        courseId: course.id,
-        data: {
-          name: "New Module",
-          description: "",
-          order_num: 1
-        }
-      });
-      const newModule = response.data || response;
-      const backendId = String(newModule.id);
-      mapTemporaryModuleId(tempId, backendId);
-    } catch (err) {
-      deleteModule(tempId);
-      toastApiError(err, "Failed to create module");
-    }
+    addModule();
   };
 
   const validateField = (field: string, value: string): string => {

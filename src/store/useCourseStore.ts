@@ -127,6 +127,8 @@ export type Course = {
   thumbnail_url?: string;
   description?: string;
   status?: string;
+  final_assessment?: any;
+  final_assessment_id?: string | number | null;
   modules: Module[];
   quizzes?: Quiz[];
   assignments?: Assignment[];
@@ -318,9 +320,28 @@ export const useCourseStore = create<CourseState>()(
 
   setCourseMetadata: (details) => set((state) => {
     const metadata = mapCourseDetailsToStore(details);
+    const final_assessment_id = metadata.final_assessment_id !== null ? metadata.final_assessment_id : (state.course.final_assessment_id ?? null);
+    
+    let final_assessment = metadata.final_assessment;
+    if (!final_assessment && final_assessment_id) {
+      if (state.course.final_assessment && String(state.course.final_assessment.id) === String(final_assessment_id)) {
+        final_assessment = state.course.final_assessment;
+      }
+    } else if (!final_assessment_id) {
+      final_assessment = null;
+    }
+
     const updatedCourse = {
       ...state.course,
       ...metadata,
+      title: metadata.title || state.course.title || "",
+      description: metadata.description || state.course.description || "",
+      thumbnail_url: metadata.thumbnail_url || state.course.thumbnail_url || "",
+      domain: metadata.domain || state.course.domain || "",
+      tags: (metadata.tags && metadata.tags.length > 0) ? metadata.tags : (state.course.tags || []),
+      status: metadata.status || state.course.status || "draft",
+      final_assessment,
+      final_assessment_id,
       modules: state.course.modules || [],
     };
     return {
@@ -339,8 +360,32 @@ export const useCourseStore = create<CourseState>()(
       return {};
     }
 
+    const incomingMetadata = mapCourseDetailsToStore(course);
+    
+    const final_assessment_id = incomingMetadata.final_assessment_id !== null ? incomingMetadata.final_assessment_id : (state.course.final_assessment_id ?? null);
+    let final_assessment = incomingMetadata.final_assessment;
+    if (!final_assessment && final_assessment_id) {
+      if (state.course.final_assessment && String(state.course.final_assessment.id) === String(final_assessment_id)) {
+        final_assessment = state.course.final_assessment;
+      }
+    } else if (!final_assessment_id) {
+      final_assessment = null;
+    }
+
+    const mergedMetadata = {
+      id: incomingMetadata.id ?? state.course.id,
+      title: incomingMetadata.title || state.course.title || '',
+      description: incomingMetadata.description || state.course.description || '',
+      thumbnail_url: incomingMetadata.thumbnail_url || state.course.thumbnail_url || '',
+      domain: incomingMetadata.domain || state.course.domain || '',
+      tags: (incomingMetadata.tags && incomingMetadata.tags.length > 0) ? incomingMetadata.tags : (state.course.tags || []),
+      status: course.status ? incomingMetadata.status : (state.course.status || 'draft'),
+      final_assessment,
+      final_assessment_id,
+    };
+
     const mappedCourse = {
-      ...mapCourseDetailsToStore(course),
+      ...mergedMetadata,
       content_blocks: course.content_blocks || [],
       modules: (course.modules || []).map((m: any) => {
         const mappedModule = {
@@ -511,31 +556,50 @@ export const useCourseStore = create<CourseState>()(
       }
     } else {
       // Validate that resolved active IDs actually exist in mapped course
-      const activeModule = mappedCourse.modules.find((m: any) => String(m.id) === String(nextActiveModuleId));
-      if (!activeModule) {
-        nextActiveModuleId = mappedCourse.modules[0]?.id ? String(mappedCourse.modules[0].id) : null;
-        nextActiveLessonId = mappedCourse.modules[0]?.lessons[0]?.id ? String(mappedCourse.modules[0].lessons[0].id) : null;
-        nextActiveTopicId = null;
-        nextActiveQuizId = null;
-        nextActiveAssignmentId = null;
+      const isCourseLevelQuizActive = nextActiveQuizId && mappedCourse.quizzes?.some((q: any) => String(q.id) === String(nextActiveQuizId));
+      const isCourseLevelFinalAssessmentActive = nextActiveAssignmentId && (
+        !nextActiveModuleId ||
+        (mappedCourse.final_assessment_id && String(mappedCourse.final_assessment_id) === String(nextActiveAssignmentId)) ||
+        (mappedCourse.final_assessment && String(mappedCourse.final_assessment.id) === String(nextActiveAssignmentId)) ||
+        (mappedCourse.assignments?.some((a: any) => String(a.id) === String(nextActiveAssignmentId)))
+      );
+
+      if (!nextActiveModuleId && (isCourseLevelQuizActive || isCourseLevelFinalAssessmentActive)) {
+        updateObject.activeModuleId = null;
+        updateObject.activeLessonId = null;
+        updateObject.activeTopicId = null;
+        updateObject.activeQuizId = isCourseLevelQuizActive ? nextActiveQuizId : null;
+        updateObject.activeAssignmentId = isCourseLevelFinalAssessmentActive ? nextActiveAssignmentId : null;
+        if (isCourseLevelFinalAssessmentActive && nextActiveAssignmentId && !mappedCourse.final_assessment_id) {
+          mappedCourse.final_assessment_id = nextActiveAssignmentId;
+        }
       } else {
-        const activeLesson = activeModule.lessons.find((l: any) => String(l.id) === String(nextActiveLessonId));
-        if (!activeLesson && nextActiveLessonId !== null) {
-          nextActiveLessonId = activeModule.lessons[0]?.id ? String(activeModule.lessons[0].id) : null;
+        const activeModule = mappedCourse.modules.find((m: any) => String(m.id) === String(nextActiveModuleId));
+        if (!activeModule) {
+          nextActiveModuleId = mappedCourse.modules[0]?.id ? String(mappedCourse.modules[0].id) : null;
+          nextActiveLessonId = mappedCourse.modules[0]?.lessons[0]?.id ? String(mappedCourse.modules[0].lessons[0].id) : null;
           nextActiveTopicId = null;
-        } else if (activeLesson) {
-          const activeTopic = activeLesson.topics.find((t: any) => String(t.id) === String(nextActiveTopicId));
-          if (!activeTopic && nextActiveTopicId !== null) {
+          nextActiveQuizId = null;
+          nextActiveAssignmentId = null;
+        } else {
+          const activeLesson = activeModule.lessons.find((l: any) => String(l.id) === String(nextActiveLessonId));
+          if (!activeLesson && nextActiveLessonId !== null) {
+            nextActiveLessonId = activeModule.lessons[0]?.id ? String(activeModule.lessons[0].id) : null;
             nextActiveTopicId = null;
+          } else if (activeLesson) {
+            const activeTopic = activeLesson.topics.find((t: any) => String(t.id) === String(nextActiveTopicId));
+            if (!activeTopic && nextActiveTopicId !== null) {
+              nextActiveTopicId = null;
+            }
           }
         }
-      }
 
-      updateObject.activeModuleId = nextActiveModuleId;
-      updateObject.activeLessonId = nextActiveLessonId;
-      updateObject.activeTopicId = nextActiveTopicId;
-      updateObject.activeQuizId = nextActiveQuizId;
-      updateObject.activeAssignmentId = nextActiveAssignmentId;
+        updateObject.activeModuleId = nextActiveModuleId;
+        updateObject.activeLessonId = nextActiveLessonId;
+        updateObject.activeTopicId = nextActiveTopicId;
+        updateObject.activeQuizId = nextActiveQuizId;
+        updateObject.activeAssignmentId = nextActiveAssignmentId;
+      }
     }
 
     updateObject.expandedModules = nextExpandedModules;
@@ -1229,7 +1293,7 @@ export const useCourseStore = create<CourseState>()(
     return id;
   },
 
-  updateQuiz: (moduleId, lessonId, quizId, updates) => set((state) => {
+  updateQuiz: (moduleId, lessonId, quizId, updates, options) => set((state) => {
     const updatedModules = state.course.modules.map(m => {
       if (m.id === moduleId) {
         if (!lessonId) {
@@ -1267,6 +1331,11 @@ export const useCourseStore = create<CourseState>()(
       ...state.course,
       modules: updatedModules,
     };
+    if (options?.isLocalOnly) {
+      return {
+        course: updatedCourse
+      };
+    }
     return {
       course: updatedCourse,
       cleanCourse: JSON.parse(JSON.stringify(updatedCourse)),
@@ -1601,7 +1670,7 @@ export const useCourseStore = create<CourseState>()(
     return id;
   },
 
-  updateAssignment: (moduleId, lessonId, assignmentId, updates) => set((state) => {
+  updateAssignment: (moduleId, lessonId, assignmentId, updates, options) => set((state) => {
     const updatedModules = state.course.modules.map(m => {
       if (m.id === moduleId) {
         if (!lessonId) {
@@ -1639,6 +1708,11 @@ export const useCourseStore = create<CourseState>()(
       ...state.course,
       modules: updatedModules,
     };
+    if (options?.isLocalOnly) {
+      return {
+        course: updatedCourse
+      };
+    }
     return {
       course: updatedCourse,
       cleanCourse: JSON.parse(JSON.stringify(updatedCourse)),

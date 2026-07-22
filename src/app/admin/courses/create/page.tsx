@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ArrowRight, UploadCloud, Image as ImageIcon, BookOpen, Sparkles, Tag, Globe, Loader2, Search, Check, ChevronDown } from "lucide-react";
+import { ArrowRight, UploadCloud, Image as ImageIcon, BookOpen, Sparkles, Tag, Globe, Loader2, Search, Check, ChevronDown, Info } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useCreateCourse, useUpdateCourse, useAssignmentsLookup } from "@/features/admin/courses/api/course-api";
-import { getDefaultEditorRoute } from "@/lib/utils";
+import { getDefaultEditorRoute, cn } from "@/lib/utils";
 import { useDomains } from "@/features/admin/domains/api/domain-api";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Static domain list — will be replaced by API data in Phase 1
 const DOMAIN_OPTIONS = [
@@ -40,6 +41,7 @@ export default function CreateCoursePage() {
   const { course, cleanCourse, setCourseDetails, resetCourse } = useCourseStore();
   const { title, thumbnail_url = "", description = "", domain = "", tags = [] } = course;
   const [tagInput, setTagInput] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
 
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,7 +88,6 @@ export default function CreateCoursePage() {
     const selected = (course as any).final_assessment_id ?? (course as any).finalAssessment?.id ?? (course as any).final_assessment?.id ?? "";
     if (selected) {
       setFinalAssessmentId(String(selected));
-      setFinalAssessmentsRequested(true);
     } else {
       setFinalAssessmentId("");
     }
@@ -291,17 +292,71 @@ export default function CreateCoursePage() {
     setTagInput(value);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          handleFieldChange("thumbnail_url", reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+  const validateAndProcessImage = (file: File) => {
+    // 1. File Size Validation (Max 5 MB)
+    const MAX_SIZE_MB = 5;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+    if (file.size > MAX_SIZE_BYTES) {
+      toast.error(`File size exceeds maximum limit of ${MAX_SIZE_MB} MB.`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
     }
+
+    // 2. Format Validation (PNG, JPG, JPEG, WEBP)
+    const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    const fileExtension = file.name.split(".").pop()?.toLowerCase();
+    const isAllowedType = ALLOWED_TYPES.includes(file.type.toLowerCase()) ||
+      ["png", "jpg", "jpeg", "webp"].includes(fileExtension || "");
+
+    if (!isAllowedType) {
+      toast.error("Invalid file format. Please upload a PNG, JPG, JPEG, or WEBP image.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    // 3. Image Dimensions & Aspect Ratio Validation
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result !== "string") return;
+      const dataUrl = event.target.result;
+      const img = new Image();
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const aspectRatio = width / height;
+
+        // Minimum Resolution: 1280 x 720 px
+        const MIN_WIDTH = 1280;
+        const MIN_HEIGHT = 720;
+        // 16:9 Aspect Ratio (1.777...) with 5% tolerance
+        const TARGET_RATIO = 16 / 9;
+        const RATIO_TOLERANCE = 0.1;
+
+        const isMinRes = width >= MIN_WIDTH && height >= MIN_HEIGHT;
+        const isCorrectRatio = Math.abs(aspectRatio - TARGET_RATIO) <= RATIO_TOLERANCE;
+
+        if (!isMinRes || !isCorrectRatio) {
+          toast.error(
+            `Invalid image dimensions. Please upload an image with recommended resolution (1280 × 720 px, 16:9 aspect ratio, min 1280×720). Uploaded: ${width} × ${height} px.`
+          );
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+
+        handleFieldChange("thumbnail_url", dataUrl);
+      };
+      img.onerror = () => {
+        toast.error("Failed to load image for validation.");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    validateAndProcessImage(e.target.files[0]);
   };
 
   const getInputClass = (field: string, base: string) => {
@@ -585,7 +640,7 @@ export default function CreateCoursePage() {
                       }
                     }}
                     onBlur={() => handleBlur("description", description)}
-                    rows={5}
+                    rows={3}
                     className={getInputClass(
                       "description",
                       "w-full px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold text-slate-800 placeholder-slate-400 resize-none leading-relaxed"
