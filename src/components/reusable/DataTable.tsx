@@ -142,102 +142,102 @@ export default function DataTable<T extends Record<string, unknown>>({
             </div>
           )}
 
-          {/* ACTIONS WRAPPER: Filters + Rows per page */}
-          <div className="flex flex-row flex-wrap items-center justify-between sm:justify-end gap-3 w-full md:w-auto md:ml-auto">
+          {/* FILTER & ROWS PER PAGE CONTAINER */}
+          <div className="flex flex-row gap-4 items-center justify-between sm:justify-start w-full md:w-auto">
             {/* FILTER SELECTS */}
             {filters && filters.length > 0 && (
-              <div className="flex gap-2 sm:gap-3 flex-wrap items-center flex-1 sm:flex-initial">
-                {filters.map((filter) => (
-                  <div key={filter.id} className="relative flex-1 sm:flex-initial min-w-[120px] sm:min-w-0">
-                    {filter.type === "select" && (
-                      <Select
-                        value={Array.isArray(filter.value) ? "" : (filter.value || "")}
-                        onValueChange={(val) => filter.onChange(val)}
-                      >
-                        <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
-                          <SelectValue placeholder={filter.label} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filter.options?.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+              <div className="flex gap-2 sm:gap-3 flex-row flex-wrap items-center flex-1 sm:flex-initial">
+              {filters.map((filter) => (
+                <div key={filter.id} className="relative flex-1 sm:flex-initial min-w-[120px] sm:min-w-0">
+                  {filter.type === "select" && (
+                    <Select
+                      value={Array.isArray(filter.value) ? "" : (filter.value || "")}
+                      onValueChange={(val) => filter.onChange(val)}
+                    >
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
+                        <SelectValue placeholder={filter.label} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filter.options?.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
-                    {filter.type === "multiselect" && (
-                      <Select
-                        value={
-                          Array.isArray(filter.value)
-                            ? filter.value.join(",")
-                            : ""
-                        }
-                        onValueChange={(val) =>
-                          filter.onChange(val ? val.split(",") : [])
-                        }
-                      >
-                        <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
-                          <SelectValue placeholder={filter.label} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filter.options?.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                  {filter.type === "multiselect" && (
+                    <Select
+                      value={
+                        Array.isArray(filter.value)
+                          ? filter.value.join(",")
+                          : ""
+                      }
+                      onValueChange={(val) =>
+                        filter.onChange(val ? val.split(",") : [])
+                      }
+                    >
+                      <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
+                        <SelectValue placeholder={filter.label} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filter.options?.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
-                    {filter.type === "text" && (
-                      <Input
-                        type="text"
-                        placeholder={filter.placeholder || filter.label}
-                        value={Array.isArray(filter.value) ? "" : filter.value}
-                        onChange={(e) => filter.onChange(e.target.value)}
-                        className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
-                      />
-                    )}
+                  {filter.type === "text" && (
+                    <Input
+                      type="text"
+                      placeholder={filter.placeholder || filter.label}
+                      value={Array.isArray(filter.value) ? "" : filter.value}
+                      onChange={(e) => filter.onChange(e.target.value)}
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
+                    />
+                  )}
 
-                    {filter.type === "date-range" && (
-                      <Input
-                        type="date"
-                        value={Array.isArray(filter.value) ? "" : filter.value}
-                        onChange={(e) => filter.onChange(e.target.value)}
-                        className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
-                      />
-                    )}
+                  {filter.type === "date-range" && (
+                    <Input
+                      type="date"
+                      value={Array.isArray(filter.value) ? "" : filter.value}
+                      onChange={(e) => filter.onChange(e.target.value)}
+                      className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}
+                    />
+                  )}
 
-                    {/* Clear button */}
-                    {filter.clearable && filter.value && (
-                      <Button
-                        onClick={() =>
-                          filter.onChange(Array.isArray(filter.value) ? [] : "")
-                        }
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
-                        title="Clear filter"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
+                  {/* Clear button */}
+                  {filter.clearable && filter.value && (
+                    <Button
+                      onClick={() =>
+                        filter.onChange(Array.isArray(filter.value) ? [] : "")
+                      }
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                      title="Clear filter"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
               </div>
             )}
 
-            {/* ROWS PER PAGE */}
+            {/* ROWS PER PAGE (Mobile Only) */}
             {showPagination && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
                 <Select
                   value={String(rowsPerPage)}
                   onValueChange={(val) => onRowsPerPageChange(Number(val))}
                 >
-                  <SelectTrigger className="w-[110px] bg-card border-border h-9 text-xs sm:text-sm">
-                    <SelectValue placeholder={`Rows: ${rowsPerPage}`} />
+                  <SelectTrigger className="w-[95px] bg-card border-border h-9 text-xs">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="5">Rows: 5</SelectItem>
@@ -361,7 +361,24 @@ export default function DataTable<T extends Record<string, unknown>>({
       {showPagination && (
         <div className="flex-shrink-0 bg-card border-t border-border px-4 sm:px-6 py-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start order-1 sm:order-1 w-full sm:w-auto">
-            {/* ROWS PER PAGE (Moved to top filter bar) */}
+            {/* ROWS PER PAGE (Desktop/Tablet) */}
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-medium text-muted-foreground whitespace-nowrap">Rows per page:</span>
+              <Select
+                value={String(rowsPerPage)}
+                onValueChange={(val) => onRowsPerPageChange(Number(val))}
+              >
+                <SelectTrigger className="w-[70px] bg-card border-border h-9 text-xs sm:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {paginationInfo ? (
               <span className="hidden sm:inline text-xs sm:text-sm text-muted-foreground ml-0 sm:ml-4 text-center sm:text-left font-medium">
                 {paginationInfo}

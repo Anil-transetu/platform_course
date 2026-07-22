@@ -1,15 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { BookOpen, CheckCircle, FileText, Plus, Eye, MoreVertical, Pencil, Trash2, ArrowLeft, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { 
+  BookOpen, 
+  CheckCircle, 
+  FileText, 
+  Eye, 
+  MoreVertical, 
+  Pencil, 
+  Trash2
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
-import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
+import { buildCourseColumns, Course } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
@@ -42,10 +48,6 @@ function CoursePageSkeleton() {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-6 border-b border-gray-200">
-        <Skeleton className="h-6 w-20 mb-2" />
-        <Skeleton className="h-6 w-20 mb-2" />
-      </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col flex-1">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
           <Skeleton className="h-10 w-[300px] rounded-lg" />
@@ -73,15 +75,8 @@ function CoursePageSkeleton() {
     </div>
   );
 }
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
 
-
-function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit?: () => void; onDelete: () => void }) {
+function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -134,44 +129,23 @@ export default function CoursesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const viewId = searchParams.get("view");
-  const [activeTab, setActiveTab] = useState<"courses" | "domains">("courses");
-  // Track domain selected for details viewing
-  const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
+
   // Track course selected for details viewing
   const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
   const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (viewId && activeTab === "courses") {
+    if (viewId) {
       router.push(`/admin/courses/view?id=${viewId}`);
     }
-  }, [viewId, activeTab, router]);
-
-  // States for Associated Courses list in Domain Detail View
-  const [courseSearch, setCourseSearch] = useState("");
-  const [courseStatusFilter, setCourseStatusFilter] = useState("All");
-  const [coursePage, setCoursePage] = useState(1);
-  const courseRowsPerPage = 5;
-
-  // Domain Modals state
-  const [domainModal, setDomainModal] = useState<{
-    open: boolean;
-    mode: "add" | "edit" | "view";
-    domain: Domain | null;
-  }>({
-    open: false,
-    mode: "add",
-    domain: null,
-  });
+  }, [viewId, router]);
 
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    item: Course | Domain | null;
-    type: "course" | "domain";
+    item: Course | null;
   }>({
     open: false,
     item: null,
-    type: "course"
   });
 
   const [search, setSearch] = useState("");
@@ -193,7 +167,7 @@ export default function CoursesPage() {
     isFetching: isFetchingCourses,
     error: coursesError
   } = useCourses(
-    activeTab === "courses" ? page : 1,
+    page,
     rowsPerPage,
     debouncedSearch,
     statusFilter,
@@ -220,23 +194,6 @@ export default function CoursesPage() {
   const coursesList = coursesResponse?.data || [];
   const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
 
-  const handleSaveDomain = async (data: Record<string, unknown>) => {
-    try {
-      if (domainModal.mode === "add") {
-        await createDomainMutation.mutateAsync(payload);
-        toast.success("Domain created successfully");
-      } else {
-        if (!domainModal.domain?.id) throw new Error("Domain ID is missing");
-        await updateDomainMutation.mutateAsync({ id: domainModal.domain.id, data: payload });
-        toast.success("Domain updated successfully");
-      }
-      setDomainModal({ open: false, mode: "add", domain: null });
-    } catch (err) {
-      const error = err as Error;
-      toast.error(error.message || "Failed to save domain");
-    }
-  };
-
   const handleDelete = async () => {
     const isOffline = typeof window !== "undefined" && !navigator.onLine;
     if (isOffline) {
@@ -252,32 +209,15 @@ export default function CoursesPage() {
         const error = err as Error;
         toast.error(error.message || "Failed to delete course");
       }
-    } else if (deleteDialog.item) {
-      try {
-        await deleteDomainMutation.mutateAsync(deleteDialog.item.id);
-        toast.success("Domain deleted successfully!");
-        if (viewingDomain && viewingDomain.id === deleteDialog.item.id) {
-          setViewingDomain(null);
-        }
-        setDeleteDialog({ open: false, item: null, type: "domain" });
-      } catch (err) {
-        const error = err as Error;
-        toast.error(error.message || "Failed to delete domain");
-      }
     }
   };
 
-  const currentData = activeTab === "courses" ? coursesList : domainsList;
-  const totalCount = activeTab === "courses" ? totalCoursesCount : totalDomainsCount;
-  const totalPages = activeTab === "courses" 
-    ? (coursesResponse?.pagination?.totalPages || Math.max(1, Math.ceil(totalCoursesCount / rowsPerPage)))
-    : Math.max(1, Math.ceil(totalDomainsCount / rowsPerPage));
+  const totalPages = coursesResponse?.pagination?.totalPages || Math.max(1, Math.ceil(totalCoursesCount / rowsPerPage));
   const start = (page - 1) * rowsPerPage;
-  const visibleData = currentData;
 
   const searchConfig = {
     enabled: true,
-    placeholder: `Search ${activeTab}...`,
+    placeholder: "Search courses...",
     value: search,
     onChange: (val: string) => {
       setSearch(val);
@@ -285,17 +225,11 @@ export default function CoursesPage() {
     },
   };
 
-  const statusOptions = activeTab === "courses" 
-    ? [
-        { value: "All", label: "All Status" },
-        { value: "Published", label: "Published" },
-        { value: "Draft", label: "Draft" },
-      ]
-    : [
-        { value: "All", label: "All Status" },
-        { value: "Active", label: "Active" },
-        { value: "Inactive", label: "Inactive" },
-      ];
+  const statusOptions = [
+    { value: "All", label: "All Status" },
+    { value: "Published", label: "Published" },
+    { value: "Draft", label: "Draft" },
+  ];
 
   const filterConfig = [
     {
@@ -311,31 +245,9 @@ export default function CoursesPage() {
     },
   ];
 
-  const paginationInfo = totalCount > 0
-    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCount)} of ${totalCount}`
+  const paginationInfo = totalCoursesCount > 0
+    ? `${start + 1}-${Math.min(start + rowsPerPage, totalCoursesCount)} of ${totalCoursesCount}`
     : "0-0 of 0";
-
-  const extraHeaderActions = (
-    <div className="flex gap-3">
-      <button 
-        onClick={() => setDomainModal({ open: true, mode: "add", domain: null })}
-        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
-      >
-        <Plus size={16} /> Create New Domain
-      </button>
-      <button 
-        onClick={() => {
-          useCourseStore.getState().resetCourse();
-          router.push("/admin/courses/create");
-        }}
-        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold"
-      >
-        <Plus size={16} /> Create New Course
-      </button>
-    </div>
-  );
-
-  const isScreenLoading = activeTab === "courses" ? isLoadingCourses : isDomainsLoading;
 
   // Render Assignment Detail View
   if (viewingAssignmentId) {
@@ -361,351 +273,70 @@ export default function CoursesPage() {
     );
   }
 
-  // Render Domain Detail View
-  if (activeDomain) {
-    // Determine courses associated with the domain
-    const associatedCoursesList = activeDomain.courses_list || [];
-
-    // Apply local search and status filtering on the Associated Courses
-    const filteredAssociatedCourses = associatedCoursesList.filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(courseSearch.toLowerCase());
-      const matchesStatus = courseStatusFilter === "All" || 
-        (c.status || "").toLowerCase() === courseStatusFilter.toLowerCase() ||
-        (courseStatusFilter.toLowerCase() === "active" && (c.status === "in_progress" || c.status === "active" || c.status === "published"));
-      return matchesSearch && matchesStatus;
-    });
-
-    const courseTotalCount = filteredAssociatedCourses.length;
-    const courseTotalPages = Math.max(1, Math.ceil(courseTotalCount / courseRowsPerPage));
-    const courseStart = (coursePage - 1) * courseRowsPerPage;
-    const visibleCourses = filteredAssociatedCourses.slice(courseStart, courseStart + courseRowsPerPage);
-
-    const coursePaginationInfo = courseTotalCount > 0
-      ? `${courseStart + 1}-${Math.min(courseStart + courseRowsPerPage, courseTotalCount)} of ${courseTotalCount} courses`
-      : "0-0 of 0 courses";
-
-    const associatedCourseColumns = [
-      {
-        key: "id",
-        label: "ID",
-        render: (val: unknown, row: Course) => <span className="text-slate-500 font-medium">{row.id}</span>
-      },
-      {
-        key: "name",
-        label: "COURSE NAME",
-        render: (val: unknown, row: Course) => <span className="font-bold text-slate-800 text-sm">{row.name}</span>
-      },
-      {
-        key: "category",
-        label: "CATEGORY",
-        render: (val: unknown, row: Course) => <span className="text-slate-500 text-sm max-w-[200px] truncate block">{row.category || row.description || "N/A"}</span>
-      },
-      {
-        key: "modules",
-        label: "TOTAL MODULES",
-        render: (val: unknown, row: Course) => <span className="text-slate-600 font-medium text-sm text-center block w-full">{row.no_of_modules || (Array.isArray(row.modules) ? row.modules.length : 0) || 0}</span>
-      },
-      {
-        key: "status",
-        label: "STATUS",
-        render: (val: unknown, row: Course) => {
-          const isActive = row.status === "Active" || row.status === "active" || row.status === "published" || row.status === "in_progress";
-          return (
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-              isActive ? "bg-green-50 text-green-600 border border-green-100" : "bg-orange-50 text-orange-600 border border-orange-100"
-            }`}>
-              {isActive ? "Active" : "Draft"}
-            </span>
-          );
-        }
-      }
-    ];
-
-    // Find Final Assignment details
-    const matchedAssignment = availableAssignments.find(a => 
-      activeDomain.assignment_ids?.includes(Number(a.id))
-    );
-
-    const associatedCoursesSearchConfig = {
-      enabled: true,
-      placeholder: "Search courses in domain...",
-      value: courseSearch,
-      onChange: (val: string) => {
-        setCourseSearch(val);
-        setCoursePage(1);
-      }
-    };
-
-    const associatedCoursesFilterConfig = [
-      {
-        id: "status",
-        label: "Status: All",
-        type: "select" as const,
-        value: courseStatusFilter,
-        options: [
-          { value: "All", label: "Status: All" },
-          { value: "Active", label: "Active" },
-          { value: "Draft", label: "Draft" },
-        ],
-        onChange: (val: string | string[]) => {
-          setCourseStatusFilter(Array.isArray(val) ? val[0] : val);
-          setCoursePage(1);
-        }
-      }
-    ];
-
-    const handleOpenAssignment = () => {
-      if (activeDomain.assignment_ids && activeDomain.assignment_ids.length > 0) {
-        setViewingAssignmentId(String(activeDomain.assignment_ids[0]));
-      } else {
-        toast.error("No final assignment assigned to this domain yet.");
-      }
-    };
-
-    return (
-      <ListingScreenTemplate
-        headerText="Course Management"
-        subHeaderText="Manage and monitor all courses and domains"
-        buttonRequired={false}
-        buttonOnclick={() => {}}
-        extraActions={
-          <button 
-            onClick={() => setViewingDomain(null)}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm"
-          >
-            <ArrowLeft size={16} /> Back to Domains
-          </button>
-        }
-      >
-        <div className="p-4 sm:p-6 space-y-6 flex flex-col overflow-y-auto h-full">
-          
-
-          {/* Domain card info */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex gap-4 items-start">
-            {activeDomain.domain_image_url ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={activeDomain.domain_image_url}
-                alt={activeDomain.name}
-                className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-100 shadow-sm"
-              />
-            ) : (
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-base font-bold flex-shrink-0 ${getAvatarColor(activeDomain.id)}`}>
-                {getInitials(activeDomain.name)}
-              </div>
-            )}
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-800">{activeDomain.name}</h2>
-                  <p className="text-slate-500 text-sm mt-1">{activeDomain.description || "No description provided."}</p>
-                </div>
-                {/* Status Badge */}
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                  activeDomain.status === "Active" ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
-                }`}>
-                  {activeDomain.status}
-                </span>
-              </div>
-              
-              {activeDomain.tags && activeDomain.tags.length > 0 && (
-                <div className="flex items-center gap-2 mt-4 flex-wrap">
-                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mr-1">Related Tags:</span>
-                  {activeDomain.tags.map((tag, i) => (
-                    <span 
-                      key={i} 
-                      className="bg-blue-50 text-blue-600 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-blue-100"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Associated Courses Card */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-base font-bold text-slate-800">Associated Courses</h2>
-            
-            {/* Courses Table using reusable DataTable built-in search and filters */}
-            <div className="border border-gray-100 rounded-xl overflow-hidden flex flex-col">
-              <DataTable<Course>
-                data={visibleCourses}
-                columns={associatedCourseColumns}
-                loading={false}
-                rowKey={(item: Course) => String(item.id)}
-                bodyHeight="auto"
-                rowsPerPage={courseRowsPerPage}
-                currentPage={coursePage}
-                totalPages={courseTotalPages}
-                onPageChange={setCoursePage}
-                onRowsPerPageChange={() => {}}
-                paginationInfo={coursePaginationInfo}
-                showPagination={true}
-                search={associatedCoursesSearchConfig}
-                filters={associatedCoursesFilterConfig}
-                actions={(course) => (
-                  <button 
-                    onClick={() => router.push(`/admin/courses/view?id=${course.id}`)}
-                    className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
-                  >
-                    <Eye size={14} />
-                    View
-                  </button>
-                )}
-              />
-            </div>
-          </div>
-
-          {/* Final Assessment Card */}
-          <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col gap-4">
-            <div className="flex items-center border-b border-gray-100 pb-3">
-              <h2 className="text-base font-bold text-slate-800">Final Assessment</h2>
-            </div>
-            
-            {matchedAssignment ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <h3 className="text-base font-bold text-blue-600">
-                    {matchedAssignment.title || matchedAssignment.assignment_title || "Untitled Assignment"}
-                  </h3>
-                  <button
-                    onClick={handleOpenAssignment}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-semibold rounded-xl shadow-sm hover:shadow-md transition-all duration-150 flex-shrink-0"
-                  >
-                    <SquareArrowOutUpRight size={15} />
-                    Open Full Assessment Page
-                  </button>
-                </div>
-                
-                {matchedAssignment.description && (
-                  <div 
-                    className="text-sm text-slate-600 leading-relaxed prose prose-slate max-w-none"
-                    dangerouslySetInnerHTML={{ __html: matchedAssignment.description }}
-                  />
-                )}
-                
-                {matchedAssignment.evaluation_matrix && matchedAssignment.evaluation_matrix.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <h4 className="text-sm font-bold text-slate-700 mb-3">Evaluation Rubric</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {matchedAssignment.evaluation_matrix.map((criteria: { name: string; marks: number | string }, cIdx: number) => (
-                        <div key={cIdx} className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
-                          <span className="font-semibold text-sm text-slate-800 block">{criteria.name}</span>
-                          <span className="text-xs font-medium text-slate-500 block">Max Score: {criteria.marks}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500 py-4 italic text-center bg-slate-50 rounded-xl">
-                No final assessment has been assigned to this domain yet.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {domainModal.open && (
-          <CreateDomainModal 
-            isOpen={domainModal.open} 
-            onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-            onSubmit={handleSaveDomain} 
-            mode={domainModal.mode}
-            domain={domainModal.domain}
-          />
-        )}
-      </ListingScreenTemplate>
-    );
-  }
-
   return (
     <ListingScreenTemplate
       headerText="Course Management"
-      subHeaderText="Manage and monitor all courses and domains"
+      subHeaderText="Manage and monitor all courses"
       buttonLabel="Create New Course"
-      buttonRequired={false}
-      buttonOnclick={() => {}}
-      extraActions={extraHeaderActions}
+      buttonRequired={true}
+      buttonOnclick={() => {
+        useCourseStore.getState().resetCourse();
+        router.push("/admin/courses/create");
+      }}
     >
-      {isScreenLoading ? (
+      {isLoadingCourses ? (
         <CoursePageSkeleton />
       ) : (
         <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden h-full">
-        {/* CARDS */}
-        {activeTab === "courses" ? (
+          {/* STATS CARDS */}
           <StatsGrid>
             <StatsCard title="Total Courses" value={courseStatsRaw?.total_courses ?? courseStatsRaw?.total ?? totalCoursesCount} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All courses available on the platform" />
             <StatsCard title="Active Courses" value={courseStatsRaw?.active_courses ?? courseStatsRaw?.active ?? coursesList.filter((c: Course) => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
             <StatsCard title="Draft Courses" value={courseStatsRaw?.draft_courses ?? courseStatsRaw?.draft ?? coursesList.filter((c: Course) => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
           </StatsGrid>
 
-        {/* DATA TABLE */}
-        <div className="flex-grow min-h-0">
-          <DataTable<Course | Domain>
-            data={visibleData}
-            columns={activeTab === "courses" ? buildCourseColumns() : buildDomainColumns()}
-            loading={isScreenLoading}
-            rowKey={(item) => String(item.id)}
-            search={searchConfig}
-            filters={filterConfig}
-            actions={(item) => (
-              <div className="flex justify-center">
-                <ActionMenu 
-                  onView={() => {
-                    if (activeTab === "courses") {
-                      router.push(`/admin/courses/view?id=${item.id}`);
-                    } else {
-                      setViewingDomain(item as Domain);
-                    }
-                  }}
-                  onEdit={() => {
-                    if (activeTab === "courses") {
-                      router.push(`/admin/courses/edit/${item.id}`);
-                    } else {
-                      setDomainModal({ open: true, mode: "edit", domain: item as Domain });
-                    }
-                  }}
-                  onDelete={() => setDeleteDialog({ open: true, item, type: activeTab === "courses" ? "course" : "domain" })}
-                />
-              </div>
-            )}
-            bodyHeight="h-full"
-            rowsPerPage={rowsPerPage}
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-            onRowsPerPageChange={(rows) => {
-              setRowsPerPage(rows);
-              setPage(1);
-            }}
-            paginationInfo={paginationInfo}
-            showPagination={true}
-            emptyStateMessage={getEmptyStateMessage()}
-          />
+          {/* DATA TABLE */}
+          <div className="flex-grow min-h-0">
+            <DataTable<Course>
+              data={coursesList}
+              columns={buildCourseColumns()}
+              loading={isLoadingCourses || isFetchingCourses || search !== debouncedSearch}
+              rowKey={(item) => String(item.id)}
+              search={searchConfig}
+              filters={filterConfig}
+              actions={(item) => (
+                <div className="flex justify-center">
+                  <ActionMenu 
+                    onView={() => router.push(`/admin/courses/view?id=${item.id}`)}
+                    onEdit={() => router.push(`/admin/courses/edit/${item.id}`)}
+                    onDelete={() => setDeleteDialog({ open: true, item })}
+                  />
+                </div>
+              )}
+              bodyHeight="h-full"
+              rowsPerPage={rowsPerPage}
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+              onRowsPerPageChange={(rows) => {
+                setRowsPerPage(rows);
+                setPage(1);
+              }}
+              paginationInfo={paginationInfo}
+              showPagination={true}
+              emptyStateMessage={getEmptyStateMessage()}
+            />
+          </div>
         </div>
-      </div>
       )}
-
-      <CreateDomainModal 
-        isOpen={domainModal.open} 
-        onClose={() => setDomainModal({ open: false, mode: "add", domain: null })} 
-        onSubmit={() => {}} 
-        mode={domainModal.mode}
-        domain={domainModal.domain}
-      />
       
       <CourseDeleteDialog
         open={deleteDialog.open}
         item={deleteDialog.item}
-        type={deleteDialog.type}
-        onClose={() => setDeleteDialog({ open: false, item: null, type: "course" })}
+        onClose={() => setDeleteDialog({ open: false, item: null })}
         onConfirm={handleDelete}
         loading={deleteCourseMutation.isPending}
       />
-
     </ListingScreenTemplate>
   );
 }

@@ -3,12 +3,10 @@
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Course } from "./columns";
-import { Domain } from "@/types/domain";
 
 interface CourseDeleteDialogProps {
   open: boolean;
-  item: Course | Domain | null;
-  type: "course" | "domain";
+  item: Course | null;
   onClose: () => void;
   onConfirm: () => void;
   loading?: boolean;
@@ -17,7 +15,6 @@ interface CourseDeleteDialogProps {
 export default function CourseDeleteDialog({
   open,
   item,
-  type,
   onClose,
   onConfirm,
   loading = false,
@@ -65,3 +62,4 @@ export default function CourseDeleteDialog({
     </Dialog>
   );
 }
+

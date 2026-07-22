@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Domain, DomainStats } from "@/types/domain";
 import { getAuthHeaders, handleResponse } from "@/lib/api-client";
 
@@ -134,8 +134,6 @@ export async function createDomain(data: Record<string, any>) {
  * Edit domain by ID (API #3)
  */
 export async function updateDomain(id: string | number, data: Record<string, any>) {
-  // If only course_ids and assignment_ids are sent, payload is tailored.
-  // Otherwise we send all provided fields.
   const payload: Record<string, any> = {};
   
   if (data.course_ids !== undefined) payload.course_ids = data.course_ids;
@@ -224,7 +222,8 @@ export function useDomains(
     queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
-    ...options,
+    enabled: options?.enabled,
   });
 }
+
 

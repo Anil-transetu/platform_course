@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { getAuthHeaders, handleResponse } from "@/lib/api-client";
+import { useAuthStore } from "@/store/useAuthStore";
 
+const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
+const BASE_URL = `${API_HOST}/api/v1/courses`;
 
 export interface Course {
   id: number;
@@ -19,7 +21,56 @@ export interface CourseStats {
   total_duration_minutes: number;
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(^| )token=([^;]+)/);
+    if (match) {
+      headers["Authorization"] = `Bearer ${match[2]}`;
+    }
+  }
+  return headers;
+}
 
+export function normalizeId(id: string | number | undefined): string | undefined {
+  return id !== undefined ? String(id) : undefined;
+}
+
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    let messageStr = "API request failed";
+    if (err.errors) {
+      if (Array.isArray(err.errors)) {
+        messageStr = err.errors.map((e: any) => typeof e === 'string' ? e : JSON.stringify(e)).join(", ");
+      } else if (typeof err.errors === "object") {
+        messageStr = Object.values(err.errors).flat().join(", ");
+      } else {
+        messageStr = String(err.errors);
+      }
+    } else if (Array.isArray(err.message)) {
+      messageStr = err.message.join(", ");
+    } else if (err.message) {
+      messageStr = err.message;
+    } else if (err.detail) {
+      messageStr = err.detail;
+    }
+
+    const isTokenExpired =
+      messageStr.toLowerCase().includes("token expired") ||
+      response.status === 401;
+
+    if (isTokenExpired && typeof document !== "undefined") {
+      document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "mock_auth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      window.location.href = "/login";
+    }
+    throw new Error(messageStr);
+  }
+  return response.json();
+}
 
 export function mapCourse(d: Record<string, any>): Course {
   const rawDate =
@@ -1154,3 +1205,4 @@ export function useCourseTopicDetail(courseId: string | number | undefined, topi
     enabled: (options?.enabled ?? true) && isValidId,
   });
 }
+

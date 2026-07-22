@@ -342,544 +342,347 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
       return;
     }
 
-    // Session validation before attempting API save
-    let tokenExists = false;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (typeof document !== "undefined") {
-      const match = document.cookie.match(/(^| )token=([^;]+)/);
-      if (match && match[2]) {
-        headers["Authorization"] = `Bearer ${match[2]}`;
-        tokenExists = true;
-      }
-    }
+    setPendingNavigation({
+      type,
+      targetUrl: target,
+      activeModuleId: activeStates?.activeModuleId !== undefined ? activeStates.activeModuleId : useCourseStore.getState().activeModuleId,
+      activeLessonId: activeStates?.activeLessonId !== undefined ? activeStates.activeLessonId : useCourseStore.getState().activeLessonId,
+      activeTopicId: activeStates?.activeTopicId !== undefined ? activeStates.activeTopicId : useCourseStore.getState().activeTopicId,
+      activeQuizId: activeStates?.activeQuizId !== undefined ? activeStates.activeQuizId : useCourseStore.getState().activeQuizId,
+      activeAssignmentId: activeStates?.activeAssignmentId !== undefined ? activeStates.activeAssignmentId : useCourseStore.getState().activeAssignmentId,
+    });
+  };
 
-    if (!tokenExists) {
-      if (!isSilent) {
-        toast.error("Your session has expired. Redirecting to login...");
-        if (typeof window !== "undefined") {
-          setTimeout(() => {
-            window.location.href = "/login";
-          }, 1500);
+  const handleDirtyGuardSave = async () => {
+    try {
+      setPendingNavigationKind("save");
+      const success = await handleSave("draft");
+      if (!success) return;
+
+      const currentPending = useCourseStore.getState().pendingNavigation;
+      if (currentPending?.action) {
+        await currentPending.action();
+      } else if (currentPending?.targetUrl) {
+        const activeStates: Record<string, any> = {};
+        if (currentPending.activeModuleId !== undefined) activeStates.activeModuleId = currentPending.activeModuleId;
+        if (currentPending.activeLessonId !== undefined) activeStates.activeLessonId = currentPending.activeLessonId;
+        if (currentPending.activeTopicId !== undefined) activeStates.activeTopicId = currentPending.activeTopicId;
+        if (currentPending.activeQuizId !== undefined) activeStates.activeQuizId = currentPending.activeQuizId;
+        if (currentPending.activeAssignmentId !== undefined) activeStates.activeAssignmentId = currentPending.activeAssignmentId;
+        
+        if (Object.keys(activeStates).length > 0) {
+          useCourseStore.setState(activeStates);
         }
+        router.push(currentPending.targetUrl);
       }
-      isSavingRef.current = false;
-      if (isComponentMountedRef.current) {
-        setIsSaving(false);
-      }
-      return;
+    } finally {
+      setPendingNavigation(null);
+      setPendingNavigationKind(null);
+    }
+  };
+
+  const handleDirtyGuardDiscard = () => {
+    const currentPending = useCourseStore.getState().pendingNavigation;
+    const currentCourse = useCourseStore.getState().course;
+    const resetCourseState = JSON.parse(JSON.stringify(cleanCourse || currentCourse));
+    
+    const activeStates: Record<string, any> = {
+      course: resetCourseState,
+      cleanCourse: resetCourseState,
+      deletedModules: [],
+      deletedLessons: [],
+      deletedTopics: [],
+    };
+    
+    if (currentPending) {
+      if (currentPending.activeModuleId !== undefined) activeStates.activeModuleId = currentPending.activeModuleId;
+      if (currentPending.activeLessonId !== undefined) activeStates.activeLessonId = currentPending.activeLessonId;
+      if (currentPending.activeTopicId !== undefined) activeStates.activeTopicId = currentPending.activeTopicId;
+      if (currentPending.activeQuizId !== undefined) activeStates.activeQuizId = currentPending.activeQuizId;
+      if (currentPending.activeAssignmentId !== undefined) activeStates.activeAssignmentId = currentPending.activeAssignmentId;
+    }
+    
+    useCourseStore.setState(activeStates);
+    useCourseStore.setState({
+      lastSavedCourseJson: JSON.stringify(useCourseStore.getState().course)
+    });
+    
+    if (currentPending?.action) {
+      currentPending.action();
+    } else if (currentPending?.targetUrl) {
+      router.push(currentPending.targetUrl);
+    }
+    setPendingNavigation(null);
+    setPendingNavigationKind(null);
+  };
+
+  const handleDirtyGuardCancel = () => {
+    setPendingNavigation(null);
+    setPendingNavigationKind(null);
+  };
+
+  const handleSave = async (status: "draft" | "published"): Promise<boolean> => {
+    if (isSavingRef.current || isSaving) return false;
+
+    const currentCourse = useCourseStore.getState().course;
+
+    // Publish/Draft validation
+    if (!currentCourse.title || currentCourse.title.trim().length < 3) {
+      toast.error("Course title must be at least 3 characters long.");
+      return false;
     }
 
-    let toastId: string | number | undefined = undefined;
-    if (!isSilent) {
-      toastId = toast.loading(
-        status === "published" 
-          ? "Publishing course structure hierarchically..." 
-          : "Saving course structure hierarchically..."
-      );
-    }
+    isSavingRef.current = true;
+    if (isComponentMountedRef.current) setIsSaving(true);
 
     try {
-      let courseId = currentCourse.id;
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (typeof document !== "undefined") {
-        const match = document.cookie.match(/(^| )token=([^;]+)/);
-        if (match) {
-          headers["Authorization"] = `Bearer ${match[2]}`;
-        }
-      }
-
-      const secureFetch = async (url: string, options: RequestInit = {}) => {
-        const res = await fetch(url, {
-          ...options,
-          headers: {
-            ...headers,
-            ...options.headers,
-          },
-        });
-        if (!res.ok) {
-          let messageStr = "";
-          const errData = await res.json().catch(() => null);
-          
-          if (errData) {
-            if (errData.errors) {
-              if (Array.isArray(errData.errors)) {
-                messageStr = errData.errors.map((e: unknown) => typeof e === 'string' ? e : (e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : JSON.stringify(e))).join(", ");
-              } else if (typeof errData.errors === "object") {
-                messageStr = Object.values(errData.errors).flat().map((e: unknown) => typeof e === 'string' ? e : (e && typeof e === 'object' && 'message' in e ? String((e as { message?: string }).message) : JSON.stringify(e))).join(", ");
-              } else {
-                messageStr = String(errData.errors);
-              }
-            } else if (Array.isArray(errData.message)) {
-              messageStr = errData.message.join(", ");
-            } else if (errData.message) {
-              messageStr = errData.message;
-            } else if (errData.error) {
-              messageStr = errData.error;
-            } else if (errData.detail) {
-              messageStr = errData.detail;
-            }
-          }
-
-          if (!messageStr) {
-            if (res.status === 400) messageStr = "Validation or bad request error.";
-            else if (res.status === 401) messageStr = "Token expired";
-            else if (res.status === 403) messageStr = "Access denied. You do not have permission to perform this action.";
-            else if (res.status === 404) messageStr = "The requested resource was not found on the server.";
-            else if (res.status === 500) messageStr = "Internal Server Error. Please contact support or try again later.";
-            else messageStr = `API request failed with status ${res.status}`;
-          }
-
-          if (res.status === 401 || messageStr.toLowerCase().includes("token expired")) {
-            throw new Error("Token expired");
-          }
-          throw new Error(messageStr);
-        }
-        return res;
-      };
-
-      // Process deleted items
-      const { deletedModules, deletedLessons, deletedTopics, clearDeletedItems } = useCourseStore.getState();
-      
-      for (const mId of deletedModules) {
-        if (!mId.startsWith('temp-')) {
-          await secureFetch(`/api/v1/modules/${mId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete module', e));
-        }
-      }
-      for (const lId of deletedLessons) {
-        if (!lId.startsWith('temp-')) {
-          await secureFetch(`/api/v1/lessons/${lId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI lesson', e));
-        }
-      }
-      for (const tId of deletedTopics) {
-        if (!tId.startsWith('temp-')) {
-          await secureFetch(`/api/v1/topics/${tId}`, { method: 'DELETE' }).catch(e => console.warn('Failed to delete UI topic', e));
-        }
-      }
-      
-      clearDeletedItems();
-
-      // Fetch all quizzes and assignments to build title-to-ID lookup maps
-      let quizzesList: QuizLookupItem[] | null = quizzesCacheRef.current;
-      if (!quizzesList) {
-        try {
-          const quizzesRes = await secureFetch("/api/v1/quizzes");
-          const quizzesJson = await quizzesRes.json();
-          quizzesList = quizzesJson.data || quizzesJson || [];
-          quizzesCacheRef.current = quizzesList;
-        } catch (err) {
-          const error = err as Error;
-          if (error.message === "Token expired") throw error;
-          console.warn("Failed to fetch quizzes list, fallback to empty", error);
-          quizzesList = [];
-        }
-      }
-
-      const quizTitleToIdMap = new Map<string, number>();
-      if (Array.isArray(quizzesList)) {
-        for (const q of quizzesList) {
-          const title = q.quiz_title || q.title || "";
-          if (title && q.id) {
-            quizTitleToIdMap.set(title.trim().toLowerCase(), Number(q.id));
-          }
-        }
-      }
-
-      let assignmentsList: AssignmentLookupItem[] | null = assignmentsCacheRef.current;
-      if (!assignmentsList) {
-        try {
-          const assignmentsRes = await secureFetch("/api/v1/assignments");
-          const assignmentsJson = await assignmentsRes.json();
-          assignmentsList = assignmentsJson.data || assignmentsJson || [];
-          assignmentsCacheRef.current = assignmentsList;
-        } catch (err) {
-          const error = err as Error;
-          if (error.message === "Token expired") throw error;
-          console.warn("Failed to fetch assignments list, fallback to empty", error);
-          assignmentsList = [];
-        }
-      }
-
-      const assignmentTitleToIdMap = new Map<string, number>();
-      if (Array.isArray(assignmentsList)) {
-        for (const a of assignmentsList) {
-          const title = a.assignment_name || a.title || "";
-          const aId = a.assignment_id || a.id;
-          if (title && aId) {
-            assignmentTitleToIdMap.set(title.trim().toLowerCase(), Number(aId));
-          }
-        }
-      }
-
-      const getQuizId = (quiz: { id: string | number; title?: string }) => {
-        if (!isNaN(Number(quiz.id))) return Number(quiz.id);
-        const titleKey = (quiz.title || "").trim().toLowerCase();
-        return quizTitleToIdMap.get(titleKey) || null;
-      };
-
-      const getAssignmentId = (assignment: { id: string | number; title?: string }) => {
-        if (!isNaN(Number(assignment.id))) return Number(assignment.id);
-        const titleKey = (assignment.title || "").trim().toLowerCase();
-        return assignmentTitleToIdMap.get(titleKey) || null;
-      };
-
-      const courseQuizzes = (currentCourse.quizzes || [])
-        .map(getQuizId)
-        .filter((id): id is number => id !== null);
-      const courseAssignments = (currentCourse.assignments || [])
-        .map(getAssignmentId)
-        .filter((id): id is number => id !== null);
-
-      let isNewCourse = !courseId || String(courseId).startsWith("temp-");
-
       const backendStatus = status === "published" ? "active" : "draft";
 
-      const updatedCourse = JSON.parse(JSON.stringify(currentCourse));
-      let newActiveModuleId = useCourseStore.getState().activeModuleId;
-      let newActiveLessonId = useCourseStore.getState().activeLessonId;
-      let newActiveTopicId = useCourseStore.getState().activeTopicId;
-
-
-
-      // 1. Create or Update Course
-      if (!courseId || String(courseId).startsWith("temp-")) {
-        const res = await secureFetch("/api/v1/courses", {
-          method: "POST",
-          body: JSON.stringify(cleanPayload({
-            name: currentCourse.title,
-            description: currentCourse.description || "Platform Course",
-            thumbnail_url: currentCourse.thumbnail_url || undefined,
-            tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
-            quizzes: courseQuizzes,
-            assignments: courseAssignments,
-          })),
-        });
-        const json = await res.json();
-        const courseData = json.data || json;
-        courseId = courseData?.id;
-        const placeholderAssignmentId = courseData?.assignments?.[0]?.id || courseData?.assignments?.[0]?.assignment_id;
-
-        updatedCourse.id = courseId;
-        isNewCourse = false;
-
-        // Immediately update store ID to prevent concurrent triggers from seeing a temp ID
-        useCourseStore.setState((state) => ({
-          course: {
-            ...state.course,
-            id: courseId,
-          }
-        }));
-        // Reset baseline reference to prevent exit cleanup autosave duplicates
-        lastSavedCourseJsonRef.current = JSON.stringify(useCourseStore.getState().course);
-        lastSavedPayloadsRef.current.set(`course-${courseId}`, payloadStr);
-
-        // Link the selected assignment if there is one
-        if (courseId && courseAssignments.length > 0) {
-          for (const aId of courseAssignments) {
-            await secureFetch(`/api/v1/assignments/${aId}`, {
-              method: "PUT",
-              body: JSON.stringify({ course_id: Number(courseId) }),
-            }).catch(e => console.warn(`Failed to link assignment ${aId} to course`, e));
-          }
-          
-          // Delete the placeholder assignment
-          if (placeholderAssignmentId) {
-            await secureFetch(`/api/v1/assignments/${placeholderAssignmentId}`, {
-              method: "DELETE",
-            }).catch(e => console.warn(`Failed to delete placeholder assignment ${placeholderAssignmentId}`, e));
-          }
-        } else if (courseId && placeholderAssignmentId) {
-          // If no selected assignment, update store to keep placeholder assignment as final assignment
-          updatedCourse.assignments = [{
-            id: String(placeholderAssignmentId),
-            title: placeholderAssignment.title
-          }];
+      if (currentCourse.id) {
+        // Edit mode: Calculate fields to update (metadata & modules)
+        const updatePayload: Record<string, any> = {};
+        if (currentCourse.title !== cleanCourse?.title) updatePayload.name = currentCourse.title;
+        if (currentCourse.description !== cleanCourse?.description) updatePayload.description = currentCourse.description;
+        if (currentCourse.thumbnail_url !== cleanCourse?.thumbnail_url) updatePayload.thumbnail_url = currentCourse.thumbnail_url;
+        if (currentCourse.final_assessment_id !== cleanCourse?.final_assessment_id) {
+          updatePayload.final_assessment_id = currentCourse.final_assessment_id ? Number(currentCourse.final_assessment_id) : null;
         }
 
-        // Update search parameter in window URL using Next.js router
-        if (courseId) {
-          const url = new URL(window.location.href);
-          if (url.searchParams.get("id") !== String(courseId)) {
-            url.searchParams.set("id", String(courseId));
-            router.replace(url.pathname + url.search, { scroll: false });
+        const initialStatusMapped = (cleanCourse?.status === "active" || cleanCourse?.status === "published") ? "active" : "draft";
+        if (backendStatus !== initialStatusMapped) {
+          updatePayload.status = backendStatus;
+        }
+
+        const deletedModules = useCourseStore.getState().deletedModules;
+        let hasNewCreatedEntities = false;
+
+        // Process Modules, Lessons, Topics: Create any newly added temp- items first
+        const modulesList = [...(currentCourse.modules || [])];
+        for (let mIndex = 0; mIndex < modulesList.length; mIndex++) {
+          const m = modulesList[mIndex];
+          const isTempModule = String(m.id).startsWith("temp-");
+          let realModuleId = String(m.id);
+
+          if (isTempModule) {
+            const createRes = await createModuleMutation.mutateAsync({
+              courseId: currentCourse.id,
+              data: {
+                name: m.title || (m as any).name || `Module ${mIndex + 1}`,
+                description: m.description || "",
+                order_num: mIndex + 1,
+                image_url: m.image_url || "",
+                video_url: m.video_url || "",
+                pdf_url: m.pdf_url || "",
+                url: m.url || "",
+              }
+            });
+            const createdModule = createRes.data || createRes;
+            realModuleId = String(createdModule.id);
+            useCourseStore.getState().mapTemporaryModuleId(String(m.id), realModuleId);
+            hasNewCreatedEntities = true;
+          }
+
+          // Fetch current state for lessons under this module
+          const currentStoreState = useCourseStore.getState().course;
+          const currentModuleState = currentStoreState.modules.find(mod => String(mod.id) === realModuleId) || m;
+          const lessonsList = [...(currentModuleState.lessons || [])];
+
+          for (let lIndex = 0; lIndex < lessonsList.length; lIndex++) {
+            const l = lessonsList[lIndex];
+            const isTempLesson = String(l.id).startsWith("temp-");
+            let realLessonId = String(l.id);
+
+            if (isTempLesson) {
+              const createRes = await createLessonMutation.mutateAsync({
+                moduleId: realModuleId,
+                courseId: currentCourse.id,
+                data: {
+                  name: l.title || (l as any).name || `Lesson ${lIndex + 1}`,
+                  type: (l as any).type || "text",
+                  content_text: l.content || l.content_text || "",
+                  text: l.content || l.text || "",
+                  order_num: lIndex + 1,
+                  image_url: l.image_url || "",
+                  video_url: l.video_url || "",
+                  pdf_url: l.pdf_url || "",
+                  url: l.url || "",
+                }
+              });
+              const createdLesson = createRes.data || createRes;
+              realLessonId = String(createdLesson.id);
+
+              useCourseStore.setState((state) => {
+                const updatedModules = state.course.modules.map(mod => {
+                  if (String(mod.id) === realModuleId) {
+                    const updatedLessons = mod.lessons.map(les => String(les.id) === String(l.id) ? { ...les, id: realLessonId } : les);
+                    let updatedOrder = mod.order;
+                    if (updatedOrder) {
+                      updatedOrder = updatedOrder.map(o => String(o.id) === String(l.id) ? { ...o, id: realLessonId } : o);
+                    }
+                    return { ...mod, lessons: updatedLessons, order: updatedOrder };
+                  }
+                  return mod;
+                });
+                const updatedActiveLessonId = String(state.activeLessonId) === String(l.id) ? realLessonId : state.activeLessonId;
+                const updatedCourse = { ...state.course, modules: updatedModules };
+                return {
+                  course: updatedCourse,
+                  cleanCourse: JSON.parse(JSON.stringify(updatedCourse)),
+                  lastSavedCourseJson: JSON.stringify(updatedCourse),
+                  activeLessonId: updatedActiveLessonId,
+                };
+              });
+              hasNewCreatedEntities = true;
+            }
+
+            // Fetch current state for topics under this lesson
+            const latestModuleState = useCourseStore.getState().course.modules.find(mod => String(mod.id) === realModuleId);
+            const currentLessonState = (latestModuleState?.lessons || []).find(les => String(les.id) === realLessonId) || l;
+            const topicsList = [...(currentLessonState.topics || [])];
+
+            for (let tIndex = 0; tIndex < topicsList.length; tIndex++) {
+              const t = topicsList[tIndex];
+              const isTempTopic = String(t.id).startsWith("temp-");
+
+              if (isTempTopic) {
+                const createRes = await createTopicMutation.mutateAsync({
+                  lessonId: realLessonId,
+                  courseId: currentCourse.id,
+                  moduleId: realModuleId,
+                  data: {
+                    name: t.title || (t as any).name || `Topic ${tIndex + 1}`,
+                    content_text: t.content || t.content_text || "",
+                    text: t.content || t.text || "",
+                    order_num: tIndex + 1,
+                    image_url: t.image_url || "",
+                    video_url: t.video_url || "",
+                    pdf_url: t.pdf_url || "",
+                    url: t.url || "",
+                  }
+                });
+                const createdTopic = createRes.data || createRes;
+                const realTopicId = String(createdTopic.id);
+
+                useCourseStore.setState((state) => {
+                  const updatedModules = state.course.modules.map(mod => {
+                    if (String(mod.id) === realModuleId) {
+                      const updatedLessons = mod.lessons.map(les => {
+                        if (String(les.id) === realLessonId) {
+                          const updatedTopics = les.topics.map(top => String(top.id) === String(t.id) ? { ...top, id: realTopicId } : top);
+                          let updatedOrder = les.order;
+                          if (updatedOrder) {
+                            updatedOrder = updatedOrder.map(o => String(o.id) === String(t.id) ? { ...o, id: realTopicId } : o);
+                          }
+                          return { ...les, topics: updatedTopics, order: updatedOrder };
+                        }
+                        return les;
+                      });
+                      return { ...mod, lessons: updatedLessons };
+                    }
+                    return mod;
+                  });
+                  const updatedActiveTopicId = String(state.activeTopicId) === String(t.id) ? realTopicId : state.activeTopicId;
+                  const updatedCourse = { ...state.course, modules: updatedModules };
+                  return {
+                    course: updatedCourse,
+                    cleanCourse: JSON.parse(JSON.stringify(updatedCourse)),
+                    lastSavedCourseJson: JSON.stringify(updatedCourse),
+                    activeTopicId: updatedActiveTopicId,
+                  };
+                });
+                hasNewCreatedEntities = true;
+              }
+            }
           }
         }
 
-        if (backendStatus === "active") {
-          await secureFetch(`/api/v1/courses/${courseId}`, {
-            method: "PUT",
-            body: JSON.stringify(cleanPayload({
-              name: currentCourse.title,
-              description: currentCourse.description || "Platform Course",
-              thumbnail_url: currentCourse.thumbnail_url || undefined,
-              status: "active",
-              tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
-              quizzes: courseQuizzes,
-              assignments: courseAssignments,
-            })),
+        const latestCourseState = useCourseStore.getState().course;
+        const currentCleanCourse = useCourseStore.getState().cleanCourse;
+        const changedModules = getChangedModules(latestCourseState, currentCleanCourse);
+        const changedLessons = getChangedLessons(latestCourseState, currentCleanCourse);
+        const changedTopics = getChangedTopics(latestCourseState, currentCleanCourse);
+        if (Object.keys(updatePayload).length > 0) {
+          await updateMutation.mutateAsync({ id: currentCourse.id, data: updatePayload });
+        }
+
+        // Save Draft/Publish must persist the editor currently being worked on.
+        // Module updates use their own PUT endpoint; course PUT does not replace it.
+        for (const changedModule of changedModules) {
+          const response = await updateModuleMutation.mutateAsync({
+            id: changedModule.moduleId,
+            courseId: currentCourse.id,
+            data: changedModule.payload,
           });
-          lastSavedPayloadsRef.current.set(`course-${courseId}`, activePayloadStr);
+          const savedModule = { ...changedModule.payload, ...(response.data || response) };
+          useCourseStore.getState().hydrateModuleFromDetail(String(changedModule.moduleId), savedModule);
+        }
+
+        for (const changedLesson of changedLessons) {
+          const response = await updateLessonMutation.mutateAsync({
+            id: changedLesson.lessonId,
+            courseId: currentCourse.id,
+            data: changedLesson.payload,
+          });
+          const savedLesson = { ...changedLesson.payload, ...(response.data || response) };
+          useCourseStore.getState().hydrateLessonFromDetail(
+            String(changedLesson.moduleId),
+            String(changedLesson.lessonId),
+            savedLesson,
+          );
+        }
+
+        for (const changedTopic of changedTopics) {
+          const response = await updateTopicMutation.mutateAsync({
+            id: changedTopic.topicId,
+            courseId: currentCourse.id,
+            data: changedTopic.payload,
+          });
+          const savedTopic = { ...changedTopic.payload, ...(response.data || response) };
+          useCourseStore.getState().hydrateTopicFromDetail(
+            String(changedTopic.moduleId),
+            String(changedTopic.lessonId),
+            String(changedTopic.topicId),
+            savedTopic,
+          );
+        }
+
+        if (Object.keys(updatePayload).length > 0 || changedModules.length > 0 || changedLessons.length > 0 || changedTopics.length > 0 || hasNewCreatedEntities) {
+          useCourseStore.getState().clearDeletedItems();
+          toast.success(status === "published" ? "Course published!" : "Draft saved.");
+        } else {
+          toast.info("No changes to save.");
         }
       } else {
-        await secureFetch(`/api/v1/courses/${courseId}`, {
-          method: "PUT",
-          body: JSON.stringify(cleanPayload({
-            name: currentCourse.title,
-            description: currentCourse.description || "Platform Course",
-            thumbnail_url: currentCourse.thumbnail_url || undefined,
-            status: backendStatus,
-            tags: currentCourse.tags ? currentCourse.tags.split(",").map(t => t.trim()).filter(Boolean) : undefined,
-            quizzes: courseQuizzes,
-            assignments: courseAssignments,
-          })),
-        });
+        // Create mode
+        const rawFaId = (currentCourse as any).final_assessment_id || (currentCourse as any).finalAssessment?.id || (currentCourse as any).final_assessment?.id;
+        const faIdNum = rawFaId ? Number(rawFaId) : null;
+
+        const payload: Record<string, any> = {
+          name: currentCourse.title,
+          description: currentCourse.description || "",
+          thumbnail_url: currentCourse.thumbnail_url || "",
+          status: backendStatus,
+          modules: []
+        };
+        if (faIdNum !== null && !isNaN(faIdNum)) {
+          payload.final_assessment_id = faIdNum;
+        }
+        if (currentCourse.tags && currentCourse.tags.length > 0) {
+          payload.tags = currentCourse.tags;
+        }
+        if (currentCourse.domain) {
+          payload.domain = currentCourse.domain;
+        }
+        const response = await createMutation.mutateAsync(payload);
+        const newId = response.data?.id || response.id;
+        toast.success("Course created successfully!");
+        router.push(`/admin/courses/edit/${newId}`);
       }
 
-      // 2. Modules Loop
-      for (let mIdx = 0; mIdx < currentCourse.modules.length; mIdx++) {
-        const m = currentCourse.modules[mIdx];
-        const isNewModule = String(m.id).startsWith("temp-");
-        let moduleId = m.id;
-
-        const mQuizzes = (m.quizzes || [])
-          .map(getQuizId)
-          .filter((id): id is number => id !== null);
-        const mAssignments = (m.assignments || [])
-          .map(getAssignmentId)
-          .filter((id): id is number => id !== null);
-
-        if (isNewModule) {
-          const payload = cleanPayload({
-            name: m.title || `Module ${mIdx + 1}`,
-            description: m.description || "",
-            order_num: mIdx + 1,
-            quizzes: mQuizzes,
-            assignments: mAssignments,
-          });
-          const payloadStr = JSON.stringify(payload);
-          
-
-          
-          const res = await secureFetch(`/api/v1/courses/${courseId}/modules`, {
-            method: "POST",
-            body: payloadStr,
-          });
-          const json = await res.json();
-          moduleId = String(json.data?.id || json.id);
-          
-          const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
-          if (targetModule) {
-            targetModule.id = moduleId;
-          }
-          
-          lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
-          if (m.id === newActiveModuleId) {
-            newActiveModuleId = moduleId;
-          }
-        } else {
-          const payload = cleanPayload({
-            name: m.title || `Module ${mIdx + 1}`,
-            description: m.description || "",
-            order_num: mIdx + 1,
-            quizzes: mQuizzes,
-            assignments: mAssignments,
-          });
-          const payloadStr = JSON.stringify(payload);
-          
-          if (lastSavedPayloadsRef.current.get(`module-${moduleId}`) !== payloadStr) {
-
-            
-            await secureFetch(`/api/v1/modules/${moduleId}`, {
-              method: "PUT",
-              body: payloadStr,
-            });
-            lastSavedPayloadsRef.current.set(`module-${moduleId}`, payloadStr);
-          }
-        }
-               // 3. Lessons (UI Lessons) Loop
-        for (let lIdx = 0; lIdx < m.lessons.length; lIdx++) {
-          const l = m.lessons[lIdx];
-          const isNewLesson = String(l.id).startsWith("temp-");
-          let lessonId = l.id;
-
-          const order = l.order || [];
-          const quizOrderMap = new Map(order.filter(o => o.type === 'quiz').map((o, idx) => [o.id, idx]));
-          const sortedQuizzes = [...(l.quizzes || [])].sort((a, b) => {
-            const idxA = quizOrderMap.has(a.id) ? quizOrderMap.get(a.id)! : 999;
-            const idxB = quizOrderMap.has(b.id) ? quizOrderMap.get(b.id)! : 999;
-            return idxA - idxB;
-          });
-          const lQuizzes = sortedQuizzes.map(getQuizId).filter((id): id is number => id !== null);
-
-          const assignmentOrderMap = new Map(order.filter(o => o.type === 'assignment').map((o, idx) => [o.id, idx]));
-          const sortedAssignments = [...(l.assignments || [])].sort((a, b) => {
-            const idxA = assignmentOrderMap.has(a.id) ? assignmentOrderMap.get(a.id)! : 999;
-            const idxB = assignmentOrderMap.has(b.id) ? assignmentOrderMap.get(b.id)! : 999;
-            return idxA - idxB;
-          });
-          const lAssignments = sortedAssignments.map(getAssignmentId).filter((id): id is number => id !== null);
-
-          const topicOrderMap = new Map(order.filter(o => o.type === 'topic').map((o, idx) => [o.id, idx]));
-          const sortedTopics = [...(l.topics || [])].sort((a, b) => {
-            const idxA = topicOrderMap.has(a.id) ? topicOrderMap.get(a.id)! : 999;
-            const idxB = topicOrderMap.has(b.id) ? topicOrderMap.get(b.id)! : 999;
-            return idxA - idxB;
-          });
-
-          if (isNewLesson) {
-            const payload = cleanPayload({
-              module_id: Number(moduleId),
-              name: l.title || `Lesson ${lIdx + 1}`,
-              type: "text",
-              content_text: l.content || "",
-              text: l.content || "",
-              order_num: lIdx + 1,
-              quizzes: lQuizzes,
-              assignments: lAssignments,
-            });
-            const payloadStr = JSON.stringify(payload);
-            
-            const res = await secureFetch("/api/v1/lessons", {
-              method: "POST",
-              body: payloadStr,
-            });
-            const json = await res.json();
-            lessonId = String(json.data?.id || json.id);
-            
-            const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
-            if (targetModule) {
-              const targetLesson = targetModule.lessons.find((les: StoreLesson) => String(les.id) === String(l.id));
-              if (targetLesson) targetLesson.id = lessonId;
-              if (targetModule.order) {
-                targetModule.order = targetModule.order.map((o: { type: string; id: string | number }) => 
-                  o.id === l.id ? { ...o, id: lessonId } : o
-                );
-              }
-            }
-            
-            lastSavedPayloadsRef.current.set(`lesson-${lessonId}`, payloadStr);
-            if (l.id === newActiveLessonId) newActiveLessonId = lessonId;
-          } else {
-            const payload = cleanPayload({
-              name: l.title || `Lesson ${lIdx + 1}`,
-              type: "text",
-              content_text: l.content || "",
-              text: l.content || "",
-              order_num: lIdx + 1,
-              quizzes: lQuizzes,
-              assignments: lAssignments,
-            });
-            const payloadStr = JSON.stringify(payload);
-            
-            if (lastSavedPayloadsRef.current.get(`lesson-${lessonId}`) !== payloadStr) {
-              await secureFetch(`/api/v1/lessons/${lessonId}`, {
-                method: "PUT",
-                body: payloadStr,
-              });
-              lastSavedPayloadsRef.current.set(`lesson-${lessonId}`, payloadStr);
-            }
-          }
-
-          // 4. Topics (UI Topics) Loop
-          for (let tIdx = 0; tIdx < sortedTopics.length; tIdx++) {
-            const t = sortedTopics[tIdx];
-            const isNewTopic = String(t.id).startsWith("temp-");
-            let topicId = t.id;
-
-            const tQuizzes = (t.quizzes || []).map(getQuizId).filter((id): id is number => id !== null);
-            const tAssignments = (t.assignments || []).map(getAssignmentId).filter((id): id is number => id !== null);
-
-            if (isNewTopic) {
-              const payload = cleanPayload({
-                lesson_id: Number(lessonId),
-                name: t.title || `Topic ${tIdx + 1}`,
-                content_text: t.content || "",
-                text: t.content || "",
-                order_num: tIdx + 1,
-                quizzes: tQuizzes,
-                assignments: tAssignments,
-              });
-              const payloadStr = JSON.stringify(payload);
-              
-              const res = await secureFetch("/api/v1/topics", {
-                method: "POST",
-                body: payloadStr,
-              });
-              const json = await res.json();
-              topicId = String(json.data?.id || json.id);
-              
-              const targetModule = updatedCourse.modules.find((mod: StoreModule) => String(mod.id) === String(m.id));
-              if (targetModule) {
-                const targetLesson = targetModule.lessons.find((les: StoreLesson) => String(les.id) === String(l.id));
-                if (targetLesson) {
-                  const targetTopic = targetLesson.topics.find((top: StoreTopic) => String(top.id) === String(t.id));
-                  if (targetTopic) targetTopic.id = topicId;
-                  if (targetLesson.order) {
-                    targetLesson.order = targetLesson.order.map((o: { type: string; id: string | number }) => 
-                      o.id === t.id ? { ...o, id: topicId } : o
-                    );
-                  }
-                }
-              }
-              
-              lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
-              if (t.id === newActiveTopicId) newActiveTopicId = topicId;
-            } else {
-              const payload = cleanPayload({
-                name: t.title || `Topic ${tIdx + 1}`,
-                content_text: t.content || "",
-                text: t.content || "",
-                order_num: tIdx + 1,
-                quizzes: tQuizzes,
-                assignments: tAssignments,
-              });
-              const payloadStr = JSON.stringify(payload);
-              
-              if (lastSavedPayloadsRef.current.get(`topic-${topicId}`) !== payloadStr) {
-                await secureFetch(`/api/v1/topics/${topicId}`, {
-                  method: "PUT",
-                  body: payloadStr,
-                });
-                lastSavedPayloadsRef.current.set(`topic-${topicId}`, payloadStr);
-              }
-            }
-          }
-        }
-      }
-
-      // Update the Zustand store with final saved details and backend-generated IDs
-      useCourseStore.setState((state) => ({
-        course: {
-          ...state.course,
-          id: courseId,
-          modules: updatedCourse.modules,
-          assignments: updatedCourse.assignments || state.course.assignments,
-        },
-        activeModuleId: newActiveModuleId,
-        activeLessonId: newActiveLessonId,
-        activeTopicId: newActiveTopicId,
-      }));
-
-      // Reset baseline reference to prevent exit cleanup autosave duplicates
-      lastSavedCourseJsonRef.current = JSON.stringify(useCourseStore.getState().course);
-
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      queryClient.invalidateQueries({ queryKey: ["courseStats"] });
-      queryClient.invalidateQueries({ queryKey: ["course", courseId] });
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domain"] });
-      queryClient.invalidateQueries({ queryKey: ["domainStats"] });
-
-      if (!isSilent) {
-        toast.success(
-          status === "published" 
-            ? "Course published successfully!" 
-            : "Course saved successfully!",
-          { id: toastId }
-        );
+      setLastSavedCourseJson(JSON.stringify(useCourseStore.getState().course));
+      useCourseStore.getState().clearDeletedItems();
+      
+      if (status === "published") {
         router.push("/admin/courses");
       }
       return true;
