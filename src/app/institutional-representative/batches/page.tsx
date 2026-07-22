@@ -285,11 +285,11 @@ export default function BatchesListingPage() {
           ) : (
             <div className="flex-1 overflow-hidden min-h-0">
               <DataTable<any>
-                data={batches}
+                data={paginatedBatches}
                 columns={columns as any}
                 rowKey={(row) => row.id}
-                currentPage={page}
-                totalPages={totalPages}
+                currentPage={displayPage}
+                totalPages={displayTotalPages}
                 onPageChange={setPage}
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={(rows) => {

@@ -4,7 +4,6 @@ import React from 'react';
 import { X, FileText } from 'lucide-react';
 import { NodeSelection } from '@tiptap/pm/state';
 import { getDisplayMediaUrl, openPdf } from '@/lib/utils';
-import { getDisplayMediaUrl, openPdf } from '@/lib/utils';
 
 const PdfComponent = (props: any) => {
   return (
@@ -27,7 +26,6 @@ const PdfComponent = (props: any) => {
             }}
           >
             Download / View PDF
-          </button>
           </button>
         </div>
       </div>

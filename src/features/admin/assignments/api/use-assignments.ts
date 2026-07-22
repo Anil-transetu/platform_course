@@ -22,8 +22,6 @@ export function useAssignments(
   search?: string,
   statusFilter?: string,
   options?: { enabled?: boolean }
-  statusFilter?: string,
-  options?: { enabled?: boolean }
 ) {
   return useQuery<{ data: Assignment[]; total?: number }, Error>({
     queryKey: [...ASSIGNMENTS_QUERY_KEY, page, limit, search, statusFilter],
@@ -41,10 +39,8 @@ export function useAssignments(
  * Hook to fetch stats
  */
 export function useAssignmentStats(options?: { enabled?: boolean }) {
-export function useAssignmentStats(options?: { enabled?: boolean }) {
   return useQuery<AssignmentStats, Error>({
     queryKey: ASSIGNMENT_STATS_QUERY_KEY,
-    queryFn: ({ signal }) => fetchAssignmentStats(signal),
     queryFn: ({ signal }) => fetchAssignmentStats(signal),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

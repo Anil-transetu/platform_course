@@ -249,13 +249,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     setLastSavedCourseJson,
     pendingNavigation,
     setPendingNavigation,
-    activeAssignmentId,
-    isSidebarCollapsed,
-    setSidebarCollapsed,
-    lastSavedCourseJson,
-    setLastSavedCourseJson,
-    pendingNavigation,
-    setPendingNavigation,
   } = useCourseStore();
 
   const createMutation = useCreateCourse();
@@ -273,7 +266,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   const activeTopic = activeTopicId && activeLesson ? activeLesson.topics.find(t => String(t.id) === String(activeTopicId)) : undefined;
 
   let activeQuiz: StoreQuiz | undefined = undefined;
-  let activeQuiz: StoreQuiz | undefined = undefined;
   if (activeQuizId) {
     if (activeLesson) {
       activeQuiz = activeLesson.quizzes?.find(q => String(q.id) === String(activeQuizId));
@@ -284,7 +276,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
     }
   }
 
-  let activeAssignment: StoreAssignment | undefined = undefined;
   let activeAssignment: StoreAssignment | undefined = undefined;
   if (activeAssignmentId) {
     if (activeLesson) {
@@ -1125,26 +1116,6 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             ) : (
               <button type="button" onClick={() => handleBreadcrumbNavigate(builderBasePath)} className="text-slate-400 hover:text-blue-600 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-[140px] text-left" title="Course">Course</button>
             )}
-      <div className="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-100/80 shadow-[0_2px_12px_rgba(0,0,0,0.015)] shrink-0">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Sidebar Toggle — hidden on root config page */}
-          {!isRootLevel && (
-            <button
-              onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
-              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
-            >
-              {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-            </button>
-          )}
-
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
-            {isRootLevel ? (
-              <span className="text-slate-800">Course</span>
-            ) : (
-              <button type="button" onClick={() => handleBreadcrumbNavigate(builderBasePath)} className="text-slate-400 hover:text-blue-600 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-[140px] text-left" title="Course">Course</button>
-            )}
 
             {!isRootLevel && activeModuleId && (
               <>
@@ -1185,20 +1156,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
                 <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={activeQuiz?.title || "New Quiz"}>{activeQuiz?.title || "New Quiz"}</span>
               </>
             )}
-            {activeQuizId && (
-              <>
-                <ChevronRight size={12} className="text-slate-300" />
-                <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={activeQuiz?.title || "New Quiz"}>{activeQuiz?.title || "New Quiz"}</span>
-              </>
-            )}
 
-            {activeAssignmentId && (
-              <>
-                <ChevronRight size={12} className="text-slate-300" />
-                <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={activeAssignment?.title || "New Assignment"}>{activeAssignment?.title || "New Assignment"}</span>
-              </>
-            )}
-          </div>
             {activeAssignmentId && (
               <>
                 <ChevronRight size={12} className="text-slate-300" />
@@ -1211,11 +1169,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         {/* CENTRALIZED ACTIONS */}
         <div className="flex gap-3 shrink-0">
           <button
-        <div className="flex gap-3 shrink-0">
-          <button
             onClick={handleBack}
-            disabled={isSaving}
-            className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSaving}
             className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1283,55 +1237,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
       )}
 
       {/* BODY: SIDEBAR + CHILDREN */}
-      {pendingNavigation && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start gap-3">
-              <div className="rounded-full bg-amber-100 p-2 text-amber-600">
-                <AlertTriangle size={18} />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">You have unsaved changes.</h3>
-                <p className="mt-2 text-sm text-slate-600">Save your changes before continuing?</p>
-              </div>
-            </div>
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleDirtyGuardCancel}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-650 hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDirtyGuardDiscard}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-750 hover:bg-rose-100 transition-colors"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={handleDirtyGuardSave}
-                disabled={isSaving}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
-              >
-                {isSaving ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* BODY: SIDEBAR + CHILDREN */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar hidden on root Course Configuration page */}
-        {!isRootLevel && (
-          <CourseSidebar isCollapsed={isSidebarCollapsed} onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)} />
-        )}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
         {/* Sidebar hidden on root Course Configuration page */}
         {!isRootLevel && (
           <CourseSidebar isCollapsed={isSidebarCollapsed} onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)} />

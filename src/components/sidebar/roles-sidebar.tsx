@@ -16,19 +16,9 @@ import { useEffect, useState } from "react";
 
 interface RolesSidebarProps {
   role: string;
-  unreadCount?: number;
-  notifications?: any[];
-  onDropdownOpen?: () => Promise<void>;
-  onNotificationsClick?: () => Promise<void>;
 }
 
-export default function RolesSidebar({ 
-  role,
-  unreadCount,
-  notifications,
-  onDropdownOpen,
-  onNotificationsClick
-}: RolesSidebarProps) {
+export default function RolesSidebar({ role }: RolesSidebarProps) {
   const pathname = usePathname();
   const [isCourseViewOrEdit, setIsCourseViewOrEdit] = useState(false);
 
@@ -125,12 +115,7 @@ export default function RolesSidebar({
       </SidebarContent>
 
       <SidebarFooter className="p-0 border-t border-slate-700/50 group-data-[collapsible=icon]:border-t-0 group-data-[collapsible=icon]:!border-0">
-        <NavUser 
-          unreadCount={unreadCount}
-          notifications={notifications}
-          onDropdownOpen={onDropdownOpen}
-          onNotificationsClick={onNotificationsClick}
-        />
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
     

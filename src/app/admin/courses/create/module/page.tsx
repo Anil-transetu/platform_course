@@ -33,32 +33,6 @@ const toastApiError = (err: any, fallbackMessage: string) => {
   }
   toast.error(err?.message || fallbackMessage);
 };
-import { useCreateModule, useCourseModuleDetail } from "@/features/admin/courses/api/course-api";
-import { toast } from "sonner";
-import { getDisplayMediaUrl, reconstructHtmlFromContentBlocks, parseHtmlToContentBlocks, matchBlocksWithIds } from "@/lib/utils";
-
-
-const isEmbedUrl = (url: string) => {
-  if (!url) return false;
-  return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
-};
-
-const getEmbedUrl = (url: string) => {
-  if (!url) return "";
-  const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/ ]{11})/i);
-  if (ytMatch && ytMatch[1]) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  const vimeoMatch = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)([0-9]+)/i);
-  if (vimeoMatch && vimeoMatch[1]) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  return url;
-};
-
-const toastApiError = (err: any, fallbackMessage: string) => {
-  if (typeof window !== "undefined" && !navigator.onLine) {
-    toast.error("Network disconnected. Please check your connection.");
-    return;
-  }
-  toast.error(err?.message || fallbackMessage);
-};
 
 export default function ModuleDetailsPage() {
   const router = useRouter();
@@ -66,12 +40,6 @@ export default function ModuleDetailsPage() {
   const { 
     course, 
     activeModuleId, 
-    updateModule,
-    addModule,
-    deleteModule,
-    setActiveModule,
-    mapTemporaryModuleId,
-    hydrateModuleFromDetail,
     updateModule,
     addModule,
     deleteModule,
@@ -91,22 +59,7 @@ export default function ModuleDetailsPage() {
 
   const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
   
-  
-  useEffect(() => {
-    if (course.modules.length > 0) {
-      const exists = course.modules.some(m => String(m.id) === String(activeModuleId));
-      if (!exists) {
-        setActiveModule(String(course.modules[0].id));
-      }
-    }
-  }, [course.modules, activeModuleId, setActiveModule]);
-
-  const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
-  
   const moduleTitle = activeModule?.title || "";
-  const moduleDescription = activeModule?.content_blocks && activeModule.content_blocks.length > 0
-    ? reconstructHtmlFromContentBlocks(activeModule.content_blocks)
-    : activeModule?.description || "";
   const moduleDescription = activeModule?.content_blocks && activeModule.content_blocks.length > 0
     ? reconstructHtmlFromContentBlocks(activeModule.content_blocks)
     : activeModule?.description || "";
@@ -116,14 +69,6 @@ export default function ModuleDetailsPage() {
   };
   
   const setModuleDescription = (val: string) => {
-    if (activeModuleId && activeModule) {
-      const parsedBlocks = parseHtmlToContentBlocks(val);
-      const matchedBlocks = matchBlocksWithIds(parsedBlocks, activeModule.content_blocks || []);
-      updateModule(activeModuleId, { 
-        description: val,
-        content_blocks: matchedBlocks
-      });
-    }
     if (activeModuleId && activeModule) {
       const parsedBlocks = parseHtmlToContentBlocks(val);
       const matchedBlocks = matchBlocksWithIds(parsedBlocks, activeModule.content_blocks || []);
@@ -243,16 +188,12 @@ export default function ModuleDetailsPage() {
       <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         <p className="text-slate-500 font-semibold text-sm">Loading module details...</p>
-      <div className="bg-slate-100 min-h-screen flex-1 flex items-center justify-center flex-col gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-slate-500 font-semibold text-sm">Loading module details...</p>
       </div>
     );
   }
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="p-8 flex flex-col gap-8 max-w-4xl">
       <div className="p-8 flex flex-col gap-8 max-w-4xl">
           {/* MODULE DETAILS CARD */}
           <div className="bg-white rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.02)] border border-slate-100/80 overflow-hidden">
@@ -266,7 +207,6 @@ export default function ModuleDetailsPage() {
                   type="text"
                   value={moduleTitle}
                   disabled={isPendingState}
-                  disabled={isPendingState}
                   onChange={(e) => { 
                     setModuleTitle(e.target.value); 
                     if(errors.moduleTitle){
@@ -275,7 +215,6 @@ export default function ModuleDetailsPage() {
                   }}
                   onBlur={() => handleFieldBlur("moduleTitle", moduleTitle)}
                   placeholder="e.g., Introduction to UI Design Fundamentals"
-                  className={`w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 placeholder-slate-450 ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""} ${isPendingState ? "opacity-60 cursor-not-allowed" : ""}`}
                   className={`w-full px-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium text-slate-800 placeholder-slate-450 ${touched.moduleTitle && errors.moduleTitle ? inputErrorClass : ""} ${isPendingState ? "opacity-60 cursor-not-allowed" : ""}`}
                 />
                 {touched.moduleTitle && errors.moduleTitle && (
@@ -290,11 +229,8 @@ export default function ModuleDetailsPage() {
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Module Description <span className="text-rose-500">*</span></label>
                 <RichTextEditor
                   key={activeModule.id}
-                  key={activeModule.id}
                   ref={editorRef}
                   value={moduleDescription}
-                  itemId={activeModule.id}
-                  disabled={isPendingState}
                   itemId={activeModule.id}
                   disabled={isPendingState}
                   onChange={(html) => {
@@ -304,15 +240,11 @@ export default function ModuleDetailsPage() {
                     }
                   }}
                   onBlur={() => handleFieldBlur("moduleDescription", moduleDescription)}
-                  onBlur={() => handleFieldBlur("moduleDescription", moduleDescription)}
                   placeholder="Provide a detailed description of what students will learn in this module..."
                 />
               </div>
             </div>
           </div>
-
-
-
 
 
 
@@ -329,9 +261,6 @@ export default function ModuleDetailsPage() {
                 <ResourceButton icon={<ImageIcon size={24} />} label="Upload Image" onClick={() => openModal("image")} />
                 <ResourceButton icon={<Video size={24} />} label="Embed Video" onClick={() => openModal("video")} />
                 <ResourceButton icon={<Globe size={24} />} label="Add URL" onClick={() => openModal("url")} />
-              </div>
-            </div>
-          </div>
               </div>
             </div>
           </div>

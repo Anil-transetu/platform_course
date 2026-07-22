@@ -19,16 +19,8 @@ export function useQuizzes(
   statusFilter?: string,
   options?: { enabled?: boolean }
 ) {
-export function useQuizzes(
-  page: number = 1,
-  limit: number = 50,
-  search?: string,
-  statusFilter?: string,
-  options?: { enabled?: boolean }
-) {
   return useQuery({
     queryKey: ["quizzes", { page, limit, search, statusFilter }],
-    queryFn: ({ signal }) => fetchQuizzes(page, limit, search, statusFilter, signal),
     queryFn: ({ signal }) => fetchQuizzes(page, limit, search, statusFilter, signal),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -36,7 +28,6 @@ export function useQuizzes(
     refetchOnReconnect: true,
     refetchOnMount: false,
     placeholderData: keepPreviousData,
-    enabled: options?.enabled,
     enabled: options?.enabled,
   });
 }
@@ -61,7 +52,6 @@ export function useQuiz(id: string | number, options?: { enabled?: boolean }) {
 /**
  * Fetch quiz statistics
  */
-export function useQuizStats(options?: { enabled?: boolean }) {
 export function useQuizStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizStats"],

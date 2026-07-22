@@ -46,73 +46,15 @@ export function mapCourse(d: Record<string, any>): Course {
     }
   }
 
-  const rawDate =
-    d.updated_at ||
-    d.updatedAt ||
-    d.updated ||
-    d.last_updated ||
-    d.lastUpdated ||
-    d.last_updated_date ||
-    d.created_at ||
-    d.createdAt;
-
-  let formattedDate = "N/A";
-  if (rawDate) {
-    const dateObj = new Date(rawDate);
-    if (!isNaN(dateObj.getTime())) {
-      formattedDate = dateObj.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-      });
-    } else {
-      formattedDate = String(rawDate);
-    }
-  }
-
   return {
     id: d.id,
     name: d.name || "N/A",
     category: d.description || "N/A",
     modules: Number(d.no_of_modules || (d.modules ? d.modules.length : 0)),
     updated: formattedDate,
-    updated: formattedDate,
     status: d.status && (d.status.toLowerCase() === "published" || d.status.toLowerCase() === "active") ? "Published" : "Draft",
     description: d.description || ""
   };
-}
-
-/** Apply a returned course resource to every cached list page without refetching it. */
-function updateCachedCourseLists(queryClient: ReturnType<typeof useQueryClient>, id: string | number, resource: Record<string, any>) {
-  const mappedCourse = mapCourse(resource);
-  queryClient.setQueriesData({ queryKey: ["courses"] }, (old: any) => {
-    if (!old?.data || !Array.isArray(old.data)) return old;
-    return {
-      ...old,
-      data: old.data.map((course: Course) =>
-        String(course.id) === String(id) ? { ...course, ...mappedCourse } : course
-      ),
-    };
-  });
-}
-
-/** Remove a course from every cached table page without causing a list refetch. */
-function removeCachedCourseLists(queryClient: ReturnType<typeof useQueryClient>, id: string | number) {
-  queryClient.setQueriesData({ queryKey: ["courses"] }, (old: any) => {
-    if (!old?.data || !Array.isArray(old.data)) return old;
-
-    const data = old.data.filter((course: Course) => String(course.id) !== String(id));
-    const removed = data.length !== old.data.length;
-    if (!removed) return old;
-
-    return {
-      ...old,
-      data,
-      pagination: old.pagination
-        ? { ...old.pagination, total: Math.max(0, Number(old.pagination.total || 0) - 1) }
-        : old.pagination,
-    };
-  });
 }
 
 /** Apply a returned course resource to every cached list page without refetching it. */
@@ -157,8 +99,6 @@ export function useCourses(
   search?: string,
   statusFilter?: string,
   options?: { enabled?: boolean }
-  statusFilter?: string,
-  options?: { enabled?: boolean }
 ) {
   return useQuery({
     queryKey: ["courses", { page, limit, search, statusFilter }],
@@ -190,10 +130,6 @@ export function useCourses(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
     placeholderData: keepPreviousData,
     enabled: options?.enabled,
   });
@@ -202,7 +138,6 @@ export function useCourses(
 /**
  * Hook to fetch course statistics
  */
-export function useCourseStats(options?: { enabled?: boolean }) {
 export function useCourseStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["courseStats"],
@@ -230,23 +165,12 @@ export function useCreateCourse() {
   return useMutation({
     mutationFn: async (data: Record<string, any>) => {
       const response = await fetch(BASE_URL, {
-    mutationFn: async (data: Record<string, any>) => {
-      const response = await fetch(BASE_URL, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       return handleResponse(response);
     },
-    onSuccess: (response) => {
-      const createdCourse = response?.data || response;
-      if (createdCourse && createdCourse.id) {
-        const normalizedId = normalizeId(createdCourse.id);
-        queryClient.setQueryData(["courseDetails", normalizedId], createdCourse);
-        queryClient.setQueryData(["courseCurriculum", normalizedId], createdCourse);
-        queryClient.invalidateQueries({ queryKey: ["courseDetails", normalizedId] });
-        queryClient.invalidateQueries({ queryKey: ["courseCurriculum", normalizedId] });
-      }
     onSuccess: (response) => {
       const createdCourse = response?.data || response;
       if (createdCourse && createdCourse.id) {
@@ -268,8 +192,6 @@ export function useCreateCourse() {
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string | number; data: Record<string, any> }) => {
-      const response = await fetch(`${BASE_URL}/${id}`, {
     mutationFn: async ({ id, data }: { id: string | number; data: Record<string, any> }) => {
       const response = await fetch(`${BASE_URL}/${id}`, {
         method: "PUT",
@@ -300,30 +222,7 @@ export function useUpdateCourse() {
       queryClient.invalidateQueries({ queryKey: ["courseDetails", normalizedId] });
       queryClient.invalidateQueries({ queryKey: ["courseCurriculum", normalizedId] });
       updateCachedCourseLists(queryClient, variables.id, { ...variables.data, ...updatedCourse, id: updatedCourse.id ?? variables.id });
-    onSuccess: (response, variables) => {
-      const normalizedId = normalizeId(variables.id);
-      const updatedCourse = response.data || response;
-      // Mutations already return the new server state. Update only the affected
-      // caches instead of invalidating every course query (which caused refetch
-      // bursts while editing).
-      queryClient.setQueryData(["courseDetails", normalizedId], (old: any) =>
-        old ? { ...old, ...variables.data, ...updatedCourse } : updatedCourse
-      );
-      queryClient.setQueryData(["courseCurriculum", normalizedId], (old: any) => {
-        if (!old) return updatedCourse;
-        return {
-          ...old,
-          ...variables.data,
-          ...updatedCourse,
-          final_assessment: updatedCourse.final_assessment ?? updatedCourse.finalAssessment ?? old.final_assessment ?? old.finalAssessment,
-          final_assessment_id: updatedCourse.final_assessment_id ?? updatedCourse.finalAssessment?.id ?? variables.data.final_assessment_id ?? old.final_assessment_id,
-        };
-      });
-      queryClient.invalidateQueries({ queryKey: ["courseDetails", normalizedId] });
-      queryClient.invalidateQueries({ queryKey: ["courseCurriculum", normalizedId] });
-      updateCachedCourseLists(queryClient, variables.id, { ...variables.data, ...updatedCourse, id: updatedCourse.id ?? variables.id });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
-      queryClient.invalidateQueries({ queryKey: ["courseStats"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
     },
   });
@@ -337,13 +236,9 @@ export function useDeleteCourse() {
   return useMutation({
     mutationFn: async (id: string | number) => {
       const response = await fetch(`${BASE_URL}/${id}`, {
-      const response = await fetch(`${BASE_URL}/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
-      // Consume the completed response before resolving the mutation. This keeps
-      // DevTools able to show the server payload and avoids navigation cancelling it.
-      return response.status === 204 ? null : handleResponse(response);
       // Consume the completed response before resolving the mutation. This keeps
       // DevTools able to show the server payload and avoids navigation cancelling it.
       return response.status === 204 ? null : handleResponse(response);
@@ -352,14 +247,8 @@ export function useDeleteCourse() {
       // A delete does not need a page refresh, a table GET, or a stats GET.
       // The visible table is updated directly from the successful mutation.
       removeCachedCourseLists(queryClient, id);
-    onSuccess: (_, id) => {
-      // A delete does not need a page refresh, a table GET, or a stats GET.
-      // The visible table is updated directly from the successful mutation.
-      removeCachedCourseLists(queryClient, id);
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
-      queryClient.removeQueries({ queryKey: ["courseDetails", normalizeId(id)] });
-      queryClient.removeQueries({ queryKey: ["courseCurriculum", normalizeId(id)] });
       queryClient.removeQueries({ queryKey: ["courseDetails", normalizeId(id)] });
       queryClient.removeQueries({ queryKey: ["courseCurriculum", normalizeId(id)] });
     },
@@ -372,8 +261,6 @@ export function useDeleteCourse() {
 export function useCreateModule() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ courseId, data }: { courseId: string | number; data: { name: string; description?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string } }) => {
-      const response = await fetch(`${BASE_URL}/${courseId}/modules`, {
     mutationFn: async ({ courseId, data }: { courseId: string | number; data: { name: string; description?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string } }) => {
       const response = await fetch(`${BASE_URL}/${courseId}/modules`, {
         method: "POST",
@@ -389,179 +276,9 @@ export function useCreateModule() {
       queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) =>
         oldCurriculum ? addCachedCourseItem(oldCurriculum, "module", newModule) : oldCurriculum
       );
-    onSuccess: (data, variables) => {
-      const courseId = normalizeId(variables.courseId);
-      const newModule = data.data || data;
-      if (!courseId) return;
-      queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) =>
-        oldCurriculum ? addCachedCourseItem(oldCurriculum, "module", newModule) : oldCurriculum
-      );
     },
   });
 }
-
-const addCachedCourseItem = (course: any, type: 'module' | 'lesson' | 'topic', itemData: any, moduleId?: string | number, lessonId?: string | number) => {
-  if (!course) return course;
-  const newCourse = { ...course };
-  
-  if (type === 'module') {
-    newCourse.modules = [...(newCourse.modules || []), itemData];
-  } else if (type === 'lesson') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      if (moduleId && String(m.id) === String(moduleId)) {
-        const hasLessons = Array.isArray(m.lessons);
-        const itemsKey = hasLessons ? 'lessons' : 'topics';
-        
-        // Also add to order array if present
-        let updatedOrder = m.order;
-        if (updatedOrder) {
-          updatedOrder = [...updatedOrder, { id: itemData.id, type: 'lesson' }];
-        }
-
-        return {
-          ...m,
-          [itemsKey]: [...(m[itemsKey] || []), itemData],
-          ...(updatedOrder !== undefined ? { order: updatedOrder } : {})
-        };
-      }
-      return m;
-    });
-  } else if (type === 'topic') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      if (moduleId && String(m.id) === String(moduleId)) {
-        return {
-          ...m,
-          lessons: (m.lessons || []).map((l: any) => {
-            if (lessonId && String(l.id) === String(lessonId)) {
-              // Also add to lesson's order array if present
-              let updatedOrder = l.order;
-              if (updatedOrder) {
-                updatedOrder = [...updatedOrder, { id: itemData.id, type: 'topic' }];
-              }
-
-              return {
-                ...l,
-                topics: [...(l.topics || []), itemData],
-                ...(updatedOrder !== undefined ? { order: updatedOrder } : {})
-              };
-            }
-            return l;
-          })
-        };
-      }
-      return m;
-    });
-  }
-  
-  return newCourse;
-};
-
-const removeCachedCourseItem = (course: any, type: 'module' | 'lesson' | 'topic', id: string | number, moduleId?: string | number) => {
-  if (!course) return course;
-  const newCourse = { ...course };
-  
-  if (type === 'module') {
-    newCourse.modules = (newCourse.modules || []).filter((m: any) => 
-      String(m.id) !== String(id)
-    );
-  } else if (type === 'lesson') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      if (moduleId !== undefined && String(m.id) !== String(moduleId)) {
-        return m;
-      }
-      const hasLessons = Array.isArray(m.lessons);
-      const itemsKey = hasLessons ? 'lessons' : 'topics';
-      
-      // Also remove from order array if present
-      let updatedOrder = m.order;
-      if (updatedOrder) {
-        updatedOrder = updatedOrder.filter((o: any) => 
-          !(String(o.id) === String(id) && (o.type === 'lesson' || o.type === 'topic'))
-        );
-      }
-
-      return {
-        ...m,
-        [itemsKey]: (m[itemsKey] || []).filter((l: any) => 
-          String(l.id) !== String(id)
-        ),
-        ...(updatedOrder !== undefined ? { order: updatedOrder } : {})
-      };
-    });
-  } else if (type === 'topic') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      const hasLessons = Array.isArray(m.lessons);
-      const itemsKey = hasLessons ? 'lessons' : 'topics';
-      return {
-        ...m,
-        [itemsKey]: (m[itemsKey] || []).map((l: any) => {
-          const hasTopics = Array.isArray(l.topics);
-          const subItemsKey = hasTopics ? 'topics' : 'lessons';
-
-          // Also remove from order array if present
-          let updatedOrder = l.order;
-          if (updatedOrder) {
-            updatedOrder = updatedOrder.filter((o: any) => 
-              !(String(o.id) === String(id) && o.type === 'topic')
-            );
-          }
-
-          return {
-            ...l,
-            [subItemsKey]: (l[subItemsKey] || []).filter((t: any) => 
-              String(t.id) !== String(id)
-            ),
-            ...(updatedOrder !== undefined ? { order: updatedOrder } : {})
-          };
-        })
-      };
-    });
-  }
-  
-  return newCourse;
-};
-
-const updateCachedCourseItem = (course: any, type: 'module' | 'lesson' | 'topic', id: string | number, updatedData: any) => {
-  if (!course) return course;
-  const newCourse = { ...course };
-  
-  if (type === 'module') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => 
-      String(m.id) === String(id) ? { ...m, ...updatedData } : m
-    );
-  } else if (type === 'lesson') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      const hasLessons = Array.isArray(m.lessons);
-      const itemsKey = hasLessons ? 'lessons' : 'topics';
-      return {
-        ...m,
-        [itemsKey]: (m[itemsKey] || []).map((l: any) => 
-          String(l.id) === String(id) ? { ...l, ...updatedData } : l
-        )
-      };
-    });
-  } else if (type === 'topic') {
-    newCourse.modules = (newCourse.modules || []).map((m: any) => {
-      const hasLessons = Array.isArray(m.lessons);
-      const itemsKey = hasLessons ? 'lessons' : 'topics';
-      return {
-        ...m,
-        [itemsKey]: (m[itemsKey] || []).map((l: any) => {
-          const hasTopics = Array.isArray(l.topics);
-          const subItemsKey = hasTopics ? 'topics' : 'lessons';
-          return {
-            ...l,
-            [subItemsKey]: (l[subItemsKey] || []).map((t: any) => 
-              String(t.id) === String(id) ? { ...t, ...updatedData } : t
-            )
-          };
-        })
-      };
-    });
-  }
-  
-  return newCourse;
-};
 
 const addCachedCourseItem = (course: any, type: 'module' | 'lesson' | 'topic', itemData: any, moduleId?: string | number, lessonId?: string | number) => {
   if (!course) return course;
@@ -734,28 +451,12 @@ export function useUpdateModule() {
   return useMutation({
     mutationFn: async ({ id, courseId, data }: { id: string | number; courseId?: string | number; data: { name?: string; description?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string; assignment_ids?: Array<string | number>; quizzes?: Array<string | number>; content_blocks?: any[] } }) => {
       const response = await fetch(`${API_HOST}/api/v1/modules/${id}`, {
-    mutationFn: async ({ id, courseId, data }: { id: string | number; courseId?: string | number; data: { name?: string; description?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string; assignment_ids?: Array<string | number>; quizzes?: Array<string | number>; content_blocks?: any[] } }) => {
-      const response = await fetch(`${API_HOST}/api/v1/modules/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       return handleResponse(response);
     },
-    onSuccess: (data, variables) => {
-      const updatedModule = data.data || data;
-      // Some update endpoints return a partial object. Keep the submitted values
-      // in cache too, otherwise a subsequent view can show stale module content.
-      const completeModule = { ...variables.data, ...updatedModule, id: updatedModule.id ?? variables.id };
-      queryClient.setQueryData(["moduleDetail", normalizeId(variables.id)], (oldModule: any) =>
-        oldModule ? { ...oldModule, ...completeModule } : completeModule
-      );
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return updateCachedCourseItem(oldCurriculum, 'module', variables.id, completeModule);
-        });
     onSuccess: (data, variables) => {
       const updatedModule = data.data || data;
       // Some update endpoints return a partial object. Keep the submitted values
@@ -783,7 +484,6 @@ export function useDeleteModule() {
   return useMutation({
     mutationFn: async ({ id, courseId }: { id: string | number; courseId?: string | number }) => {
       const response = await fetch(`${API_HOST}/api/v1/modules/${id}`, {
-      const response = await fetch(`${API_HOST}/api/v1/modules/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -798,19 +498,12 @@ export function useDeleteModule() {
           if (!oldCurriculum) return oldCurriculum;
           return removeCachedCourseItem(oldCurriculum, 'module', variables.id);
         });
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return removeCachedCourseItem(oldCurriculum, 'module', variables.id);
-        });
       }
     },
   });
 }
 
 /**
- * Mutation to create a topic (corresponds to UI Topic)
  * Mutation to create a topic (corresponds to UI Topic)
  */
 export function useCreateTopic() {
@@ -832,14 +525,6 @@ export function useCreateTopic() {
           if (!oldCurriculum) return oldCurriculum;
           return addCachedCourseItem(oldCurriculum, 'topic', newTopic, variables.moduleId, variables.lessonId);
         });
-    onSuccess: (data, variables) => {
-      const newTopic = data.data || data;
-      const courseId = normalizeId(variables.courseId);
-      if (courseId && variables.moduleId && variables.lessonId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return addCachedCourseItem(oldCurriculum, 'topic', newTopic, variables.moduleId, variables.lessonId);
-        });
       }
     },
   });
@@ -847,13 +532,10 @@ export function useCreateTopic() {
 
 /**
  * Mutation to update a topic (corresponds to UI Topic)
- * Mutation to update a topic (corresponds to UI Topic)
  */
 export function useUpdateTopic() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, courseId, data }: { id: string | number; courseId?: string | number; data: { name?: string; content_text?: string; text?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string; content_blocks?: any[] } }) => {
-      const response = await fetch(`${API_HOST}/api/v1/topics/${id}`, {
     mutationFn: async ({ id, courseId, data }: { id: string | number; courseId?: string | number; data: { name?: string; content_text?: string; text?: string; order_num?: number; image_url?: string; video_url?: string; pdf_url?: string; url?: string; content_blocks?: any[] } }) => {
       const response = await fetch(`${API_HOST}/api/v1/topics/${id}`, {
         method: "PUT",
@@ -871,15 +553,6 @@ export function useUpdateTopic() {
           if (!oldCurriculum) return oldCurriculum;
           return updateCachedCourseItem(oldCurriculum, 'topic', variables.id, updatedTopic);
         });
-    onSuccess: (data, variables) => {
-      const updatedTopic = data.data || data;
-      queryClient.setQueryData(["topicDetail", normalizeId(variables.id)], updatedTopic);
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return updateCachedCourseItem(oldCurriculum, 'topic', variables.id, updatedTopic);
-        });
       }
     },
   });
@@ -887,13 +560,11 @@ export function useUpdateTopic() {
 
 /**
  * Mutation to delete a topic (corresponds to UI Topic)
- * Mutation to delete a topic (corresponds to UI Topic)
  */
 export function useDeleteTopic() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, courseId }: { id: string | number; courseId?: string | number }) => {
-      const response = await fetch(`${API_HOST}/api/v1/topics/${id}`, {
       const response = await fetch(`${API_HOST}/api/v1/topics/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
@@ -909,19 +580,12 @@ export function useDeleteTopic() {
           if (!oldCurriculum) return oldCurriculum;
           return removeCachedCourseItem(oldCurriculum, 'topic', variables.id);
         });
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return removeCachedCourseItem(oldCurriculum, 'topic', variables.id);
-        });
       }
     },
   });
 }
 
 /**
- * Mutation to create a lesson (corresponds to UI Lesson)
  * Mutation to create a lesson (corresponds to UI Lesson)
  */
 export function useCreateLesson() {
@@ -935,14 +599,6 @@ export function useCreateLesson() {
       });
       return handleResponse(response);
     },
-    onSuccess: (data, variables) => {
-      const newLesson = data.data || data;
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return addCachedCourseItem(oldCurriculum, 'lesson', newLesson, variables.moduleId);
-        });
     onSuccess: (data, variables) => {
       const newLesson = data.data || data;
       const courseId = normalizeId(variables.courseId);
@@ -967,41 +623,12 @@ export function useUpdateLesson() {
       // accepts their persisted URLs and content_blocks rather than these UI-only fields.
       const { images, videos, pdfs, urls, ...payload } = data;
       const response = await fetch(`${API_HOST}/api/v1/lessons/${id}`, {
-    mutationFn: async ({ id, courseId, data }: { id: string | number; courseId?: string | number; data: { name?: string; type?: string; content_text?: string; text?: string; duration_minutes?: number; order_num?: number; quizzes?: Array<string | number>; assignment_ids?: Array<string | number>; image_url?: string; video_url?: string; pdf_url?: string; url?: string; images?: string[]; videos?: string[]; pdfs?: string[]; urls?: string[]; content_blocks?: any[] } }) => {
-      // Resource arrays remain in local state for the editor/viewer, but the lesson API
-      // accepts their persisted URLs and content_blocks rather than these UI-only fields.
-      const { images, videos, pdfs, urls, ...payload } = data;
-      const response = await fetch(`${API_HOST}/api/v1/lessons/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
         body: JSON.stringify(payload),
       });
       return handleResponse(response);
     },
-    onSuccess: (data, variables) => {
-      const updatedLesson = data.data || data;
-      const completeLesson = { ...variables.data, ...updatedLesson, id: updatedLesson.id ?? variables.id };
-      // The PUT response is authoritative. Seed/update the detail cache even if
-      // it was not previously visited, so the editor has no reason to issue a GET.
-      queryClient.setQueryData(["lessonDetail", normalizeId(variables.id)], (oldLesson: any) =>
-        ({ ...oldLesson, ...completeLesson })
-      );
-      queryClient.setQueriesData({ queryKey: ["moduleDetail"] }, (oldModule: any) => {
-        if (!oldModule?.lessons || !Array.isArray(oldModule.lessons)) return oldModule;
-        return {
-          ...oldModule,
-          lessons: oldModule.lessons.map((lesson: any) =>
-            String(lesson.id) === String(variables.id) ? { ...lesson, ...completeLesson } : lesson
-          ),
-        };
-      });
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return updateCachedCourseItem(oldCurriculum, 'lesson', variables.id, completeLesson);
-        });
     onSuccess: (data, variables) => {
       const updatedLesson = data.data || data;
       const completeLesson = { ...variables.data, ...updatedLesson, id: updatedLesson.id ?? variables.id };
@@ -1038,8 +665,6 @@ export function useDeleteLesson() {
   return useMutation({
     mutationFn: async ({ id, courseId, moduleId }: { id: string | number; courseId?: string | number; moduleId?: string | number }) => {
       const response = await fetch(`${API_HOST}/api/v1/lessons/${id}`, {
-    mutationFn: async ({ id, courseId, moduleId }: { id: string | number; courseId?: string | number; moduleId?: string | number }) => {
-      const response = await fetch(`${API_HOST}/api/v1/lessons/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -1048,13 +673,6 @@ export function useDeleteLesson() {
       }
     },
     onSuccess: (_, variables) => {
-      queryClient.removeQueries({ queryKey: ["lessonDetail", normalizeId(variables.id)] });
-      const courseId = normalizeId(variables.courseId);
-      if (courseId) {
-        queryClient.setQueryData(["courseCurriculum", courseId], (oldCurriculum: any) => {
-          if (!oldCurriculum) return oldCurriculum;
-          return removeCachedCourseItem(oldCurriculum, 'lesson', variables.id, variables.moduleId);
-        });
       queryClient.removeQueries({ queryKey: ["lessonDetail", normalizeId(variables.id)] });
       const courseId = normalizeId(variables.courseId);
       if (courseId) {
@@ -1071,10 +689,8 @@ export function useDeleteLesson() {
  * Hook to fetch all quizzes
  */
 export function useQuizzes(page: number = 1, limit: number = 100, search?: string, options?: { enabled?: boolean }) {
-export function useQuizzes(page: number = 1, limit: number = 100, search?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizzesList", { page, limit, search }],
-    queryFn: async ({ signal }) => {
     queryFn: async ({ signal }) => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
@@ -1090,18 +706,15 @@ export function useQuizzes(page: number = 1, limit: number = 100, search?: strin
     },
     staleTime: 5 * 60 * 1000,
     enabled: options?.enabled,
-    staleTime: 5 * 60 * 1000,
-    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to fetch all assignments
  */
-export function useAssignmentsList(page: number = 1, limit: number = 10, search?: string) {
+export function useAssignmentsList(page: number = 1, limit: number = 100, search?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentsList", { page, limit, search }],
-    queryFn: async ({ signal }) => {
     queryFn: async ({ signal }) => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
@@ -1117,15 +730,12 @@ export function useAssignmentsList(page: number = 1, limit: number = 10, search?
     },
     staleTime: 5 * 60 * 1000,
     enabled: options?.enabled,
-    staleTime: 5 * 60 * 1000,
-    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to lookup capstone assignments for domains
  */
-export function useAssignmentLookup(options?: { enabled?: boolean }) {
 export function useAssignmentLookup(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentLookup"],
@@ -1139,15 +749,12 @@ export function useAssignmentLookup(options?: { enabled?: boolean }) {
     },
     staleTime: 5 * 60 * 1000,
     enabled: options?.enabled,
-    staleTime: 5 * 60 * 1000,
-    enabled: options?.enabled,
   });
 }
 
 /**
  * Hook to lookup assignments (plural)
  */
-export function useAssignmentsLookup(options?: { enabled?: boolean }) {
 export function useAssignmentsLookup(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["assignmentsLookup"],

@@ -14,10 +14,6 @@ import {
   Award,
   PlayCircle,
   FileText
-  ClipboardList,
-  Award,
-  PlayCircle,
-  FileText
 } from "lucide-react";
 import { cn, getDisplayThumbnailUrl } from "@/lib/utils";
 
@@ -47,8 +43,6 @@ export default function CourseViewSidebar({
         setExpandedModules(prev => ({ ...prev, [activeItem.id]: true }));
       } else if (activeItem.type === "lesson") {
         const mod = course.modules?.find((m: any) => 
-          m.lessons?.some((l: any) => String(l.id) === String(activeItem.id)) ||
-          m.topics?.some((l: any) => String(l.id) === String(activeItem.id))
           m.lessons?.some((l: any) => String(l.id) === String(activeItem.id)) ||
           m.topics?.some((l: any) => String(l.id) === String(activeItem.id))
         );
@@ -82,10 +76,6 @@ export default function CourseViewSidebar({
           for (const les of lessons) {
             const hasTopic = les.topics?.some((t: any) => String(t.id) === String(activeItem.id)) ||
                              les.lessons?.some((t: any) => String(t.id) === String(activeItem.id));
-          const lessons = mod.lessons || mod.topics || [];
-          for (const les of lessons) {
-            const hasTopic = les.topics?.some((t: any) => String(t.id) === String(activeItem.id)) ||
-                             les.lessons?.some((t: any) => String(t.id) === String(activeItem.id));
             const hasQuiz = les.quizzes?.some((q: any) => String(q.id) === String(activeItem.id));
             const hasAss = les.assignments?.some((a: any) => String(a.id) === String(activeItem.id));
             if (hasTopic || hasQuiz || hasAss || String(les.id) === String(activeItem.id)) {
@@ -99,10 +89,8 @@ export default function CourseViewSidebar({
 
         if (foundModuleId) {
           setExpandedModules(prev => ({ ...prev, [foundModuleId]: true }));
-          setExpandedModules(prev => ({ ...prev, [foundModuleId]: true }));
         }
         if (foundLessonId) {
-          setExpandedLessons(prev => ({ ...prev, [foundLessonId]: true }));
           setExpandedLessons(prev => ({ ...prev, [foundLessonId]: true }));
         }
       }
@@ -122,8 +110,6 @@ export default function CourseViewSidebar({
   const modules = course.modules || [];
 
   return (
-    <aside className="w-[320px] bg-slate-50 border-r border-slate-200 p-4 flex flex-col gap-4 shrink-0 h-full overflow-hidden text-slate-700">
-      {/* Course Info Header */}
     <aside className="w-[320px] bg-slate-50 border-r border-slate-200 p-4 flex flex-col gap-4 shrink-0 h-full overflow-hidden text-slate-700">
       {/* Course Info Header */}
       <div 
@@ -154,15 +140,10 @@ export default function CourseViewSidebar({
       <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl border border-slate-200 p-2">
         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-3 py-3 border-b border-slate-100 mb-2">
           Course Content
-      <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-2xl border border-slate-200 p-2">
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-3 py-3 border-b border-slate-100 mb-2">
-          Course Content
         </h3>
         
         <div className="flex-grow overflow-y-auto px-1 flex flex-col gap-1 no-scrollbar pb-4">
-        <div className="flex-grow overflow-y-auto px-1 flex flex-col gap-1 no-scrollbar pb-4">
           {modules.length === 0 ? (
-            <div className="text-sm text-slate-400 italic px-3 py-2">No modules found.</div>
             <div className="text-sm text-slate-400 italic px-3 py-2">No modules found.</div>
           ) : (
             modules.map((module: any, mIdx: number) => {
@@ -199,9 +180,7 @@ export default function CourseViewSidebar({
                   {isExpanded && (() => {
                     const order = module.order || [];
                     const lessonsArray = module.topics || module.lessons || [];
-                    const lessonsArray = module.topics || module.lessons || [];
                     const items = order.length > 0 ? order : [
-                      ...lessonsArray.map((l: any) => ({ id: l.id, type: 'lesson' as const })),
                       ...lessonsArray.map((l: any) => ({ id: l.id, type: 'lesson' as const })),
                       ...(module.quizzes || []).map((q: any) => ({ id: q.id, type: 'quiz' as const })),
                       ...(module.assignments || []).map((a: any) => ({ id: a.id, type: 'assignment' as const }))
@@ -211,7 +190,6 @@ export default function CourseViewSidebar({
                       <div className="flex flex-col pl-3.5 ml-4 border-l border-slate-150/60 gap-1 mt-0.5 mb-1.5">
                         {items.map((item: any) => {
                           if (item.type === 'lesson' || item.type === 'topic') {
-                            const lesson = lessonsArray.find((l: any) => String(l.id) === String(item.id));
                             const lesson = lessonsArray.find((l: any) => String(l.id) === String(item.id));
                             if (!lesson) return null;
                             const isLessonActive = activeItem?.type === "lesson" && String(activeItem.id) === String(lesson.id);
@@ -234,7 +212,6 @@ export default function CourseViewSidebar({
                                       className="p-0.5 rounded-md text-slate-400 hover:text-slate-650 hover:bg-slate-100 transition-colors shrink-0"
                                     >
                                       {isLessonExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                      {isLessonExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </button>
                                     <BookOpen className={cn("shrink-0", isLessonActive ? "text-indigo-650" : "text-slate-400")} size={14} />
                                     <span className="text-[13px] font-semibold truncate flex-1">
@@ -246,9 +223,7 @@ export default function CourseViewSidebar({
                                 {isLessonExpanded && (() => {
                                   const lessonOrder = lesson.order || [];
                                   const subTopicsArray = lesson.lessons || lesson.topics || [];
-                                  const subTopicsArray = lesson.lessons || lesson.topics || [];
                                   const lessonItems = lessonOrder.length > 0 ? lessonOrder : [
-                                    ...subTopicsArray.map((t: any) => ({ id: t.id, type: 'topic' as const })),
                                     ...subTopicsArray.map((t: any) => ({ id: t.id, type: 'topic' as const })),
                                     ...(lesson.quizzes || []).map((q: any) => ({ id: q.id, type: 'quiz' as const })),
                                     ...(lesson.assignments || []).map((a: any) => ({ id: a.id, type: 'assignment' as const }))
@@ -258,7 +233,6 @@ export default function CourseViewSidebar({
                                     <div className="flex flex-col pl-3.5 ml-4 border-l border-slate-150/60 gap-1 mb-1.5">
                                       {lessonItems.map((lItem: any) => {
                                         if (lItem.type === 'topic' || lItem.type === 'lesson') {
-                                          const topic = subTopicsArray.find((t: any) => String(t.id) === String(lItem.id));
                                           const topic = subTopicsArray.find((t: any) => String(t.id) === String(lItem.id));
                                           if (!topic) return null;
                                           const isTopicActive = activeItem?.type === "topic" && String(activeItem.id) === String(topic.id);
@@ -434,5 +408,3 @@ export default function CourseViewSidebar({
     </aside>
   );
 }
-
-

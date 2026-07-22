@@ -42,7 +42,6 @@ type ActiveItem = {
   id: string | number;
   data: any;
   isFinal?: boolean;
-  isFinal?: boolean;
 };
 
 export default function CourseView({ course, onBack }: CourseViewProps) {
@@ -540,29 +539,17 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
               <BookOpen className="text-blue-500" size={20} />
               Curriculum Overview
             </h3>
-          {/* CURRICULUM OVERVIEW */}
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-            <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <BookOpen className="text-blue-500" size={20} />
-              Curriculum Overview
-            </h3>
             {modules.length === 0 ? (
-              <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
-                <Folder className="mx-auto text-slate-300 mb-3" size={32} />
-                <p className="text-slate-500">No modules have been added to this course yet.</p>
-              </div>
               <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
                 <Folder className="mx-auto text-slate-300 mb-3" size={32} />
                 <p className="text-slate-500">No modules have been added to this course yet.</p>
               </div>
             ) : (
               <div className="space-y-4">
-              <div className="space-y-4">
                 {modules.map((m: any, idx: number) => (
                   <div 
                     key={m.id}
                     onClick={() => setActiveItem({ type: "module", id: m.id, data: m })}
-                    className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md cursor-pointer transition-all group"
                     className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md cursor-pointer transition-all group"
                   >
                     <div className="flex items-center gap-4">
@@ -676,10 +663,6 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
           <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
             <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 block">
               Lesson
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-200">
-            <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3 block">
-              Lesson
             </span>
             <h1 className="text-3xl font-extrabold text-slate-800 mb-6">{lessonData.name || lessonData.title}</h1>
             {hasContentBlocks ? (
@@ -737,10 +720,7 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
               Topic
             </span>
             <h1 className="text-3xl font-extrabold text-slate-800">{topicData.name || topicData.title}</h1>
-            <h1 className="text-3xl font-extrabold text-slate-800">{topicData.name || topicData.title}</h1>
             {topicData.duration_minutes && (
-              <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium mt-3">
-                <Clock size={16} /> {topicData.duration_minutes} minutes
               <div className="flex items-center gap-1.5 text-sm text-slate-500 font-medium mt-3">
                 <Clock size={16} /> {topicData.duration_minutes} minutes
               </div>
@@ -754,7 +734,6 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
           ) : displayContent ? (
             <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-slate-200 mt-8">
               <div 
-                className="text-slate-700 leading-relaxed prose prose-slate prose-headings:text-slate-800 prose-a:text-blue-600 max-w-none" 
                 className="text-slate-700 leading-relaxed prose prose-slate prose-headings:text-slate-800 prose-a:text-blue-600 max-w-none" 
                 dangerouslySetInnerHTML={{ __html: displayContent }} 
               />
@@ -814,17 +793,7 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
                   <Clock size={16} className="text-slate-400" />
                   {quiz.time_limit_minutes ? `${quiz.time_limit_minutes} mins` : "20 mins"}
                 </span>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Time Limit</span>
-                <span className="text-lg font-bold text-slate-800 flex items-center gap-1">
-                  <Clock size={16} className="text-slate-400" />
-                  {quiz.time_limit_minutes ? `${quiz.time_limit_minutes} mins` : "20 mins"}
-                </span>
               </div>
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Questions</span>
-                <span className="text-lg font-bold text-slate-800">10</span>
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Questions</span>
                 <span className="text-lg font-bold text-slate-800">10</span>
@@ -832,13 +801,7 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Passing Score</span>
                 <span className="text-lg font-bold text-slate-800">{quiz.passing_score ? `${quiz.passing_score}%` : "70%"}</span>
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Passing Score</span>
-                <span className="text-lg font-bold text-slate-800">{quiz.passing_score ? `${quiz.passing_score}%` : "70%"}</span>
               </div>
-              <div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Max Attempts</span>
-                <span className="text-lg font-bold text-slate-800">{quiz.max_attempts || "1"}</span>
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Max Attempts</span>
                 <span className="text-lg font-bold text-slate-800">{quiz.max_attempts || "1"}</span>
@@ -846,15 +809,6 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <span className="font-bold text-slate-700">Question 1 of 10</span>
-              <span className="text-sm font-semibold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">1 Points</span>
-            </div>
-            
-            <div className="p-8 md:p-10">
-              <h3 className="text-xl font-bold text-slate-800 mb-8 leading-relaxed">
-                Which of the following describes the correct output behavior for the configured environment?
           <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <span className="font-bold text-slate-700">Question 1 of 10</span>
@@ -1140,31 +1094,13 @@ export default function CourseView({ course, onBack }: CourseViewProps) {
           >
             <Menu size={18} />
           </button>
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50 font-sans">
-      {/* Header */}
-      <header className="flex justify-between items-center px-4 md:px-6 py-4 bg-white border-b border-slate-200 shadow-sm shrink-0 z-40 relative">
-        <div className="flex items-center gap-2 md:gap-4">
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden flex items-center justify-center p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
-            title="Open Menu"
-          >
-            <Menu size={18} />
-          </button>
           <button 
             onClick={onBack}
             className="flex items-center justify-center p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
             title="Exit Course View"
-            className="flex items-center justify-center p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
-            title="Exit Course View"
           >
             <ArrowLeft size={18} />
-            <ArrowLeft size={18} />
           </button>
-          <div className="h-8 w-[1px] bg-slate-200 mx-1 md:mx-2" />
-          <div className="min-w-0">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none mb-1 hidden sm:block">Previewing</h2>
-            <h3 className="font-bold text-slate-800 leading-tight max-w-[150px] sm:max-w-xl truncate">{course.name}</h3>
           <div className="h-8 w-[1px] bg-slate-200 mx-1 md:mx-2" />
           <div className="min-w-0">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none mb-1 hidden sm:block">Previewing</h2>

@@ -5,12 +5,16 @@ import { Modal } from "@/components/ui/modal";
 import { FileText, Download, Search, ChevronDown, Info, X, Calendar as CalendarIcon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCreateBatch, useUpdateBatch, useBatch } from "@/hooks/use-batches";
-import { useInstitutionsOutlook } from "@/features/admin/institutions/api/use-institutions";
-import { useTutors } from "@/features/admin/tutor/api/tutor-api";
-import { useStudents } from "@/hooks/use-students";
-import { useCourseLookup } from "@/features/admin/courses/api/course-api";
+import { useCreateBatch, useUpdateBatch, useBatch, useStudentLookup } from "@/hooks/use-batches";
 import { useDebounce } from "@/hooks/use-debounce";
+import BatchInstitutionSelect from "./BatchInstitutionSelect";
+import CourseSelect from "./CourseSelect";
+import DomainSelect from "./DomainSelect";
+import TutorSelect from "./TutorSelect";
+import BulkUploadModal from "./BulkUploadModal";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 interface Props {
   open: boolean;
@@ -54,21 +58,13 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
   const [studentSearch, setStudentSearch] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   
-  const [instructorSearch, setInstructorSearch] = useState("");
-  const [instructorDropdownOpen, setInstructorDropdownOpen] = useState(false);
-
-  const [courseSearch, setCourseSearch] = useState("");
-  const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
-  const [selectedCourseName, setSelectedCourseName] = useState("");
-  const debouncedCourseSearch = useDebounce(courseSearch, 300);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const studentDropdownRef = useRef<HTMLDivElement>(null);
-  const tutorDropdownRef = useRef<HTMLDivElement>(null);
-  const courseDropdownRef = useRef<HTMLDivElement>(null);
-  const prevInstitutionIdRef = useRef(form.institution_id);
+
+  const debouncedSearch = useDebounce(studentSearch, 300);
 
   // API hooks
   const { data: studentsLookupData, isLoading: isStudentsLoading } = useStudentLookup(
@@ -79,28 +75,16 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
   
   const { data: fullBatch } = useBatch(open && mode === "edit" ? batch?.id || "" : "");
   
-  const { data: lookupCourses } = useCourseLookup(
-    debouncedCourseSearch,
-    10,
-    { enabled: open && (courseDropdownOpen || !!debouncedCourseSearch) }
-  );
-
   const createMutation = useCreateBatch();
   const updateMutation = useUpdateBatch();
 
   const allStudents = studentsLookupData || [];
 
-  // Click outside listener for student, tutor and course search dropdowns
+  // Click outside listener for student search dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
-      }
-      if (tutorDropdownRef.current && !tutorDropdownRef.current.contains(event.target as Node)) {
-        setInstructorDropdownOpen(false);
-      }
-      if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
-        setCourseDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -123,7 +107,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           end_date: activeBatch.end_date || "",
           status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
         });
-        setSelectedCourseName(activeBatch.course || activeBatch.Course?.name || "");
 
         if (activeBatch.Enrollments) {
           setSelectedStudents(
@@ -147,12 +130,9 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           end_date: "",
           status: "",
         });
-        setSelectedCourseName("");
         setSelectedStudents([]);
       }
       setStudentSearch("");
-      setInstructorSearch("");
-      setCourseSearch("");
       setDropdownOpen(false);
       setErrors({});
     }
@@ -327,7 +307,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
         {/* ROW 3: INSTRUCTOR & STATUS */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="relative">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               INSTRUCTOR <span className="text-red-500">*</span>
             </label>

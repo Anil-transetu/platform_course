@@ -165,12 +165,14 @@ export default function StudentHeader() {
             <p className="text-sm font-semibold text-foreground">{displayName}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">ID: {displayId}</p>
           </div>
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-border">
-            <img 
-              src={avatarUrl} 
-              alt={displayName} 
-              className="object-cover w-full h-full"
-            />
+          <div className="relative w-10 h-10 shrink-0">
+            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border border-border">
+              <img 
+                src={avatarUrl} 
+                alt={displayName} 
+                className="object-cover w-full h-full"
+              />
+            </div>
             {unreadCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 z-10" />
             )}

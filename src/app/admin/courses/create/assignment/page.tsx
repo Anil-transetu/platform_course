@@ -9,7 +9,7 @@ import { useUpdateModule, useUpdateLesson, useUpdateCourse, useUnlinkAssignment 
 import { toast } from 'sonner';
 import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
 import { Input } from "@/components/ui/input";
-import { useDebounce } from "@/hooks/use-debounce";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export default function AssignmentLibraryPage() {
@@ -20,9 +20,6 @@ export default function AssignmentLibraryPage() {
     activeAssignmentId, 
     updateAssignment, 
     updateCourseAssignment,
-    setActiveAssignment,
-    deleteAssignment,
-    deleteCourseAssignment
     setActiveAssignment,
     deleteAssignment,
     deleteCourseAssignment
@@ -49,16 +46,6 @@ export default function AssignmentLibraryPage() {
     } else {
       activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
     }
-    const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
-    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
-
-    if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment;
-    } else if (finalAssessmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment || { id: finalAssessmentId };
-    } else {
-      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
-    }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
     activeAssignment = activeModule?.assignments?.find(a => String(a.id) === String(activeAssignmentId));
@@ -71,19 +58,13 @@ export default function AssignmentLibraryPage() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [forceLibraryView, setForceLibraryView] = useState(false);
 
   const debouncedSearch = useDebounce(search, 300);
 
   // 2. Fetch specific assignment details from backend if ID is a real backend ID
-  // For course-level final assessment: fall back to finalAssessmentId so the preview
-  // opens on the very first click (even before activeAssignment object is resolved).
-  const rawIdStr = activeAssignment?.id
-    ? String(activeAssignment.id)
-    : (!activeModuleId && finalAssessmentId)
-      ? String(finalAssessmentId)
-      : (activeAssignmentId ? String(activeAssignmentId) : undefined);
-  const activeAssignmentIdStr = rawIdStr;
+  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
   const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
   const isLibraryEnabled = !isRealId || forceLibraryView;
 
@@ -92,7 +73,7 @@ export default function AssignmentLibraryPage() {
     currentPage, 
     6, 
     debouncedSearch || undefined, 
-    undefined,
+    statusFilter === "All" ? undefined : statusFilter,
     { enabled: isLibraryEnabled }
   );
   const assignmentItems = assignmentsData?.data || [];
@@ -202,7 +183,6 @@ export default function AssignmentLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="p-8 flex flex-col gap-6 max-w-5xl">
       <div className="p-8 flex flex-col gap-6 max-w-5xl">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
@@ -319,7 +299,6 @@ export default function AssignmentLibraryPage() {
                       {assignmentDetail?.evaluation_matrix && assignmentDetail.evaluation_matrix.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {assignmentDetail.evaluation_matrix.map((criteria, cIdx: number) => (
-                          {assignmentDetail.evaluation_matrix.map((criteria, cIdx: number) => (
                             <div key={cIdx} className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
                               <span className="font-bold text-sm text-slate-800 block mb-1">{criteria.name}</span>
                               <span className="text-xs text-slate-500">Marks: {criteria.marks}</span>
@@ -351,10 +330,10 @@ export default function AssignmentLibraryPage() {
                 <p className="text-slate-550 text-sm font-medium">Browse and add pre-existing assignments to your module.</p>
               </div>
 
-              {/* SEARCH BAR */}
-              <div className="mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+              {/* SEARCH & FILTERS BAR */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
                 {/* Search */}
-                <div className="relative w-full max-w-md">
+                <div className="relative flex-1 w-full sm:max-w-md">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-450" />
                   <Input 
                     type="text" 
@@ -366,6 +345,26 @@ export default function AssignmentLibraryPage() {
                     }}
                     className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
+                </div>
+                
+                {/* Select Filter */}
+                <div className="w-full sm:w-48">
+                  <Select 
+                    value={statusFilter} 
+                    onValueChange={(val) => {
+                      setStatusFilter(val);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full bg-slate-50/50 border border-slate-250 text-xs font-bold text-slate-700 rounded-lg">
+                      <SelectValue placeholder="Status Filter" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-200">
+                      <SelectItem value="All" className="text-xs font-semibold">All Assignments</SelectItem>
+                      <SelectItem value="Active" className="text-xs font-semibold">Active Only</SelectItem>
+                      <SelectItem value="Draft" className="text-xs font-semibold">Draft Only</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -384,7 +383,6 @@ export default function AssignmentLibraryPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {assignmentItems.map((assignment: ApiAssignment) => {
                     {assignmentItems.map((assignment: ApiAssignment) => {
                       const details = getSubmissionTypeDetails(assignment.submissionType || assignment.submission_type);
                       const badge = getStatusBadge(assignment.status);

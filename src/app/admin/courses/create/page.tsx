@@ -257,7 +257,6 @@ export default function CreateCoursePage() {
     if (field === "thumbnail_url") setCourseDetails(title, description, value, domain, tags);
     if (field === "domain") setCourseDetails(title, description, thumbnail_url, value, tags);
     if (field === "status") setCourseDetails(title, description, thumbnail_url, domain, tags, value);
-    if (field === "status") setCourseDetails(title, description, thumbnail_url, domain, tags, value);
 
     if (errors[field]) {
       setErrors((prev) => {
@@ -467,99 +466,9 @@ export default function CreateCoursePage() {
     );
   }
 
-  const handleContinue = async () => {
-    // Validate required fields
-    const titleErr = validateField("title", title);
-    const descErr = validateField("description", description);
-    setTouched({ title: true, description: true });
-    if (titleErr || descErr) return;
-
-    if (course.id) {
-      // Edit/Update mode
-      try {
-        setIsSubmitting(true);
-        // Calculate dirty fields comparing current state with cleanCourse
-        const dirtyFields: Record<string, any> = {};
-        if (title !== cleanCourse?.title) dirtyFields.name = title;
-        if (description !== cleanCourse?.description) dirtyFields.description = description;
-        if (thumbnail_url !== cleanCourse?.thumbnail_url) dirtyFields.thumbnail_url = thumbnail_url;
-        if (domain !== cleanCourse?.domain) dirtyFields.domain = domain;
-        if (JSON.stringify(tags) !== JSON.stringify(cleanCourse?.tags || [])) dirtyFields.tags = tags;
-        
-        const mappedStatus = status === "published" ? "active" : "draft";
-        const initialStatusMapped = (cleanCourse?.status === "active" || cleanCourse?.status === "published") ? "active" : "draft";
-        if (mappedStatus !== initialStatusMapped) {
-          dirtyFields.status = mappedStatus;
-        }
-
-        if (Object.keys(dirtyFields).length > 0) {
-          await updateMutation.mutateAsync({ id: course.id, data: dirtyFields });
-          useCourseStore.getState().clearDeletedItems();
-          toast.success("Course details saved.");
-        }
-
-        const { activeModuleId, activeLessonId, activeTopicId } = useCourseStore.getState();
-        const builderRoute = getDefaultEditorRoute(course.id, { activeModuleId, activeLessonId, activeTopicId });
-        router.push(builderRoute.endsWith(`/edit/${course.id}`) ? `${builderRoute}/module` : builderRoute);
-      } catch (err: any) {
-        toastApiError(err, "Failed to update course");
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      // Create mode
-      try {
-        setIsSubmitting(true);
-        const rawFaId = finalAssessmentId || (course as any).final_assessment_id || (course as any).finalAssessment?.id || (course as any).final_assessment?.id;
-        const faIdNum = rawFaId ? Number(rawFaId) : null;
-
-        const payload: Record<string, any> = {
-          name: title,
-          description,
-          thumbnail_url,
-          status: status === "published" ? "active" : "draft",
-          modules: []
-        };
-        if (faIdNum !== null && !isNaN(faIdNum)) {
-          payload.final_assessment_id = faIdNum;
-        }
-        if (tags.length > 0) {
-          payload.tags = tags;
-        }
-        if (domain) {
-          payload.domain = domain;
-        }
-        const response = await createMutation.mutateAsync(payload);
-        const newId = response.data?.id || response.id;
-        useCourseStore.getState().clearDeletedItems(); // Reset baseline
-        toast.success("Course created successfully!");
-        router.push(`/admin/courses/edit/${newId}/module`);
-      } catch (err: any) {
-        toastApiError(err, "Failed to create course");
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  // If we are in edit mode (editId is present), but the store course ID is not editId,
-  // we are still in the process of initializing the store. Show a loader to prevent loading flicker.
-  if (editId && String(course.id) !== editId) {
-    return (
-      <div className="flex-1 bg-slate-50 flex items-center justify-center p-8 min-h-screen">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-slate-500 font-semibold text-sm">Initializing edit form...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
       <div className="max-w-6xl mx-auto flex flex-col gap-8">
-
-        {/* HEADER */}
 
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
@@ -577,11 +486,8 @@ export default function CreateCoursePage() {
         {/* 3-COLUMN LAYOUT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
-
           {/* LEFT 2/3 COLUMN */}
           <div className="lg:col-span-2 flex flex-col gap-8">
-
-            {/* COURSE INFORMATION CARD */}
 
             {/* COURSE INFORMATION CARD */}
             <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
@@ -590,9 +496,7 @@ export default function CreateCoursePage() {
                 Course Information
               </h3>
 
-
               <div className="flex flex-col gap-6">
-                {/* Title */}
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-2">
@@ -612,7 +516,6 @@ export default function CreateCoursePage() {
                   <ErrorMsg field="title" />
                 </div>
 
-                {/* Description */}
                 {/* Description */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -678,32 +581,6 @@ export default function CreateCoursePage() {
                   <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
                     {status === "draft" ? "Only visible to admins." : "Visible to all enrolled students."}
                   </p>
-            {/* METADATA CARD */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-4 border-b border-slate-100">
-                <Globe className="text-indigo-500" size={16} />
-                Course Settings
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Status */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setStatus(val as "draft" | "published");
-                      handleFieldChange("status", val === "published" ? "active" : "draft");
-                    }}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold text-slate-800"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="published">Published</option>
-                  </select>
-                  <p className="text-[10px] text-slate-400 mt-1.5 font-medium">
-                    {status === "draft" ? "Only visible to admins." : "Visible to all enrolled students."}
-                  </p>
                 </div>
 
                 {/* Domain */}
@@ -821,143 +698,7 @@ export default function CreateCoursePage() {
                   placeholder="Type a tag and press Space or Enter"
                 />
                 <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Press Space or Enter to convert text into a tag.</p>
-                {/* Domain */}
-                <div ref={domainRef} className="relative">
-                  <label className="block text-xs font-bold text-slate-700 mb-2">Domain</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDomainsRequested(true);
-                        setDomainOpen((prev) => !prev);
-                      }}
-                      className={`w-full flex items-center justify-between rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all ${domainOpen ? "border-blue-500 ring-4 ring-blue-500/10" : "border-slate-200 hover:border-blue-300"}`}
-                    >
-                      <span className="flex items-center gap-2 overflow-hidden">
-                        <Globe size={16} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{domain || "Select a domain..."}</span>
-                      </span>
-                      <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${domainOpen ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {domainOpen && (
-                      <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                        <div className="border-b border-slate-100 bg-white p-2">
-                          <div className="relative">
-                            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                              type="text"
-                              autoFocus
-                              value={domainSearch}
-                              onChange={(event) => setDomainSearch(event.target.value)}
-                              onKeyDown={handleDomainKeyDown}
-                              placeholder="Search domains..."
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="max-h-60 overflow-y-auto p-1">
-                          {domainsLoading ? (
-                            <div className="flex items-center justify-center p-4 text-sm text-slate-500">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
-                              Loading...
-                            </div>
-                          ) : domainOptions.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-slate-500">No domains found.</div>
-                          ) : filteredDomainOptions.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-slate-500">No domains found for your search.</div>
-                          ) : (
-                            <ul className="space-y-1">
-                              <li>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleFieldChange("domain", "");
-                                    setDomainOpen(false);
-                                  }}
-                                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${!domain ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${domainFocusedIndex === 0 ? "bg-slate-100 font-semibold" : ""}`}
-                                >
-                                  <span>Select a domain...</span>
-                                  {!domain ? <Check size={14} className="shrink-0" /> : null}
-                                </button>
-                              </li>
-                              {filteredDomainOptions.map((d, index) => {
-                                const isSelected = domain === d;
-                                const optionIndex = index + 1;
-                                return (
-                                  <li key={d}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleFieldChange("domain", d);
-                                        setDomainOpen(false);
-                                      }}
-                                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${isSelected ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${domainFocusedIndex === optionIndex ? "bg-slate-100 font-semibold" : ""}`}
-                                    >
-                                      <span className="truncate text-left">{d}</span>
-                                      {isSelected ? <Check size={14} className="shrink-0" /> : null}
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                  <Tag size={12} className="text-slate-400" />
-                  Tags
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {tag}
-                      <button type="button" onClick={() => handleRemoveTag(tag)} className="text-slate-400 hover:text-slate-700" aria-label={`Remove ${tag}`}>
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => handleTagInputChange(e.target.value)}
-                  onKeyDown={handleTagInputKeyDown}
-                  onBlur={() => handleAddTag(tagInput)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold text-slate-800 placeholder-slate-400"
-                  placeholder="Type a tag and press Space or Enter"
-                />
-                <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Press Space or Enter to convert text into a tag.</p>
-              </div>
-
-              {/* Final assessment is course metadata, not curriculum content. */}
-              <div ref={finalAssessmentRef}>
-                <label className="block text-xs font-bold text-slate-700 mb-2">Final Assessment</label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!finalAssessmentsRequested) {
-                        setFinalAssessmentsRequested(true);
-                      }
-                      setFinalAssessmentOpen((prev) => !prev);
-                    }}
-                    disabled={updateMutation.isPending}
-                    className={`w-full flex items-center justify-between rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all ${finalAssessmentOpen ? "border-blue-500 ring-4 ring-blue-500/10" : "border-slate-200 hover:border-blue-300"} disabled:opacity-60`}
-                  >
-                    <span className="flex items-center gap-2 overflow-hidden">
-                      <BookOpen size={16} className="text-slate-400 shrink-0" />
-                      <span className="truncate">{selectedFinalAssessmentLabel}</span>
-                    </span>
-                    <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${finalAssessmentOpen ? "rotate-180" : ""}`} />
 
               {/* Final assessment is course metadata, not curriculum content. */}
               <div ref={finalAssessmentRef}>
@@ -1003,13 +744,6 @@ export default function CreateCoursePage() {
                           <div className="flex items-center justify-center p-4 text-sm text-slate-500">
                             <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
                             Updating...
-                      </div>
-
-                      <div className="max-h-60 overflow-y-auto p-1">
-                        {updateMutation.isPending ? (
-                          <div className="flex items-center justify-center p-4 text-sm text-slate-500">
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
-                            Updating...
                           </div>
                         ) : !finalAssessmentsRequested ? (
                           <div className="p-4 text-center text-sm text-slate-500">Open to load assignments.</div>
@@ -1053,80 +787,12 @@ export default function CreateCoursePage() {
                             })}
                           </ul>
                         )}
-                        ) : !finalAssessmentsRequested ? (
-                          <div className="p-4 text-center text-sm text-slate-500">Open to load assignments.</div>
-                        ) : finalAssessments.length === 0 ? (
-                          <div className="p-4 text-center text-sm text-slate-500">No assignments found.</div>
-                        ) : filteredFinalAssessments.length === 0 ? (
-                          <div className="p-4 text-center text-sm text-slate-500">No assignments found for your search.</div>
-                        ) : (
-                          <ul className="space-y-1">
-                            <li>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  void handleFinalAssessmentChange("");
-                                  setFinalAssessmentOpen(false);
-                                }}
-                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${!finalAssessmentId ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${faFocusedIndex === 0 ? "bg-slate-100 font-semibold" : ""}`}
-                              >
-                                <span>No final assessment</span>
-                                {!finalAssessmentId ? <Check size={14} className="shrink-0" /> : null}
-                              </button>
-                            </li>
-                            {filteredFinalAssessments.map((assignment: any, index: number) => {
-                              const isSelected = String(finalAssessmentId) === String(assignment.id);
-                              const optionIndex = index + 1;
-                              return (
-                                <li key={assignment.id}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      void handleFinalAssessmentChange(String(assignment.id));
-                                      setFinalAssessmentOpen(false);
-                                    }}
-                                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${isSelected ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${faFocusedIndex === optionIndex ? "bg-slate-100 font-semibold" : ""}`}
-                                  >
-                                    <span className="truncate text-left">{assignment.title || assignment.assignment_title || `Assignment ${assignment.id}`}</span>
-                                    {isSelected ? <Check size={14} className="shrink-0" /> : null}
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
                       </div>
-                    </div>
-                  )}
                     </div>
                   )}
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Loaded only when this selector is opened.</p>
-                <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Loaded only when this selector is opened.</p>
               </div>
-            </div>
-
-            {/* BUILD CURRICULUM CTA */}
-            <div className="flex justify-end">
-              <button
-                onClick={handleContinue}
-                disabled={createMutation.isPending || updateMutation.isPending || isSubmitting}
-                className="flex items-center gap-2.5 bg-blue-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {createMutation.isPending || updateMutation.isPending || isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    Build Curriculum
-                    <ArrowRight size={16} className="stroke-[2.5px]" />
-                  </>
-                )}
-              </button>
-            </div>
-
             </div>
 
             {/* BUILD CURRICULUM CTA */}
@@ -1154,7 +820,6 @@ export default function CreateCoursePage() {
 
           {/* RIGHT 1/3 COLUMN */}
           <div className="lg:col-span-1 flex flex-col gap-8">
-
 
             {/* THUMBNAIL CARD */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-5">

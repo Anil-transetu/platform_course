@@ -8,20 +8,10 @@ import CreateDomainModal from "@/components/sidebar/CreateDomainModel";
 import StatsCard, { StatsGrid } from "@/components/ui/StatsCard";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import DataTable, { Column } from "@/components/reusable/DataTable";
-import DataTable, { Column } from "@/components/reusable/DataTable";
 import CourseDeleteDialog from "./CourseDeleteDialog";
 import { buildCourseColumns, buildDomainColumns, Course, Domain } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import {
-  useDomains,
-  useDomain,
-  useDomainStats,
-  useCreateDomain,
-  useUpdateDomain,
-  useDeleteDomain
-} from "@/features/admin/domains/api/domain-api";
-import { useAssignments } from "@/features/admin/assignments/api/use-assignments";
 import {
   useCourses,
   useCourseStats,
@@ -31,30 +21,12 @@ import CourseDetailViewer from "./CourseDetailViewer";
 import AssignmentDetailViewer from "./AssignmentDetailViewer";
 import { useCourseStore } from "@/store/useCourseStore";
 import { useDebounce } from "@/hooks/use-debounce";
-
-const getInitials = (name?: string) => {
-  if (!name) return "C";
-  const parts = name.split(" ");
-  if (parts.length > 1) {
-    return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-const avatarColors = [
-  "bg-blue-100 text-blue-600 border border-blue-200",
-  "bg-orange-200 text-orange-600 border border-orange-300",
-  "bg-purple-100 text-purple-600 border border-purple-200",
-  "bg-pink-100 text-pink-600 border border-pink-200",
-  "bg-green-100 text-green-600 border border-green-200",
-];
-
-const getAvatarColor = (id: string | number) => {
-  const index = typeof id === "number" ? id % avatarColors.length : String(id).length % avatarColors.length;
-  return avatarColors[index];
-};
-
-// Master list of all possible courses to map tags and associate course details
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 function CoursePageSkeleton() {
   return (
@@ -167,7 +139,6 @@ export default function CoursesPage() {
   const [viewingDomain, setViewingDomain] = useState<Domain | null>(null);
   // Track course selected for details viewing
   const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
-  const [viewingCourse, setViewingCourse] = useState<Course | null>(null);
   const [viewingAssignmentId, setViewingAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -221,70 +192,30 @@ export default function CoursesPage() {
     isLoading: isLoadingCourses,
     isFetching: isFetchingCourses,
     error: coursesError
-    isFetching: isFetchingCourses,
-    error: coursesError
   } = useCourses(
     activeTab === "courses" ? page : 1,
     rowsPerPage,
     debouncedSearch,
     statusFilter,
-    { enabled: queriesReady && activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId && !viewId }
+    { enabled: queriesReady && !viewingCourse && !viewingAssignmentId && !viewId }
   );
 
   useEffect(() => {
-    if (coursesError && activeTab === "courses") {
+    if (coursesError) {
       toast.error(coursesError.message || "Failed to load courses");
     }
-  }, [coursesError, activeTab]);
+  }, [coursesError]);
 
   const getEmptyStateMessage = () => {
-    if (activeTab === "courses") {
-      return coursesError
-        ? "Failed to load courses. Please try again."
-        : "No courses found.";
-    } else {
-      return "No domains found.";
-    }
+    return coursesError
+      ? "Failed to load courses. Please try again."
+      : "No courses found.";
   };
 
   const { data: courseStatsRaw } = useCourseStats({
-    enabled: queriesReady && activeTab === "courses" && !viewingCourse && !viewingDomain && !viewingAssignmentId && !viewId
+    enabled: queriesReady && !viewingCourse && !viewingAssignmentId && !viewId
   });
   const deleteCourseMutation = useDeleteCourse();
-
-  // Queries & Mutations for domains
-  const {
-    data: domainsResponse,
-    isLoading: isDomainsLoading,
-    isFetching: isDomainsFetching
-  } = useDomains(
-    activeTab === "domains" ? page : 1,
-    rowsPerPage,
-    debouncedSearch,
-    statusFilter,
-    { enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId }
-  );
-
-  const { data: domainStats } = useDomainStats({
-    enabled: activeTab === "domains" && !viewingCourse && !viewingDomain && !viewingAssignmentId
-  });
-
-  const { data: assignmentsRes } = useAssignments(1, 100, undefined, undefined, {
-    enabled: !!viewingDomain && !viewingAssignmentId
-  });
-  const availableAssignments = assignmentsRes?.data || [];
-
-  const createDomainMutation = useCreateDomain();
-  const updateDomainMutation = useUpdateDomain();
-  const deleteDomainMutation = useDeleteDomain();
-
-  // Fetch latest domain details dynamically when viewing a domain
-  const { data: latestDomain } = useDomain(viewingDomain?.id || "");
-  const activeDomain = latestDomain || viewingDomain;
-
-  // Normalize Lists
-  const domainsList: Domain[] = domainsResponse?.data || (Array.isArray(domainsResponse) ? domainsResponse : []);
-  const totalDomainsCount = domainsResponse?.pagination?.total || domainsResponse?.total || domainsList.length;
 
   const coursesList = coursesResponse?.data || [];
   const totalCoursesCount = coursesResponse?.pagination?.total || coursesResponse?.total || coursesList.length;
@@ -312,11 +243,11 @@ export default function CoursesPage() {
       toast.error("Network disconnected. Please check your connection.");
       return;
     }
-    if (deleteDialog.type === "course" && deleteDialog.item) {
+    if (deleteDialog.item) {
       try {
         await deleteCourseMutation.mutateAsync(deleteDialog.item.id);
         toast.success("Course deleted successfully!");
-        setDeleteDialog({ open: false, item: null, type: "course" });
+        setDeleteDialog({ open: false, item: null });
       } catch (err) {
         const error = err as Error;
         toast.error(error.message || "Failed to delete course");
@@ -425,7 +356,6 @@ export default function CoursesPage() {
           setViewingCourse(null);
           router.push("/admin/courses");
         }} 
-        onEdit={() => router.push(`/admin/courses/edit/${viewingCourse.id}`)}
         onEdit={() => router.push(`/admin/courses/edit/${viewingCourse.id}`)}
       />
     );
@@ -711,47 +641,6 @@ export default function CoursesPage() {
             <StatsCard title="Active Courses" value={courseStatsRaw?.active_courses ?? courseStatsRaw?.active ?? coursesList.filter((c: Course) => c.status === "Published").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Courses currently published and accessible to students" />
             <StatsCard title="Draft Courses" value={courseStatsRaw?.draft_courses ?? courseStatsRaw?.draft ?? coursesList.filter((c: Course) => c.status === "Draft").length} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Courses saved as draft and not yet published" />
           </StatsGrid>
-        ) : (
-          <StatsGrid>
-            <StatsCard title="Total Domains" value={domainStats?.total || totalCount} icon={<BookOpen size={20} />} iconBgClass="bg-blue-50" iconColorClass="text-blue-600" tooltip="All academic domains managed" />
-            <StatsCard title="Active Domains" value={domainStats?.active || domainsList.filter(d => d.status === "Active").length} icon={<CheckCircle size={20} />} iconBgClass="bg-green-50" iconColorClass="text-green-600" tooltip="Domains currently active" />
-            <StatsCard title="Inactive Domains" value={(domainStats?.total || totalCount) - (domainStats?.active || domainsList.filter(d => d.status === "Active").length)} icon={<FileText size={20} />} iconBgClass="bg-orange-50" iconColorClass="text-orange-600" tooltip="Domains currently inactive" />
-          </StatsGrid>
-        )}
-
-        {/* TABS */}
-        <div className="flex gap-6 border-b flex-shrink-0">
-          <button
-            onClick={() => {
-              setActiveTab("courses");
-              setPage(1);
-              setStatusFilter("All");
-              setSearch("");
-            }}
-            className={`pb-2 font-medium transition-all text-sm ${
-              activeTab === "courses"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground"
-            }`}
-          >
-            Courses
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("domains");
-              setPage(1);
-              setStatusFilter("All");
-              setSearch("");
-            }}
-            className={`pb-2 font-medium transition-all text-sm ${
-              activeTab === "domains"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:text-foreground"
-            }`}
-          >
-            Domains
-          </button>
-        </div>
 
         {/* DATA TABLE */}
         <div className="flex-grow min-h-0">
@@ -814,10 +703,9 @@ export default function CoursesPage() {
         type={deleteDialog.type}
         onClose={() => setDeleteDialog({ open: false, item: null, type: "course" })}
         onConfirm={handleDelete}
-        loading={deleteCourseMutation.isPending || deleteDomainMutation.isPending}
+        loading={deleteCourseMutation.isPending}
       />
 
     </ListingScreenTemplate>
   );
 }
-

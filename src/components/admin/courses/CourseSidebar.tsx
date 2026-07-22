@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import React, { useState, useRef } from "react";
 import { 
   FolderPlus, 
   FileText, 
@@ -39,25 +38,7 @@ interface CourseSidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
 }
-import { useCreateModule, useUpdateModule, useDeleteModule, useCreateLesson, useUpdateLesson, useDeleteLesson, useCreateTopic, useDeleteTopic } from "@/features/admin/courses/api/course-api";
-import { Modal } from "@/components/ui/modal";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 
-const toastApiError = (err: any, fallbackMessage: string) => {
-  if (typeof window !== "undefined" && !navigator.onLine) {
-    toast.error("Network disconnected. Please check your connection.");
-    return;
-  }
-  toast.error(err?.message || fallbackMessage);
-};
-
-interface CourseSidebarProps {
-  isCollapsed?: boolean;
-  onToggle?: () => void;
-}
-
-export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
 export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -69,10 +50,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     activeTopicId,
     activeQuizId,
     activeAssignmentId,
-    expandedModules,
-    expandedLessons,
-    toggleModuleExpand,
-    toggleLessonExpand,
     expandedModules,
     expandedLessons,
     toggleModuleExpand,
@@ -97,13 +74,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     deleteCourseQuiz,
     deleteCourseAssignment,
     moveLessonItem,
-    moveModuleItem,
-    reorderModules,
-    reorderModuleItems,
-    reorderLessonItems,
-    mapTemporaryModuleId,
-    lastSavedCourseJson,
-    setPendingNavigation,
     moveModuleItem,
     reorderModules,
     reorderModuleItems,
@@ -197,23 +167,9 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
       activeQuizId: null,
       activeAssignmentId: null
     });
-    confirmNavigation("lesson", "lesson", {
-      activeModuleId: moduleId,
-      activeLessonId: lessonId,
-      activeTopicId: null,
-      activeQuizId: null,
-      activeAssignmentId: null
-    });
   };
 
   const handleTopicClick = (moduleId: string, lessonId: string, topicId: string) => {
-    confirmNavigation("topic", "topic", {
-      activeModuleId: moduleId,
-      activeLessonId: lessonId,
-      activeTopicId: topicId,
-      activeQuizId: null,
-      activeAssignmentId: null
-    });
     confirmNavigation("topic", "topic", {
       activeModuleId: moduleId,
       activeLessonId: lessonId,
@@ -588,28 +544,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     }
 
     execute();
-    const execute = () => {
-      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
-      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
-      if (currentActiveModuleId && currentActiveLessonId) {
-        addQuiz(currentActiveModuleId, currentActiveLessonId);
-      } else if (currentActiveModuleId) {
-        addQuiz(currentActiveModuleId);
-      } else {
-        addCourseQuiz();
-      }
-      navigateTo("quiz");
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingNavigation({
-        type: "action",
-        action: execute
-      });
-      return;
-    }
-
-    execute();
   };
 
   const handleAddAssignment = () => {
@@ -635,69 +569,11 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
     }
 
     execute();
-    const execute = () => {
-      const currentActiveModuleId = useCourseStore.getState().activeModuleId;
-      const currentActiveLessonId = useCourseStore.getState().activeLessonId;
-      if (currentActiveModuleId && currentActiveLessonId) {
-        addAssignment(currentActiveModuleId, currentActiveLessonId);
-      } else if (currentActiveModuleId) {
-        addAssignment(currentActiveModuleId);
-      } else {
-        addCourseAssignment();
-      }
-      navigateTo("assignment");
-    };
-
-    if (hasUnsavedChanges()) {
-      setPendingNavigation({
-        type: "action",
-        action: execute
-      });
-      return;
-    }
-
-    execute();
   };
 
   const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
-  const hasCourseContent = (course.quizzes && course.quizzes.length > 0) || (course.assignments && course.assignments.length > 0);
 
   return (
-    <div
-      className={`bg-[#f5f8fc] border-r border-slate-200/80 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700 overflow-hidden transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-[52px]' : 'w-[320px]'
-      }`}
-    >
-      {/* COLLAPSED ICON STRIP */}
-      {isCollapsed && (
-        <div className="flex flex-col items-center py-4 gap-3 flex-1">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500" title="Add Module">
-            <FolderPlus size={16} />
-          </div>
-          {course.modules.length > 0 && (
-            <div className="flex flex-col gap-2 items-center mt-1">
-              {course.modules.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => handleModuleClick(m.id)}
-                  title={m.title || "Module"}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                    activeModuleId === m.id
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-white text-blue-600 border border-slate-200 hover:bg-blue-50'
-                  }`}
-                >
-                  <Folder size={14} />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* EXPANDED FULL SIDEBAR */}
-      {!isCollapsed && (
-        <div className="p-6 flex flex-col gap-8 overflow-y-auto flex-1">
     <div
       className={`bg-[#f5f8fc] border-r border-slate-200/80 flex flex-col shadow-[2px_0_15px_rgba(0,0,0,0.015)] shrink-0 h-full text-slate-700 overflow-hidden transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-[52px]' : 'w-[320px]'
@@ -764,7 +640,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                       {/* Expand Arrow */}
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
-                        onClick={(e) => { e.stopPropagation(); toggleModuleExpand(module.id); }}
                         className={`p-1 rounded-md transition-colors ${
                           isModuleActive && !activeLessonId
                             ? 'hover:bg-blue-700/50 text-white/80 hover:text-white'
@@ -816,7 +691,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
 
                     return (
                       <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
-                      <div className="flex flex-col pl-5 ml-4 border-l-2 border-slate-200 gap-1.5">
                         {items.map((item, itemIdx) => {
                           if (item.type === 'lesson') {
                             const lesson = module.lessons.find(l => l.id === item.id);
@@ -840,7 +714,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                   <div className="flex items-center gap-2 overflow-hidden flex-1 pl-1">
                                     {/* Lesson Expand Toggle */}
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
                                       onClick={(e) => { e.stopPropagation(); toggleLessonExpand(lesson.id); }}
                                       className={`p-0.5 rounded-md transition-colors ${
                                         isLessonActive
@@ -873,7 +746,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteLessonClick(module.id, lesson.id);
-                                        handleDeleteLessonClick(module.id, lesson.id);
                                       }}
                                       className={`p-0.5 ${isLessonActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                     >
@@ -892,7 +764,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                   ];
                                   
                                   return (
-                                    <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                     <div className="flex flex-col pl-6 mt-1 border-l-2 border-indigo-100 gap-1.5 ml-[22px]">
                                       {lessonItems.map((lItem, lItemIdx) => {
                                         if (lItem.type === 'topic') {
@@ -926,7 +797,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                   onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleDeleteTopicClick(module.id, lesson.id, topic.id);
-                                                    handleDeleteTopicClick(module.id, lesson.id, topic.id);
                                                   }}
                                                   className={`p-0.5 ${isTopicActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -954,7 +824,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                             >
                                               <div className="flex items-center gap-2 overflow-hidden flex-1 pl-2">
                                                 <GraduationCap className={isQuizActive ? "text-white" : "text-slate-400"} size={14} />
-                                                <span className="text-xs font-semibold truncate flex-1">
                                                 <span className="text-xs font-semibold truncate flex-1">
                                                   {quiz.title || `Quiz ${qIdx + 1}`}
                                                 </span>
@@ -1006,9 +875,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                                      if (activeAssignmentId === assignment.id) {
                                                        navigateTo("lesson");
                                                      }
-                                                     if (activeAssignmentId === assignment.id) {
-                                                       navigateTo("lesson");
-                                                     }
                                                   }}
                                                   className={`p-0.5 ${isAssignmentActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                                 >
@@ -1056,9 +922,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                         if (activeQuizId === quiz.id) {
                                           navigateTo("module");
                                         }
-                                        if (activeQuizId === quiz.id) {
-                                          navigateTo("module");
-                                        }
                                      }}
                                      className={`p-0.5 ${isQuizActive ? 'hover:text-white text-white/70' : 'hover:text-rose-600 text-slate-400'}`}
                                    >
@@ -1095,9 +958,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       deleteAssignment(module.id, undefined, assignment.id);
-                                       if (activeAssignmentId === assignment.id) {
-                                         navigateTo("module");
-                                       }
                                        if (activeAssignmentId === assignment.id) {
                                          navigateTo("module");
                                        }
@@ -1193,7 +1053,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
 
         </div>
       </div>
-
 
       {/* 2. ADD CONTENT SECTION */}
       <div className="pt-4 border-t border-slate-200">
@@ -1294,15 +1153,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
           onClick={handleAddModule}
           disabled={createModuleMutation.isPending}
           className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={createModuleMutation.isPending}
-          className="w-full flex items-center justify-center gap-2 bg-blue-100/60 text-blue-600 hover:bg-blue-200/85 hover:text-blue-700 py-3.5 rounded-xl transition-all font-bold text-sm shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {createModuleMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus size={16} />
-          )}
-          {createModuleMutation.isPending ? "Adding Module..." : "Add Another Module"}
           {createModuleMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -1312,52 +1163,6 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
         </button>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <Modal 
-        isOpen={deleteTargetId !== null} 
-        onClose={() => !isDeleting && (setDeleteTargetId(null), setDeleteTargetType(null), setDeleteTargetModuleId(null))}
-        title={deleteTargetType === 'module' ? "Delete Module" : "Delete Lesson"}
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-slate-650 leading-relaxed">
-            {deleteTargetType === 'module' 
-              ? "Are you sure you want to delete this module? This will permanently remove all lessons, topics, quizzes, and assignments under it."
-              : "Are you sure you want to delete this lesson? This will permanently remove all topics, quizzes, and assignments under it."
-            }
-          </p>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button
-              onClick={() => {
-                setDeleteTargetId(null);
-                setDeleteTargetType(null);
-                setDeleteTargetModuleId(null);
-              }}
-              disabled={isDeleting}
-              className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-650 hover:bg-slate-50 transition-all disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-              className="px-5 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-md shadow-rose-600/10 flex items-center gap-2 disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete"
-              )}
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-        </div>
-      )}
       {/* Delete Confirmation Modal */}
       <Modal 
         isOpen={deleteTargetId !== null} 

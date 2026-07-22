@@ -144,8 +144,8 @@ export function useMarkAllNotificationsRead() {
 
 export function useNotificationUnreadCount() {
   const { data } = useNotifications(1, 20);
-  const notifications = data?.data || [];
-  return notifications.filter((n) => !n.is_read).length;
+  const notifications = data?.data;
+  return Array.isArray(notifications) ? notifications.filter((n) => !n.is_read).length : 0;
 }
 
 

@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ExternalLink, Loader2, Camera } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
 import { ExternalLink, Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -50,10 +46,6 @@ export default function GeneralSettingsPage() {
   const { data: profileResponse, isLoading: isLoadingProfile } = useProfile();
   const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
   
-  
-  const { data: profileResponse, isLoading: isLoadingProfile } = useProfile();
-  const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
-  
   const [profileImage, setProfileImage] = useState(defaultAvatar);
   const [formData, setFormData] = useState<Record<string, any>>({});
   
@@ -62,6 +54,12 @@ export default function GeneralSettingsPage() {
   const [selectedImageForCrop, setSelectedImageForCrop] = useState<string | null>(null);
   
   const profileData = profileResponse?.data || profileResponse || {};
+  
+  const isAdmin = profileData.role?.toLowerCase() === "admin" || profileData.role === "Admin";
+  const currentIgnoredFields = [...IGNORED_FIELDS];
+  if (isAdmin) {
+    currentIgnoredFields.push("mobile_number", "phone_number", "phone", "mobile");
+  }
 
   useEffect(() => {
     if (!isLoadingProfile && Object.keys(profileData).length > 0) {
@@ -70,7 +68,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           // Flatten simple string arrays, ignore object arrays here
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
@@ -94,7 +92,6 @@ export default function GeneralSettingsPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Create an object URL for the cropper instead of reading immediately
     // Create an object URL for the cropper instead of reading immediately
     const imageUrl = URL.createObjectURL(file);
     setSelectedImageForCrop(imageUrl);
@@ -129,7 +126,7 @@ export default function GeneralSettingsPage() {
     
     // Strip out fields that the backend doesn't allow updating via this endpoint
     const disallowedFields = [
-      "email", "status", "role", "created_date", "created_at", 
+      "email", "role", "created_date", "created_at", 
       "updated_at", "allocated_batches", "allocated_batches_count",
       "avatar"
     ];
@@ -199,7 +196,7 @@ export default function GeneralSettingsPage() {
       
       const initialData: Record<string, any> = {};
       Object.keys(profileData).forEach(key => {
-        if (!IGNORED_FIELDS.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
+        if (!currentIgnoredFields.includes(key) && !READ_ONLY_FIELDS.includes(key)) {
           if (Array.isArray(profileData[key])) {
              if (profileData[key].length > 0 && typeof profileData[key][0] !== 'object') {
                initialData[key] = profileData[key].join(", ");
@@ -312,8 +309,6 @@ export default function GeneralSettingsPage() {
               alt="Profile Picture"
               fill
               className="object-cover"
-              fill
-              className="object-cover"
               unoptimized
               priority
             />
@@ -322,17 +317,9 @@ export default function GeneralSettingsPage() {
               <Camera className="w-6 h-6 text-white mb-1" />
               <span className="text-[10px] font-medium text-white uppercase tracking-wider">Change</span>
             </div>
-            {/* Dark overlay specifically for image hover to ensure visibility of camera icon regardless of theme */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="w-6 h-6 text-white mb-1" />
-              <span className="text-[10px] font-medium text-white uppercase tracking-wider">Change</span>
-            </div>
           </div>
 
           <div>
-            <h3 className="text-base font-semibold mb-1">Profile Picture</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              JPG, GIF or PNG. 1MB max. Click the avatar to upload.
             <h3 className="text-base font-semibold mb-1">Profile Picture</h3>
             <p className="text-xs text-muted-foreground mb-4">
               JPG, GIF or PNG. 1MB max. Click the avatar to upload.
@@ -348,10 +335,10 @@ export default function GeneralSettingsPage() {
 
         {/* Dynamic Form Fields (Editable) */}
         <h3 className="text-lg font-medium mb-4 border-b pb-2">Personal Information</h3>
-        {Object.keys(formData).filter(k => !IGNORED_FIELDS.includes(k)).length > 0 ? (
+        {Object.keys(formData).filter(k => !currentIgnoredFields.includes(k)).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-10">
             {Object.entries(formData)
-              .filter(([key]) => !IGNORED_FIELDS.includes(key) && key !== "status")
+              .filter(([key]) => !currentIgnoredFields.includes(key) && key !== "status")
               .map(([key, value]) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className="font-medium">{formatLabel(key)}</Label>
@@ -384,23 +371,7 @@ export default function GeneralSettingsPage() {
         ) : (
           <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl mb-10 bg-muted/20">
             No editable profile fields found.
-        ) : (
-          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-xl mb-10 bg-muted/20">
-            No editable profile fields found.
           </div>
-        )}
-
-        {/* Read-Only Fields */}
-        {readOnlyEntries.length > 0 && (
-          <>
-            <h3 className="text-lg font-medium mb-4 border-b pb-2">System Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-6">
-              {readOnlyEntries.map(([key, value]) => (
-                <div key={key} className="space-y-2">
-                  <Label className="text-muted-foreground font-medium block">{formatLabel(key)}</Label>
-                  {renderReadOnlyField(key, value)}
-                </div>
-              ))}
         )}
 
         {/* Read-Only Fields */}
@@ -417,8 +388,6 @@ export default function GeneralSettingsPage() {
             </div>
           </>
         )}
-          </>
-        )}
       </div>
 
       <div className="p-4 md:p-6 border-t bg-muted/50 flex flex-col sm:flex-row items-center justify-end gap-3 sm:gap-4 mt-auto">
@@ -429,14 +398,6 @@ export default function GeneralSettingsPage() {
           {isUpdating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}
         </Button>
       </div>
-
-      {/* Profile Image Cropper Modal */}
-      <ImageCropperModal
-        isOpen={isCropperOpen}
-        imageSrc={selectedImageForCrop}
-        onClose={handleCropperClose}
-        onCropComplete={handleCropComplete}
-      />
 
       {/* Profile Image Cropper Modal */}
       <ImageCropperModal

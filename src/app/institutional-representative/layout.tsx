@@ -11,7 +11,6 @@ export default function InstitutionalRepresentativeLayout({
   return (
     <SidebarProvider className="h-screen overflow-hidden">
       <RolesSidebar role="INSTITUTION_REP" />
-      <RolesSidebar role="INSTITUTION_REP" />
       <SidebarInset className="flex flex-col overflow-hidden bg-muted">
         <main className="flex-1 overflow-hidden flex flex-col h-full">
           {children}
