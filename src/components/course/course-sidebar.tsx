@@ -1,4 +1,5 @@
 import React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { 
   ChevronDown, ChevronRight, FileText, Target, 
@@ -27,6 +28,7 @@ export function CourseSidebar({
   expandedLessons,
   toggleLesson
 }: CourseSidebarProps) {
+  const queryClient = useQueryClient();
   
   const renderItemButton = (
     type: SidebarItemType,
@@ -39,6 +41,19 @@ export function CourseSidebar({
     const isActive = activeItem?.type === type && activeItem?.id === id;
     const isLocked = !!data.isLocked;
     
+    const cachedView = queryClient.getQueryData(["course-view", String(courseData.courseId), type, String(id)]) as any;
+    
+    const isCompleted = 
+      data.progressPct === 100 || 
+      data.isCompleted === true || 
+      data.is_completed === true || 
+      data.status === "completed" || 
+      data.progress_status === "completed" ||
+      cachedView?.isCompleted === true ||
+      cachedView?.is_completed === true ||
+      cachedView?.data?.isCompleted === true ||
+      cachedView?.data?.is_completed === true;
+
     return (
       <button
         key={id}
@@ -58,7 +73,7 @@ export function CourseSidebar({
         <div className="flex items-center justify-center shrink-0">
           {isLocked ? (
             <Lock size={14} />
-          ) : data.progressPct === 100 ? (
+          ) : isCompleted ? (
             <CheckCircle2 size={14} className="text-green-500" />
           ) : (
             <IconComponent size={14} />
@@ -83,6 +98,17 @@ export function CourseSidebar({
         const isLessExpanded = !!expandedLessons[String(lesson.id)];
         const isLessActive = activeItem?.type === "lesson" && activeItem?.id === lesson.id;
         
+        const cachedLessView = queryClient.getQueryData(["course-view", String(courseData.courseId), "lesson", String(lesson.id)]) as any;
+        const isLessCompleted = 
+          lesson.progressPct === 100 || 
+          (lesson as any).isCompleted === true || 
+          (lesson as any).is_completed === true || 
+          (lesson as any).status === "completed" || 
+          cachedLessView?.isCompleted === true ||
+          cachedLessView?.is_completed === true ||
+          cachedLessView?.data?.isCompleted === true ||
+          cachedLessView?.data?.is_completed === true;
+
         return (
           <div key={lesson.id} className="mt-1">
             <div 
@@ -100,7 +126,13 @@ export function CourseSidebar({
               )}
             >
               <div className="flex items-center gap-3 overflow-hidden w-full text-sm font-medium">
-                {lesson.isLocked ? <Lock size={14} className="shrink-0" /> : <FileText size={14} className="shrink-0" />}
+                {lesson.isLocked ? (
+                  <Lock size={14} className="shrink-0" />
+                ) : isLessCompleted ? (
+                  <CheckCircle2 size={14} className="shrink-0 text-green-500" />
+                ) : (
+                  <FileText size={14} className="shrink-0" />
+                )}
                 <span className="truncate">{lesson.name}</span>
               </div>
               {!lesson.isLocked && (

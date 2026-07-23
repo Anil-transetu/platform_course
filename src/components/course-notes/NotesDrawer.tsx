@@ -4,15 +4,19 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NotesHeader } from "./NotesHeader";
 import { NotesEditor } from "./NotesEditor";
 import { useCourseNotes } from "./hooks/useCourseNotes";
+import { ActiveSidebarItem } from "@/types/student-course";
+import { Loader2 } from "lucide-react";
 
 interface NotesDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  courseId: string;
+  activeItem: ActiveSidebarItem | null;
 }
 
-export function NotesDrawer({ isOpen, onOpenChange }: NotesDrawerProps) {
+export function NotesDrawer({ isOpen, onOpenChange, courseId, activeItem }: NotesDrawerProps) {
   const isMobile = useIsMobile();
-  const { note, updateNote } = useCourseNotes();
+  const { note, updateNote, saveNote, isSaving, isLoading, isError } = useCourseNotes(courseId, activeItem, isOpen);
 
   return (
     <>
@@ -26,10 +30,8 @@ export function NotesDrawer({ isOpen, onOpenChange }: NotesDrawerProps) {
       `}} />
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent
-          side={isMobile ? "bottom" : "right"}
-          className={`${
-            isMobile ? "h-[85vh] rounded-t-xl" : "w-[400px] sm:w-[420px]"
-          } p-0 flex flex-col bg-background shadow-2xl border-l`}
+          side="right"
+          className="w-full sm:w-[400px] md:w-[420px] p-0 flex flex-col bg-background shadow-2xl border-l h-full"
         >
           <SheetTitle className="sr-only">Course Notes</SheetTitle>
           <SheetDescription className="sr-only">
@@ -38,12 +40,24 @@ export function NotesDrawer({ isOpen, onOpenChange }: NotesDrawerProps) {
           <div className="flex flex-col h-full overflow-hidden p-6">
             <NotesHeader />
             <div className="flex-1 mt-4 flex flex-col overflow-hidden">
-              {note && (
+              {isLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+                  <p className="text-sm">Loading your notes...</p>
+                </div>
+              ) : isError ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-destructive gap-3 text-center">
+                  <p className="text-sm font-medium">Failed to load notes</p>
+                  <p className="text-xs text-muted-foreground">Please try again later</p>
+                </div>
+              ) : note ? (
                 <NotesEditor
                   note={note}
                   onChange={updateNote}
+                  onSave={saveNote}
+                  isSaving={isSaving}
                 />
-              )}
+              ) : null}
             </div>
           </div>
         </SheetContent>
