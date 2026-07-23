@@ -30,10 +30,8 @@ export function NotesDrawer({ isOpen, onOpenChange, courseId, activeItem }: Note
       `}} />
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent
-          side={isMobile ? "bottom" : "right"}
-          className={`${
-            isMobile ? "h-[85vh] rounded-t-xl" : "w-[400px] sm:w-[420px]"
-          } p-0 flex flex-col bg-background shadow-2xl border-l`}
+          side="right"
+          className="w-full sm:w-[400px] md:w-[420px] p-0 flex flex-col bg-background shadow-2xl border-l h-full"
         >
           <SheetTitle className="sr-only">Course Notes</SheetTitle>
           <SheetDescription className="sr-only">

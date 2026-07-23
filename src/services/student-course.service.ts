@@ -2,7 +2,7 @@ import { CourseSidebarResponse, CourseHomeResponse, CourseContent } from "@/type
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 
-function getAuthHeaders(): Record<string, string> {
+export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -15,7 +15,7 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-async function handleResponse<T>(response: Response): Promise<T> {
+export async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
     let messageStr = "API request failed";

@@ -62,8 +62,8 @@ export function NotesEditor({ note, onChange, onSave, isSaving }: NotesEditorPro
           ref={editorRef}
           contentEditable
           onInput={handleContentInput}
-          style={{ color: "black", caretColor: "black" }}
-          className="flex-1 overflow-y-auto p-5 text-base focus:outline-none prose prose-sm prose-p:leading-relaxed prose-headings:font-semibold max-w-none"
+          style={{ color: "black", caretColor: "black", wordWrap: "break-word" }}
+          className="flex-1 overflow-auto p-5 text-base focus:outline-none prose prose-sm prose-p:leading-relaxed prose-headings:font-semibold max-w-none"
           data-placeholder="Start typing your notes here..."
           suppressContentEditableWarning
         />

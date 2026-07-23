@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useCourseView } from "@/hooks/use-course-view";
 import { useCourseHome } from "@/hooks/use-course-home";
 import { useRouter, useParams } from "next/navigation";
+import { MarkCompletedButton } from "./mark-completed-button";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -51,16 +52,16 @@ export function CourseViewer({ courseId, activeItem }: CourseViewerProps) {
 
   if (activeItem.type === "module") {
     const module = activeItem.data as SidebarModule;
-    return <ModuleOverview module={module} content={viewContent} />;
+    return <ModuleOverview courseId={courseId} module={module} content={viewContent} />;
   }
 
   if (activeItem.type === "lesson") {
     const lesson = activeItem.data as SidebarLesson;
-    return <LessonOverview lesson={lesson} content={viewContent} />;
+    return <LessonOverview courseId={courseId} lesson={lesson} content={viewContent} />;
   }
 
   if (activeItem.type === "topic") {
-    return <TopicViewer content={viewContent} data={activeItem.data} />;
+    return <TopicViewer courseId={courseId} content={viewContent} data={activeItem.data} />;
   }
 
   if (activeItem.type === "quiz") {
@@ -232,7 +233,7 @@ function StatCard({ title, icon, stats, onClick }: { title: string, icon: React.
 // Fallback Views for Modules and Lessons
 // ----------------------------------------------------
 
-function ModuleOverview({ module, content }: { module: SidebarModule; content?: CourseContent }) {
+function ModuleOverview({ courseId, module, content }: { courseId: string; module: SidebarModule; content?: CourseContent }) {
   return (
     <div className="space-y-6 max-w-5xl mx-auto w-full pb-16">
       <Card>
@@ -253,13 +254,22 @@ function ModuleOverview({ module, content }: { module: SidebarModule; content?: 
               <Progress value={module.progressPct} className="h-2" />
             </div>
           )}
+
+          <div className="pt-6 mt-6 border-t flex justify-end">
+            <MarkCompletedButton 
+              courseId={courseId} 
+              resourceType="module" 
+              resourceId={module.id} 
+              isInitiallyCompleted={(content as any)?.isCompleted || (content as any)?.progressPct === 100 || module.progressPct === 100} 
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function LessonOverview({ lesson, content }: { lesson: SidebarLesson; content?: any }) {
+function LessonOverview({ courseId, lesson, content }: { courseId: string; lesson: SidebarLesson; content?: any }) {
   const duration = content?.duration_minutes || (lesson as any).duration_minutes;
   const videoUrl = content?.video_url || (lesson as any).video_url;
   const contentText = content?.content_text || (lesson as any).content_text;
@@ -312,6 +322,15 @@ function LessonOverview({ lesson, content }: { lesson: SidebarLesson; content?: 
               />
             </div>
           )}
+
+          <div className="pt-6 mt-6 border-t flex justify-end">
+            <MarkCompletedButton 
+              courseId={courseId} 
+              resourceType="lesson" 
+              resourceId={lesson.id} 
+              isInitiallyCompleted={(content as any)?.isCompleted || (content as any)?.progressPct === 100 || lesson.progressPct === 100} 
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -322,7 +341,7 @@ function LessonOverview({ lesson, content }: { lesson: SidebarLesson; content?: 
 // Specific Viewers (Topics, Quizzes, Assignments)
 // ----------------------------------------------------
 
-function TopicViewer({ content, data }: { content: CourseContent; data: any }) {
+function TopicViewer({ courseId, content, data }: { courseId: string; content: CourseContent; data: any }) {
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-16">
       
@@ -368,6 +387,15 @@ function TopicViewer({ content, data }: { content: CourseContent; data: any }) {
           </CardContent>
         </Card>
       )}
+
+      <div className="flex justify-end pt-4">
+        <MarkCompletedButton 
+          courseId={courseId} 
+          resourceType="topic" 
+          resourceId={content.id || data.id} 
+          isInitiallyCompleted={(content as any)?.isCompleted || (content as any)?.progressPct === 100 || content.metadata?.is_completed || data.is_completed} 
+        />
+      </div>
     </div>
   );
 }
