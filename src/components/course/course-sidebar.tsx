@@ -101,7 +101,7 @@ export function CourseSidebar({
         const cachedLessView = queryClient.getQueryData(["course-view", String(courseData.courseId), "lesson", String(lesson.id)]) as any;
         const isLessCompleted = 
           lesson.progressPct === 100 || 
-          lesson.isCompleted === true || 
+          (lesson as any).isCompleted === true || 
           (lesson as any).is_completed === true || 
           (lesson as any).status === "completed" || 
           cachedLessView?.isCompleted === true ||
