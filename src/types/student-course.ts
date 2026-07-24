@@ -110,17 +110,42 @@ export interface Topic {
   content_text?: string;
 }
 
+export interface QuizOption {
+  optionId: string | number;
+  option: string;
+}
+
+export interface QuizQuestion {
+  questionId: string | number;
+  question: string;
+  type?: 'mcq' | 'boolean';
+  options?: QuizOption[]; 
+  marks?: number;
+}
+
 export interface Quiz {
-  id: string | number;
+  quizId?: string | number;
+  id?: string | number;
   name?: string;
+  quizTitle?: string;
   quiz_title?: string;
   title?: string;
   instructions?: string;
+  quizTime?: number;
   time_limit_minutes?: number;
   max_attempts?: number;
   total_marks?: number;
   passing_score?: number;
+  description?: string;
+  total_questions?: number;
+  courseId?: string | number;
+  questions?: QuizQuestion[];
 }
+
+export interface QuizSubmitPayload {
+  answers: Record<string, string | number> | Array<{ questionId: string; optionId: string }>;
+}
+
 
 export interface Assignment {
   id: string | number;
@@ -129,4 +154,39 @@ export interface Assignment {
   description?: string;
   submission_type?: string;
   max_score?: number | string;
+}
+
+export interface QuizResultQuestion {
+  questionId: string | number;
+  question: string;
+  type?: 'mcq' | 'boolean';
+  options: QuizOption[];
+  correctOptionId?: string | number;
+  studentOptionId?: string | number;
+  isCorrect: boolean;
+  marksAwarded: number;
+  marksTotal: number;
+  explanation?: string;
+}
+
+export interface QuizResultSummary {
+  quizTitle: string;
+  totalQuestions: number;
+  attemptedQuestions: number;
+  correctAnswers: number;
+  incorrectAnswers: number;
+  unansweredQuestions: number;
+  totalMarks: number;
+  obtainedMarks: number;
+  percentage: number;
+  passingMarks: number;
+  isPass: boolean;
+  status: string;
+  submissionDate?: string;
+  canRetake?: boolean;
+}
+
+export interface QuizResultResponse {
+  summary: QuizResultSummary;
+  questions: QuizResultQuestion[];
 }

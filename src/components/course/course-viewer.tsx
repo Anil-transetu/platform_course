@@ -8,6 +8,9 @@ import { useCourseView } from "@/hooks/use-course-view";
 import { useCourseHome } from "@/hooks/use-course-home";
 import { useRouter, useParams } from "next/navigation";
 import { MarkCompletedButton } from "./mark-completed-button";
+import { QuizAttemptView } from "@/features/student/courses/components/quiz/QuizAttemptView";
+import { QuizResultView } from "@/features/student/courses/components/quiz/QuizResultView";
+import { QuizReviewView } from "@/features/student/courses/components/quiz/QuizReviewView";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -65,7 +68,7 @@ export function CourseViewer({ courseId, activeItem }: CourseViewerProps) {
   }
 
   if (activeItem.type === "quiz") {
-    return <QuizViewer content={viewContent} data={activeItem.data as Quiz} />;
+    return <QuizViewer courseId={courseId} content={viewContent} data={activeItem.data as Quiz} />;
   }
 
   if (activeItem.type === "assignment") {
@@ -400,11 +403,67 @@ function TopicViewer({ courseId, content, data }: { courseId: string; content: C
   );
 }
 
-function QuizViewer({ content, data }: { content: CourseContent; data: Quiz }) {
-  const timeLimit = data.time_limit_minutes || content.metadata?.time_limit_minutes;
+function QuizViewer({ courseId, content, data }: { courseId: string; content: CourseContent; data: Quiz }) {
+  const isCompleted = 
+    (content as any)?.isCompleted || 
+    content.metadata?.is_completed || 
+    (data as any)?.is_completed || 
+    (data as any)?.isCompleted || 
+    (content as any)?.progressPct === 100 || 
+    (content as any)?.status === "completed" || 
+    (content as any)?.progress === 100 ||
+    (data as any)?.status === "completed";
+    
+  const [quizState, setQuizState] = React.useState<'intro' | 'attempting' | 'result' | 'review'>(
+    isCompleted ? 'result' : 'intro'
+  );
+  const timeLimit = data.time_limit_minutes || content.metadata?.time_limit_minutes || data.quizTime;
   const maxAttempts = data.max_attempts || content.metadata?.max_attempts;
   const totalMarks = data.total_marks || content.metadata?.total_marks;
   const passingScore = data.passing_score || content.metadata?.passing_score;
+
+  // We merge content and data to form a robust Quiz object for QuizAttemptView
+  const mergedQuiz: Quiz = {
+    ...data,
+    ...content,
+    questions: (content as any).questions || data.questions || [],
+    quizId: content.id || data.id || data.quizId,
+    quizTitle: content.title || data.name || data.quiz_title || data.title,
+    description: content.description || data.instructions,
+    quizTime: timeLimit,
+  };
+
+  if (quizState === 'attempting') {
+    return (
+      <QuizAttemptView 
+        courseId={courseId} 
+        quiz={mergedQuiz} 
+        onBack={() => setQuizState('intro')} 
+        onSuccess={() => setQuizState('result')} 
+      />
+    );
+  }
+
+  if (quizState === 'result') {
+    return (
+      <QuizResultView 
+        courseId={courseId}
+        quizId={String(mergedQuiz.quizId)}
+        onBackToCourse={() => setQuizState('intro')}
+        onReviewQuiz={() => setQuizState('review')}
+      />
+    );
+  }
+
+  if (quizState === 'review') {
+    return (
+      <QuizReviewView 
+        courseId={courseId}
+        quizId={String(mergedQuiz.quizId)}
+        onBackToResults={() => setQuizState('result')}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-16">
@@ -438,7 +497,10 @@ function QuizViewer({ content, data }: { content: CourseContent; data: Quiz }) {
           </div>
 
           <div className="pt-6 border-t flex justify-end">
-            <button className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => setQuizState('attempting')}
+              className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+            >
               Start Assessment <ArrowRight size={16} />
             </button>
           </div>
