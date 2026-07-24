@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useInstitutions, useInstitutionStats } from "@/features/admin/institutions/api/use-institutions";
+import { useInstitutions, useInstitutionStats, useUpdateInstitutionStatus } from "@/features/admin/institutions/api/use-institutions";
 import { Institution } from "@/features/admin/institutions/api/institution-api";
 import { buildInstitutionColumns } from "./columns";
 import InstitutionFormModal from "./InstitutionFormModal";
@@ -11,17 +11,40 @@ import DataTable from "@/components/reusable/DataTable";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Building, CheckCircle, BookOpen, Clock, MoreVertical, Pencil, Trash2, Landmark } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Building, CheckCircle, BookOpen, Clock, MoreVertical, Pencil, Trash2, Landmark, Power, CheckCircle2 } from "lucide-react";
 
-function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function ActionMenu({
+  status,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+}: {
+  status: string;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  onDelete: () => void;
+}) {
+  const isActive = (status || "").toLowerCase() === "active";
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
@@ -41,16 +64,42 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
           <Pencil size={14} className="text-gray-400" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Trash2 size={14} className="text-red-500" />
-          Delete
-        </DropdownMenuItem>
+
+        {isActive ? (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors focus:bg-amber-50 outline-none font-medium flex items-center gap-2"
+          >
+            <Power size={14} className="text-amber-500" />
+            Disable
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors focus:bg-emerald-50 outline-none font-medium flex items-center gap-2"
+            >
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              Enable
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} className="text-red-500" />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -119,6 +168,18 @@ function InstitutionsPageContent() {
     open: false,
     institution: null,
   });
+
+  const [statusConfirmDialog, setStatusConfirmDialog] = useState<{
+    open: boolean;
+    institution: Institution | null;
+    nextStatus: "active" | "inactive";
+  }>({
+    open: false,
+    institution: null,
+    nextStatus: "active",
+  });
+
+  const updateInstitutionStatus = useUpdateInstitutionStatus();
 
   useEffect(() => {
     if (searchParams.get("action") === "create") {
@@ -199,6 +260,32 @@ function InstitutionsPageContent() {
     ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
 
+  const handleConfirmStatusToggle = () => {
+    if (!statusConfirmDialog.institution) return;
+    const targetStatus = statusConfirmDialog.nextStatus;
+    const targetInst = statusConfirmDialog.institution;
+
+    // Immediately close dialog to ensure Radix UI unmounts overlays and restores focus
+    setStatusConfirmDialog({ open: false, institution: null, nextStatus: "active" });
+
+    updateInstitutionStatus.mutate(
+      { id: targetInst.id, status: targetStatus },
+      {
+        onSuccess: () => {
+          toast.success(`Institution ${targetStatus === "active" ? "enabled" : "disabled"} successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update institution status");
+        },
+        onSettled: () => {
+          if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = "";
+          }
+        },
+      }
+    );
+  };
+
   return (
     <ListingScreenTemplate
       headerText="Institution Management"
@@ -253,14 +340,25 @@ function InstitutionsPageContent() {
             loading={isLoading || isFetching}
             search={searchConfig}
             filters={filterConfig}
-            actions={(institution) => (
-              <div className="flex justify-center">
-                <ActionMenu
-                  onEdit={() => setFormModal({ open: true, mode: "edit", institution })}
-                  onDelete={() => setDeleteDialog({ open: true, institution })}
-                />
-              </div>
-            )}
+            actions={(institution) => {
+              const isActive = (institution.status || "Active").toLowerCase() === "active";
+              return (
+                <div className="flex justify-center">
+                  <ActionMenu
+                    status={institution.status || "Active"}
+                    onEdit={() => setFormModal({ open: true, mode: "edit", institution })}
+                    onToggleStatus={() =>
+                      setStatusConfirmDialog({
+                        open: true,
+                        institution,
+                        nextStatus: isActive ? "inactive" : "active",
+                      })
+                    }
+                    onDelete={() => setDeleteDialog({ open: true, institution })}
+                  />
+                </div>
+              );
+            }}
             currentPage={page}
             totalPages={totalPages}
             onPageChange={setPage}
@@ -286,6 +384,55 @@ function InstitutionsPageContent() {
         institution={deleteDialog.institution}
         onClose={() => setDeleteDialog({ open: false, institution: null })}
       />
+
+      {/* STATUS CONFIRMATION DIALOG */}
+      <AlertDialog
+        open={statusConfirmDialog.open}
+        onOpenChange={(val) => {
+          if (!val) {
+            setStatusConfirmDialog({ open: false, institution: null, nextStatus: "active" });
+            if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+              document.body.style.pointerEvents = "";
+            }
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} institution{" "}
+              <span className="font-semibold text-slate-800">{statusConfirmDialog.institution?.name}</span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 flex sm:justify-center gap-3">
+            <AlertDialogCancel
+              onClick={() => setStatusConfirmDialog({ open: false, institution: null, nextStatus: "active" })}
+              className="rounded-xl px-6"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmStatusToggle}
+              disabled={updateInstitutionStatus.isPending}
+              className={`rounded-xl px-6 text-white shadow-sm gap-2 flex items-center ${
+                statusConfirmDialog.nextStatus === "active"
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                  : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+              }`}
+            >
+              {statusConfirmDialog.nextStatus === "active" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <Power className="w-4 h-4" />
+              )}
+              {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ListingScreenTemplate>
   );
 }

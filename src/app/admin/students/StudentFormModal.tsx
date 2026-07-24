@@ -26,7 +26,6 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     mobile_number: "",
     password: "",
     notes: "",
-    status: "",
     institution_id: "",
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +42,6 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           mobile_number: student.mobile_number || "",
           password: "", // Leave blank on edit
           notes: student.notes || "",
-          status: student.status?.toLowerCase() === "inactive" ? "inactive" : "active",
           institution_id: (student.institution_id as string) || (student.institutionId as string) || "",
         });
       } else {
@@ -54,7 +52,6 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           mobile_number: "",
           password: "",
           notes: "",
-          status: "",
           institution_id: "",
         });
       }
@@ -69,7 +66,6 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     if (!form.last_name.trim()) e.last_name = "Last name is required";
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.mobile_number.trim()) e.mobile_number = "Mobile number is required";
-    if (!form.status) e.status = "Status is required" as any;
     if (!form.institution_id?.toString().trim()) e.institution_id = "Institution is required";
     if (mode === "add" && !form.password.trim()) {
       e.password = "Password is required";
@@ -162,46 +158,24 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
         </div>
 
-        {/* Row 2: Email and Status */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              EMAIL ADDRESS <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="john.doe@example.com"
-              autoComplete="new-email"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
-                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
-          
-          <div className="sm:w-1/3">
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              STATUS <span className="text-red-500">*</span>
-            </label>
-            <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
-              <SelectTrigger className={`w-full bg-gray-50 dark:bg-muted/50/50 ${
-                (errors as any).status ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {(errors as any).status && (
-              <p className="text-red-500 text-xs mt-1">{(errors as any).status}</p>
-            )}
-          </div>
+        {/* Row 2: Email */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+            EMAIL ADDRESS <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="john.doe@example.com"
+            autoComplete="new-email"
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+              errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
         </div>
 
         {/* Row 3: Mobile + Password */}

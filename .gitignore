@@ -43,3 +43,7 @@ tsc*.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+graphify-out/
+.agents/

@@ -5,6 +5,7 @@ import {
   fetchInstitutionById,
   createInstitution,
   updateInstitution,
+  updateInstitutionStatus,
   deleteInstitution,
   fetchInstitutionsLookup,
   Institution,
@@ -94,6 +95,21 @@ export function useDeleteInstitution() {
     mutationFn: deleteInstitution,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["institutionStats"] });
+    },
+  });
+}
+
+/**
+ * Update institution status (Enable/Disable)
+ */
+export function useUpdateInstitutionStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string | number; status: string }) => updateInstitutionStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["institution", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["institutionStats"] });
     },
   });

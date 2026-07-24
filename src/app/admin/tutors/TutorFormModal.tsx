@@ -46,7 +46,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     password: "",
     domains: [] as string[],
     tags: [] as string[],
-    status: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form | "domains" | "tags", string>>>({});
@@ -83,7 +82,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: tutor.domains || [],
           tags: tutor.tags || [],
-          status: tutor.status ? tutor.status.toLowerCase() : "",
         });
       } else {
         setForm({
@@ -93,7 +91,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           password: "",
           domains: [],
           tags: [],
-          status: "",
         });
       }
       setErrors({});
@@ -134,10 +131,6 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
 
     if (formToValidate.tags.some(t => hasEmoji(t))) {
       e.tags = "Tags cannot contain emojis";
-    }
-
-    if (!formToValidate.status) {
-      e.status = "Status is required";
     }
 
     setErrors(e);
@@ -242,56 +235,27 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           )}
         </div>
 
-        {/* Row 2: Status & Email Address */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Status <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={form.status}
-              onValueChange={(val) => {
-                setForm({ ...form, status: val });
-                if (errors.status) setErrors(prev => ({ ...prev, status: "" }));
-              }}
-            >
-              <SelectTrigger className={`w-full border rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between capitalize ${
-                form.status ? "text-gray-700 dark:text-foreground" : "text-gray-400"
-              } ${
-                errors.status ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}>
-                <SelectValue placeholder="Select status..." />
-              </SelectTrigger>
-              <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl p-1">
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.status && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.status}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => {
-                setForm({ ...form, email: e.target.value });
-                if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
-              }}
-              placeholder="john.doe@example.com"
-              autoComplete="new-email"
-              className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
-                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.email}</p>
-            )}
-          </div>
+        {/* Row 2: Email Address */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+            Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => {
+              setForm({ ...form, email: e.target.value });
+              if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+            }}
+            placeholder="john.doe@example.com"
+            autoComplete="new-email"
+            className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+              errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.email}</p>
+          )}
         </div>
 
         {/* Row 3: Contact Number & Password */}

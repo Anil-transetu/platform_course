@@ -143,7 +143,6 @@ export async function createUser(data: Record<string, unknown>) {
     full_name: data.name,
     email: data.email,
     role: apiRole,
-    is_active: data.is_active,
   };
 
   if (data.password) {
@@ -178,7 +177,6 @@ export async function updateUser(id: string | number, data: Record<string, unkno
     full_name: data.name,
     email: data.email,
     role: apiRole,
-    is_active: data.is_active,
   };
 
   if (apiRole === "institution_representative" && data.institution_id) {
@@ -195,6 +193,19 @@ export async function updateUser(id: string | number, data: Record<string, unkno
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
+  });
+
+  return handleResponse(response);
+}
+
+/**
+ * Update user status (Enable/Disable)
+ */
+export async function updateUserStatus(id: string | number, status: string) {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   return handleResponse(response);
@@ -289,6 +300,18 @@ export function useDeleteUser() {
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["userStats"] });
+    },
+  });
+}
+
+export function useUpdateUserStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string | number; status: string }) => updateUserStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["user", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["userStats"] });
     },
   });

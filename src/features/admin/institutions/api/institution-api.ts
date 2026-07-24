@@ -138,10 +138,14 @@ export async function fetchInstitutionById(
 export async function createInstitution(
   institutionData: Partial<Institution>
 ): Promise<Institution> {
+  const payload = { ...institutionData };
+  delete payload.status;
+  delete (payload as any).is_active;
+
   const response = await fetch(BASE_URL, {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify(institutionData),
+    body: JSON.stringify(payload),
   });
 
   const data = await handleResponse(response);
@@ -155,10 +159,31 @@ export async function updateInstitution(
   id: string | number,
   institutionData: Partial<Institution>
 ): Promise<Institution> {
+  const payload = { ...institutionData };
+  delete payload.status;
+  delete (payload as any).is_active;
+
   const response = await fetch(`${BASE_URL}/${id}`, {
-    method: "PUT", // or PATCH based on operation
+    method: "PUT",
     headers: getAuthHeaders(),
-    body: JSON.stringify(institutionData),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await handleResponse(response);
+  return data.data || data;
+}
+
+/**
+ * Update institution status (Enable/Disable)
+ */
+export async function updateInstitutionStatus(
+  id: string | number,
+  status: string
+): Promise<Institution> {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   const data = await handleResponse(response);

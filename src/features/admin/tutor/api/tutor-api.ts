@@ -100,7 +100,6 @@ export async function createTutor(data: Record<string, unknown>) {
     mobile_number: data.phone || data.mobile_number,
     domains: Array.isArray(data.domains) ? data.domains.map(d => typeof d === 'string' ? d.toUpperCase() : d) : [],
     tags: Array.isArray(data.tags) ? data.tags.map(t => typeof t === 'string' ? t.toUpperCase() : t) : [],
-    status: data.status || "active"
   };
 
   if (data.password) {
@@ -126,7 +125,6 @@ export async function updateTutor(id: string | number, data: Record<string, unkn
     mobile_number: data.phone || data.mobile_number,
     domains: Array.isArray(data.domains) ? data.domains.map(d => typeof d === 'string' ? d.toUpperCase() : d) : [],
     tags: Array.isArray(data.tags) ? data.tags.map(t => typeof t === 'string' ? t.toUpperCase() : t) : [],
-    status: data.status || "active"
   };
 
   if (data.password && (data.password as string).trim() !== "") {
@@ -137,6 +135,19 @@ export async function updateTutor(id: string | number, data: Record<string, unkn
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
+  });
+
+  return handleResponse(response);
+}
+
+/**
+ * Update tutor status (Enable/Disable)
+ */
+export async function updateTutorStatus(id: string | number, status: string) {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   return handleResponse(response);
@@ -372,6 +383,19 @@ export function useDeleteTutor() {
           newTutors
         };
       });
+    },
+  });
+}
+
+export function useUpdateTutorStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string | number; status: string }) => updateTutorStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["tutors"] });
+      queryClient.invalidateQueries({ queryKey: ["tutors", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["tutors", "detail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["tutors", "stats"] });
     },
   });
 }

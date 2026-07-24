@@ -32,12 +32,36 @@ import {
   useTutorStats,
   useCreateTutor,
   useUpdateTutor,
-  useDeleteTutor
+  useDeleteTutor,
+  useUpdateTutorStatus,
 } from "@/features/admin/tutor/api/tutor-api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Power, CheckCircle2 } from "lucide-react";
 
-function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function ActionMenu({
+  status,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+}: {
+  status: string;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  onDelete: () => void;
+}) {
+  const isActive = (status || "").toLowerCase() === "active";
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
@@ -57,16 +81,42 @@ function ActionMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => 
           <Pencil size={14} className="text-gray-400" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Trash2 size={14} className="text-red-500" />
-          Delete
-        </DropdownMenuItem>
+
+        {isActive ? (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors focus:bg-amber-50 outline-none font-medium flex items-center gap-2"
+          >
+            <Power size={14} className="text-amber-500" />
+            Disable
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors focus:bg-emerald-50 outline-none font-medium flex items-center gap-2"
+            >
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              Enable
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} className="text-red-500" />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -134,6 +184,16 @@ function TutorsPageContent() {
     tutor: null,
   });
 
+  const [statusConfirmDialog, setStatusConfirmDialog] = useState<{
+    open: boolean;
+    tutor: Tutor | null;
+    nextStatus: "active" | "inactive";
+  }>({
+    open: false,
+    tutor: null,
+    nextStatus: "active",
+  });
+
   // Queries & Mutations
   const { data: tutorsData, isLoading, isFetching } = useTutors(page, rowsPerPage, debouncedSearch, statusFilter, domainFilter);
   const { data: tutorStats, isLoading: isStatsLoading } = useTutorStats();
@@ -141,6 +201,7 @@ function TutorsPageContent() {
   const createTutor = useCreateTutor();
   const updateTutor = useUpdateTutor();
   const deleteTutor = useDeleteTutor();
+  const updateTutorStatus = useUpdateTutorStatus();
 
   const tutorsList: Tutor[] = Array.isArray(tutorsData?.data) ? tutorsData.data : (Array.isArray(tutorsData) ? tutorsData : []);
   const totalCount = tutorsData?.total || tutorsData?.pagination?.total || tutorsList.length;
@@ -232,6 +293,32 @@ function TutorsPageContent() {
     }
   };
 
+  const handleConfirmStatusToggle = () => {
+    if (!statusConfirmDialog.tutor) return;
+    const targetStatus = statusConfirmDialog.nextStatus;
+    const targetTutor = statusConfirmDialog.tutor;
+
+    // Immediately close dialog to ensure Radix UI unmounts overlays and restores focus
+    setStatusConfirmDialog({ open: false, tutor: null, nextStatus: "active" });
+
+    updateTutorStatus.mutate(
+      { id: targetTutor.id, status: targetStatus },
+      {
+        onSuccess: () => {
+          toast.success(`Tutor ${targetStatus === "active" ? "enabled" : "disabled"} successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update tutor status");
+        },
+        onSettled: () => {
+          if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = "";
+          }
+        },
+      }
+    );
+  };
+
   return (
     <ListingScreenTemplate
       headerText="Tutor Management"
@@ -283,14 +370,25 @@ function TutorsPageContent() {
             rowKey={(tutor) => String(tutor.id)}
             search={searchConfig}
             filters={filterConfig}
-            actions={(tutor) => (
-              <div className="flex justify-center">
-                <ActionMenu 
-                  onEdit={() => setFormModal({ open: true, mode: "edit", tutor })}
-                  onDelete={() => setDeleteDialog({ open: true, tutor })}
-                />
-              </div>
-            )}
+            actions={(tutor) => {
+              const isActive = (tutor.status || "active").toLowerCase() === "active";
+              return (
+                <div className="flex justify-center">
+                  <ActionMenu 
+                    status={tutor.status || "active"}
+                    onEdit={() => setFormModal({ open: true, mode: "edit", tutor })}
+                    onToggleStatus={() =>
+                      setStatusConfirmDialog({
+                        open: true,
+                        tutor,
+                        nextStatus: isActive ? "inactive" : "active",
+                      })
+                    }
+                    onDelete={() => setDeleteDialog({ open: true, tutor })}
+                  />
+                </div>
+              );
+            }}
             bodyHeight="h-full"
             rowsPerPage={rowsPerPage}
             currentPage={page}
@@ -323,6 +421,55 @@ function TutorsPageContent() {
         onClose={() => setDeleteDialog({ open: false, tutor: null })}
         onConfirm={handleDeleteTutor}
       />
+
+      {/* STATUS CONFIRMATION DIALOG */}
+      <AlertDialog
+        open={statusConfirmDialog.open}
+        onOpenChange={(val) => {
+          if (!val) {
+            setStatusConfirmDialog({ open: false, tutor: null, nextStatus: "active" });
+            if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+              document.body.style.pointerEvents = "";
+            }
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} tutor{" "}
+              <span className="font-semibold text-slate-800">{statusConfirmDialog.tutor?.name}</span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 flex sm:justify-center gap-3">
+            <AlertDialogCancel
+              onClick={() => setStatusConfirmDialog({ open: false, tutor: null, nextStatus: "active" })}
+              className="rounded-xl px-6"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmStatusToggle}
+              disabled={updateTutorStatus.isPending}
+              className={`rounded-xl px-6 text-white shadow-sm gap-2 flex items-center ${
+                statusConfirmDialog.nextStatus === "active"
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                  : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+              }`}
+            >
+              {statusConfirmDialog.nextStatus === "active" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <Power className="w-4 h-4" />
+              )}
+              {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ListingScreenTemplate>
   );
 }

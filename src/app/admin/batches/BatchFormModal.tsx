@@ -52,7 +52,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     department: "",
     start_date: "",
     end_date: "",
-    status: "",
   });
 
   const [selectedStudents, setSelectedStudents] = useState<{ id: number; name: string }[]>([]);
@@ -105,7 +104,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           department: activeBatch.department || "",
           start_date: activeBatch.start_date || "",
           end_date: activeBatch.end_date || "",
-          status: activeBatch.status?.toLowerCase() === "inactive" ? "inactive" : "active",
         });
 
         if (activeBatch.Enrollments) {
@@ -128,7 +126,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           department: "",
           start_date: "",
           end_date: "",
-          status: "",
         });
         setSelectedStudents([]);
       }
@@ -174,7 +171,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
     }
     if (!form.start_date.trim()) newErrors.start_date = "Start Date is required";
     if (!form.end_date.trim()) newErrors.end_date = "End Date is required";
-    if (!form.status.trim()) newErrors.status = "Status is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -197,7 +193,6 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
       start_date: form.start_date,
       end_date: form.end_date,
       enroll_students: selectedStudents.map(s => s.id),
-      status: form.status,
     };
 
     // Double-safety: ensure both are never non-null simultaneously
@@ -305,36 +300,19 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           )}
         </div>
 
-        {/* ROW 3: INSTRUCTOR & STATUS */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="relative">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              INSTRUCTOR <span className="text-red-500">*</span>
-            </label>
-            <TutorSelect
-              value={form.tutor_id}
-              onChange={(val) => setForm({ ...form, tutor_id: val })}
-              initialName={mode === "edit" ? (fullBatch || batch)?.instructor : undefined}
-              error={!!errors.tutor_id}
-              institutionId={form.institution_id}
-            />
-            {errors.tutor_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tutor_id}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              STATUS <span className="text-red-500">*</span>
-            </label>
-            <Select value={form.status} onValueChange={(val) => setForm({...form, status: val})}>
-              <SelectTrigger className={`w-full h-[42px] px-4 rounded-xl border ${errors.status ? "border-red-500" : "border-gray-200"} bg-gray-50/50 text-slate-700 text-sm`}>
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.status && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.status}</p>}
-          </div>
+        {/* ROW 3: INSTRUCTOR */}
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            INSTRUCTOR <span className="text-red-500">*</span>
+          </label>
+          <TutorSelect
+            value={form.tutor_id}
+            onChange={(val) => setForm({ ...form, tutor_id: val })}
+            initialName={mode === "edit" ? (fullBatch || batch)?.instructor : undefined}
+            error={!!errors.tutor_id}
+            institutionId={form.institution_id}
+          />
+          {errors.tutor_id && <p className="text-red-500 text-xs mt-1 font-semibold">{errors.tutor_id}</p>}
         </div>
 
         {/* ROW 4: START DATE & END DATE */}

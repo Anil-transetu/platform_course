@@ -25,7 +25,6 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     password: "",
     role: "",
     institution_id: "",
-    is_active: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
@@ -44,7 +43,6 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           password: "",
           role: initialRole,
           institution_id: (user.institution_id as string) || "",
-          is_active: user.status === "inactive" ? "false" : "true",
         });
       } else {
         setForm({
@@ -53,7 +51,6 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           password: "",
           role: "",
           institution_id: "",
-          is_active: "",
         });
       }
       setErrors({});
@@ -66,7 +63,6 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     if (!form.name.trim()) e.name = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.role.trim()) e.role = "Role is required";
-    if (form.is_active === "") e.is_active = "Status is required" as any;
     if (form.role === "institution_representative" && !form.institution_id?.toString().trim()) {
       e.institution_id = "Institution is required";
     }
@@ -81,8 +77,6 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     if (!validate()) return;
     
     const payload: any = { ...form };
-    if (payload.is_active === "true") payload.is_active = true;
-    else if (payload.is_active === "false") payload.is_active = false;
 
     if (mode === "edit" && !payload.password) {
       delete payload.password;
@@ -136,44 +130,22 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
         )}
         
         <div className="flex flex-col gap-4">
-          {/* Full Name & Status Row */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. John Doe"
-                className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
-                  errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="sm:w-1/3">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <Select value={form.is_active} onValueChange={(val) => setForm({ ...form, is_active: val })}>
-                <SelectTrigger className={`w-full bg-white dark:bg-card ${
-                  (errors as any).is_active ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              {(errors as any).is_active && (
-                <p className="text-red-500 text-xs mt-1">{(errors as any).is_active}</p>
-              )}
-            </div>
+          {/* Full Name */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. John Doe"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}
+            />
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+            )}
           </div>
 
           {/* Email Address */}
