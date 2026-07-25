@@ -159,12 +159,7 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
 
     if (!form.institution_id) newErrors.institution_id = "Institution is required";
     if (!form.tutor_id) newErrors.tutor_id = "Instructor is required";
-    
-    // Exactly one of courseId or domainId must be selected.
-    // Both selected at the same time is prevented by the UI, but we guard here anyway.
-    if (!form.course_id && !form.domain_id) {
-      newErrors.association = "You must select either a Course or a Domain";
-    }
+    if (!form.course_id) newErrors.course_id = "Course is required";
 
     if (selectedStudents.length === 0) {
       newErrors.enroll_students = "Enroll Students is required";
@@ -259,44 +254,22 @@ export default function BatchFormModal({ open, onClose, mode, batch }: Props) {
           </div>
         </div>
 
-        {/* ROW 2: ASSOCIATION — Course OR Domain (mutually exclusive) */}
+        {/* ROW 2: COURSE (Required) */}
         <div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                COURSE
-              </label>
-              <CourseSelect
-                value={form.course_id}
-                onChange={(val) => {
-                  // Selecting a course clears the domain
-                  setForm({ ...form, course_id: val, domain_id: "" });
-                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
-                }}
-                initialName={mode === "edit" && !form.domain_id ? (fullBatch || batch)?.course : undefined}
-                error={!!errors.association}
-                disabled={!!form.domain_id}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                DOMAIN
-              </label>
-              <DomainSelect
-                value={form.domain_id}
-                onChange={(val) => {
-                  // Selecting a domain clears the course
-                  setForm({ ...form, domain_id: val, course_id: "" });
-                  if (errors.association) setErrors(prev => ({ ...prev, association: "" }));
-                }}
-                initialName={mode === "edit" && !form.course_id ? (fullBatch || batch)?.domain : undefined}
-                error={!!errors.association}
-                disabled={!!form.course_id}
-              />
-            </div>
-          </div>
-          {errors.association && (
-            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.association}</p>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            COURSE <span className="text-red-500">*</span>
+          </label>
+          <CourseSelect
+            value={form.course_id}
+            onChange={(val) => {
+              setForm({ ...form, course_id: val, domain_id: "" });
+              if (errors.course_id) setErrors(prev => ({ ...prev, course_id: "" }));
+            }}
+            initialName={mode === "edit" ? (fullBatch || batch)?.course : undefined}
+            error={!!errors.course_id}
+          />
+          {errors.course_id && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.course_id}</p>
           )}
         </div>
 

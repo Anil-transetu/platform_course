@@ -6,13 +6,20 @@ import { User, Bell, Palette, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+import { useAuthStore } from "@/store/useAuthStore";
+import { useUserDetails } from "@/features/profile/api/profile-api";
+
 export function SettingsNav() {
   const pathname = usePathname();
+  const { role: storeRole } = useAuthStore();
+  const { data: userDetails } = useUserDetails();
+  const data = userDetails?.data || userDetails;
+  const isAdmin = (storeRole || data?.role || "").toUpperCase() === "ADMIN";
 
   const navItems = [
     { name: "General", href: "/settings/general", icon: User },
     { name: "Appearance", href: "/settings/appearance", icon: Palette },
-    { name: "Notifications", href: "/settings/notifications", icon: Bell },
+    ...(!isAdmin ? [{ name: "Notifications", href: "/settings/notifications", icon: Bell }] : []),
   ];
 
   return (

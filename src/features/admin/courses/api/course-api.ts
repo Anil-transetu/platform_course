@@ -149,10 +149,11 @@ export function useCourses(
   limit: number = 10,
   search?: string,
   statusFilter?: string,
+  domainFilter?: string,
   options?: { enabled?: boolean }
 ) {
   return useQuery({
-    queryKey: ["courses", { page, limit, search, statusFilter }],
+    queryKey: ["courses", { page, limit, search, statusFilter, domainFilter }],
     queryFn: async () => {
       const query = new URLSearchParams();
       query.append("page", page.toString());
@@ -161,6 +162,9 @@ export function useCourses(
       if (statusFilter && statusFilter !== "All") {
         const backendStatus = statusFilter.toLowerCase() === "published" ? "active" : statusFilter.toLowerCase();
         query.append("status", backendStatus);
+      }
+      if (domainFilter && domainFilter !== "All" && domainFilter !== "All Domains") {
+        query.append("domain", domainFilter);
       }
 
       const response = await fetch(`${BASE_URL}?${query.toString()}`, {
@@ -233,6 +237,9 @@ export function useCreateCourse() {
       }
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
     },
   });
 }
@@ -275,6 +282,9 @@ export function useUpdateCourse() {
       updateCachedCourseLists(queryClient, variables.id, { ...variables.data, ...updatedCourse, id: updatedCourse.id ?? variables.id });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
     },
   });
 }
@@ -300,6 +310,9 @@ export function useDeleteCourse() {
       removeCachedCourseLists(queryClient, id);
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"] });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
       queryClient.removeQueries({ queryKey: ["courseDetails", normalizeId(id)] });
       queryClient.removeQueries({ queryKey: ["courseCurriculum", normalizeId(id)] });
     },

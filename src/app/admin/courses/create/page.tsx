@@ -10,6 +10,8 @@ import { getDefaultEditorRoute, cn } from "@/lib/utils";
 import { useDomains } from "@/features/admin/domains/api/domain-api";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import DomainSelect from "@/components/reusable/DomainSelect";
+import TagsInput from "@/components/reusable/TagsInput";
 
 // Static domain list — will be replaced by API data in Phase 1
 const DOMAIN_OPTIONS = [
@@ -394,7 +396,13 @@ export default function CreateCoursePage() {
         if (title !== cleanCourse?.title) dirtyFields.name = title;
         if (description !== cleanCourse?.description) dirtyFields.description = description;
         if (thumbnail_url !== cleanCourse?.thumbnail_url) dirtyFields.thumbnail_url = thumbnail_url;
-        if (domain !== cleanCourse?.domain) dirtyFields.domain = domain;
+        
+        const currentDomainId = (course as any).domain_id !== undefined ? ((course as any).domain_id ? Number((course as any).domain_id) : null) : null;
+        const cleanDomainId = (cleanCourse as any)?.domain_id !== undefined ? ((cleanCourse as any)?.domain_id ? Number((cleanCourse as any)?.domain_id) : null) : null;
+        if (currentDomainId !== cleanDomainId) {
+          dirtyFields.domain_id = currentDomainId;
+        }
+
         if (JSON.stringify(tags) !== JSON.stringify(cleanCourse?.tags || [])) dirtyFields.tags = tags;
         
         const mappedStatus = status === "published" ? "active" : "draft";
@@ -423,6 +431,7 @@ export default function CreateCoursePage() {
         setIsSubmitting(true);
         const rawFaId = finalAssessmentId || (course as any).final_assessment_id || (course as any).finalAssessment?.id || (course as any).final_assessment?.id;
         const faIdNum = rawFaId ? Number(rawFaId) : null;
+        const targetDomainId = (course as any).domain_id ? Number((course as any).domain_id) : null;
 
         const payload: Record<string, any> = {
           name: title,
@@ -437,8 +446,8 @@ export default function CreateCoursePage() {
         if (tags.length > 0) {
           payload.tags = tags;
         }
-        if (domain) {
-          payload.domain = domain;
+        if (targetDomainId !== null) {
+          payload.domain_id = targetDomainId;
         }
         const response = await createMutation.mutateAsync(payload);
         const newId = response.data?.id || response.id;
@@ -584,120 +593,28 @@ export default function CreateCoursePage() {
                 </div>
 
                 {/* Domain */}
-                <div ref={domainRef} className="relative">
-                  <label className="block text-xs font-bold text-slate-700 mb-2">Domain</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDomainsRequested(true);
-                        setDomainOpen((prev) => !prev);
-                      }}
-                      className={`w-full flex items-center justify-between rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-all ${domainOpen ? "border-blue-500 ring-4 ring-blue-500/10" : "border-slate-200 hover:border-blue-300"}`}
-                    >
-                      <span className="flex items-center gap-2 overflow-hidden">
-                        <Globe size={16} className="text-slate-400 shrink-0" />
-                        <span className="truncate">{domain || "Select a domain..."}</span>
-                      </span>
-                      <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${domainOpen ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {domainOpen && (
-                      <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                        <div className="border-b border-slate-100 bg-white p-2">
-                          <div className="relative">
-                            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                            <input
-                              type="text"
-                              autoFocus
-                              value={domainSearch}
-                              onChange={(event) => setDomainSearch(event.target.value)}
-                              onKeyDown={handleDomainKeyDown}
-                              placeholder="Search domains..."
-                              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="max-h-60 overflow-y-auto p-1">
-                          {domainsLoading ? (
-                            <div className="flex items-center justify-center p-4 text-sm text-slate-500">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin text-blue-600" />
-                              Loading...
-                            </div>
-                          ) : domainOptions.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-slate-500">No domains found.</div>
-                          ) : filteredDomainOptions.length === 0 ? (
-                            <div className="p-4 text-center text-sm text-slate-500">No domains found for your search.</div>
-                          ) : (
-                            <ul className="space-y-1">
-                              <li>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    handleFieldChange("domain", "");
-                                    setDomainOpen(false);
-                                  }}
-                                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${!domain ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${domainFocusedIndex === 0 ? "bg-slate-100 font-semibold" : ""}`}
-                                >
-                                  <span>Select a domain...</span>
-                                  {!domain ? <Check size={14} className="shrink-0" /> : null}
-                                </button>
-                              </li>
-                              {filteredDomainOptions.map((d, index) => {
-                                const isSelected = domain === d;
-                                const optionIndex = index + 1;
-                                return (
-                                  <li key={d}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleFieldChange("domain", d);
-                                        setDomainOpen(false);
-                                      }}
-                                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors ${isSelected ? "bg-blue-50 text-blue-700 font-bold" : "text-slate-700 hover:bg-slate-50"} ${domainFocusedIndex === optionIndex ? "bg-slate-100 font-semibold" : ""}`}
-                                    >
-                                      <span className="truncate text-left">{d}</span>
-                                      {isSelected ? <Check size={14} className="shrink-0" /> : null}
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">Domain <span className="text-rose-500">*</span></label>
+                  <DomainSelect
+                    value={(course as any).domain_id !== undefined && (course as any).domain_id !== null ? (course as any).domain_id : domain}
+                    onChange={(val, domainObj) => {
+                      const domainIdNum = val ? Number(val) : null;
+                      const domainName = domainObj?.name || (val && isNaN(Number(val)) ? val : "");
+                      setCourseDetails(title, description, thumbnail_url, domainName, tags, status === "published" ? "active" : "draft", domainIdNum);
+                    }}
+                    initialName={domain}
+                  />
                 </div>
               </div>
 
               {/* Tags */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                  <Tag size={12} className="text-slate-400" />
-                  Tags
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {tag}
-                      <button type="button" onClick={() => handleRemoveTag(tag)} className="text-slate-400 hover:text-slate-700" aria-label={`Remove ${tag}`}>
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => handleTagInputChange(e.target.value)}
-                  onKeyDown={handleTagInputKeyDown}
-                  onBlur={() => handleAddTag(tagInput)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50/50 border border-slate-200 focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold text-slate-800 placeholder-slate-400"
-                  placeholder="Type a tag and press Space or Enter"
+                <TagsInput
+                  label="Tags"
+                  variant="tag"
+                  value={tags}
+                  onChange={(newTags) => setCourseDetails(title, description, thumbnail_url, domain, newTags, status === "published" ? "active" : "draft", (course as any).domain_id)}
                 />
-                <p className="text-[10px] text-slate-400 mt-1.5 font-medium">Press Space or Enter to convert text into a tag.</p>
               </div>
 
               {/* Final assessment is course metadata, not curriculum content. */}

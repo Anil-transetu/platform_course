@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tutor } from "@/types/tutor";
 import TutorFormModal from "./TutorFormModal";
+import { useDomainLookup } from "@/features/admin/domains/api/use-domains";
 import TutorDeleteDialog from "./TutorDeleteDialog";
 import { buildTutorColumns } from "./columns";
 import { Toaster } from "@/components/ui/sonner";
@@ -219,6 +220,8 @@ function TutorsPageContent() {
     );
   }
 
+  const [isDomainFilterOpen, setIsDomainFilterOpen] = useState(false);
+
   // DataTable configs
   const searchConfig = {
     enabled: true,
@@ -229,17 +232,30 @@ function TutorsPageContent() {
     },
   };
 
+  const { data: domainsLookup = [] } = useDomainLookup(undefined, {
+    enabled: isDomainFilterOpen || (domainFilter !== "All" && domainFilter !== "All Domains")
+  });
+
+  const domainOptions = [
+    { value: "All", label: "All Domains" },
+    ...(Array.isArray(domainsLookup)
+      ? domainsLookup.map((d: any) => ({
+          value: String(d.name || d.id),
+          label: d.name,
+        }))
+      : []),
+  ];
+
   const filterConfig = [
     {
       id: "domain",
-      label: "All Domain",
+      label: "All Domains",
       type: "select" as const,
       value: domainFilter,
-      options: [
-        { value: "All", label: "All Domain" },
-        ...PREDEFINED_DOMAINS.map(d => ({ value: d, label: d })),
-        ...dynamicDomains.map(d => ({ value: d, label: d }))
-      ],
+      options: domainOptions,
+      onOpenChange: (open: boolean) => {
+        if (open) setIsDomainFilterOpen(true);
+      },
       onChange: (val: string | string[]) => {
         setDomainFilter(Array.isArray(val) ? val[0] : val);
         setPage(1);
@@ -435,26 +451,26 @@ function TutorsPageContent() {
         }}
       >
         <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
+          <AlertDialogHeader className="text-left sm:text-left space-y-2">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-foreground">
               Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-slate-500 dark:text-muted-foreground text-sm leading-relaxed">
               Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} tutor{" "}
-              <span className="font-semibold text-slate-800">{statusConfirmDialog.tutor?.name}</span>?
+              <span className="font-semibold text-slate-900 dark:text-foreground">{statusConfirmDialog.tutor?.name}</span>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 flex sm:justify-center gap-3">
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
             <AlertDialogCancel
               onClick={() => setStatusConfirmDialog({ open: false, tutor: null, nextStatus: "active" })}
-              className="rounded-xl px-6"
+              className="rounded-xl px-5"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatusToggle}
               disabled={updateTutorStatus.isPending}
-              className={`rounded-xl px-6 text-white shadow-sm gap-2 flex items-center ${
+              className={`rounded-xl px-5 text-white shadow-sm gap-2 flex items-center ${
                 statusConfirmDialog.nextStatus === "active"
                   ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                   : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"

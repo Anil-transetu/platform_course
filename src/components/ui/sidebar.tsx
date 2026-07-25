@@ -69,6 +69,18 @@ function SidebarProvider({
   const [openMobile, setOpenMobile] = React.useState(false)
 
   const [_open, _setOpen] = React.useState(defaultOpen)
+  
+  React.useEffect(() => {
+    try {
+      const savedState = localStorage.getItem(SIDEBAR_COOKIE_NAME)
+      if (savedState !== null) {
+        _setOpen(savedState === "true")
+      }
+    } catch {
+      // Fallback to defaultOpen if localStorage is unavailable
+    }
+  }, [])
+
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -79,6 +91,11 @@ function SidebarProvider({
         _setOpen(openState)
       }
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      try {
+        localStorage.setItem(SIDEBAR_COOKIE_NAME, String(openState))
+      } catch {
+        // Ignore localStorage write errors
+      }
     },
     [setOpenProp, open]
   )

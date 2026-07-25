@@ -24,6 +24,9 @@ export default function RolesSidebar({ role }: RolesSidebarProps) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      if (!pathname.startsWith("/settings")) {
+        sessionStorage.setItem("last_app_page", pathname + (window.location.search || ""));
+      }
       const searchParams = new URLSearchParams(window.location.search);
       const isViewOrEdit = 
         pathname.startsWith("/admin/courses/create") || 

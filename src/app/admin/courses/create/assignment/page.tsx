@@ -25,26 +25,27 @@ export default function AssignmentLibraryPage() {
     deleteCourseAssignment
   } = useCourseStore();
   
-  const finalAssessmentId = (course as any)?.final_assessment_id || (course as any)?.finalAssessmentId;
+  const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
+  const finalAssessmentId = String(finalAssessment?.id ?? (course as any)?.final_assessment_id ?? (course as any)?.finalAssessmentId ?? "");
 
   // Sync activeAssignmentId on course-level assignment if it is null or different
   useEffect(() => {
-    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== String(finalAssessmentId)) {
-      setActiveAssignment(String(finalAssessmentId));
+    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== finalAssessmentId) {
+      setActiveAssignment(finalAssessmentId);
     }
   }, [activeModuleId, finalAssessmentId, activeAssignmentId, setActiveAssignment]);
 
   let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
   if (!activeModuleId) {
     const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
-    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
+    const effectiveAssignmentId = (!activeModuleId && finalAssessmentId) ? finalAssessmentId : (activeAssignmentId || finalAssessmentId);
 
     if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
       activeAssignment = finalAssessment;
-    } else if (finalAssessmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment || { id: finalAssessmentId };
-    } else {
-      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
+    } else if (effectiveAssignmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment || { id: effectiveAssignmentId };
+    } else if (effectiveAssignmentId) {
+      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId)) || { id: effectiveAssignmentId };
     }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
@@ -330,10 +331,10 @@ export default function AssignmentLibraryPage() {
                 <p className="text-slate-550 text-sm font-medium">Browse and add pre-existing assignments to your module.</p>
               </div>
 
-              {/* SEARCH & FILTERS BAR */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+              {/* SEARCH BAR */}
+              <div className="w-full mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
                 {/* Search */}
-                <div className="relative flex-1 w-full sm:max-w-md">
+                <div className="relative w-full">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-450" />
                   <Input 
                     type="text" 
@@ -345,26 +346,6 @@ export default function AssignmentLibraryPage() {
                     }}
                     className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
-                </div>
-                
-                {/* Select Filter */}
-                <div className="w-full sm:w-48">
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={(val) => {
-                      setStatusFilter(val);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-10 w-full bg-slate-50/50 border border-slate-250 text-xs font-bold text-slate-700 rounded-lg">
-                      <SelectValue placeholder="Status Filter" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-slate-200">
-                      <SelectItem value="All" className="text-xs font-semibold">All Assignments</SelectItem>
-                      <SelectItem value="Active" className="text-xs font-semibold">Active Only</SelectItem>
-                      <SelectItem value="Draft" className="text-xs font-semibold">Draft Only</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

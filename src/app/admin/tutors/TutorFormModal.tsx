@@ -11,6 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDomains } from "@/features/admin/domains/api/domain-api";
+import DomainSelect from "@/components/reusable/DomainSelect";
+import TagsInput from "@/components/reusable/TagsInput";
+import Chip from "@/components/reusable/Chip";
+import { toSentenceCase } from "@/lib/utils";
 
 interface Props {
   open: boolean;
@@ -44,13 +48,15 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     domains: [] as string[],
     tags: [] as string[],
   });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof typeof form | "domains" | "tags", string>>>({});
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof form | "confirmPassword" | "domains" | "tags", string>>>({});
 
-  // Custom Domain input state
   // Custom Domain input state
   const [isAddingCustomDomain, setIsAddingCustomDomain] = useState(false);
   const [customDomainInput, setCustomDomainInput] = useState("");
@@ -80,6 +86,7 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           email: tutor.email || "",
           phone: tutor.phone || "",
           password: "",
+          confirmPassword: "",
           domains: tutor.domains || [],
           tags: tutor.tags || [],
         });
@@ -89,21 +96,29 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           email: "",
           phone: "",
           password: "",
+          confirmPassword: "",
           domains: [],
           tags: [],
         });
       }
+      setIsUpdatingPassword(false);
       setErrors({});
       setShowPassword(false);
+      setShowConfirmPassword(false);
       setIsAddingCustomDomain(false);
       setCustomDomainInput("");
       setTagInput("");
       setLoadDomains(false);
+    } else {
+      setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+      setIsUpdatingPassword(false);
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     }
   }, [mode, tutor, open]);
 
   const validate = (formToValidate = form) => {
-    const e: Partial<Record<keyof typeof form | "domains" | "tags", string>> = {};
+    const e: Partial<Record<keyof typeof form | "confirmPassword" | "domains" | "tags", string>> = {};
     
     if (!formToValidate.name.trim()) {
       e.name = "Full Name is required";
@@ -123,10 +138,28 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
       e.phone = "Contact Number must be exactly 10 digits";
     }
 
-    if (mode === "add" && !formToValidate.password.trim()) {
-      e.password = "Password is required";
-    } else if (formToValidate.password && hasEmoji(formToValidate.password)) {
-      e.password = "Password cannot contain emojis";
+    if (mode === "add") {
+      if (!formToValidate.password.trim()) {
+        e.password = "Password is required";
+      } else if (hasEmoji(formToValidate.password)) {
+        e.password = "Password cannot contain emojis";
+      }
+      if (!formToValidate.confirmPassword.trim()) {
+        e.confirmPassword = "Confirm Password is required";
+      } else if (formToValidate.password !== formToValidate.confirmPassword) {
+        e.confirmPassword = "Passwords do not match";
+      }
+    } else if (mode === "edit" && isUpdatingPassword) {
+      if (!formToValidate.password.trim()) {
+        e.password = "New password is required";
+      } else if (hasEmoji(formToValidate.password)) {
+        e.password = "Password cannot contain emojis";
+      }
+      if (!formToValidate.confirmPassword.trim()) {
+        e.confirmPassword = "Confirm New Password is required";
+      } else if (formToValidate.password !== formToValidate.confirmPassword) {
+        e.confirmPassword = "Passwords do not match";
+      }
     }
 
     if (formToValidate.tags.some(t => hasEmoji(t))) {
@@ -150,7 +183,8 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
     if (!validate(updatedForm)) return;
     
     const payload = { ...updatedForm };
-    if (mode === "edit" && !payload.password) {
+    delete (payload as any).confirmPassword;
+    if (mode === "edit" && (!isUpdatingPassword || !payload.password)) {
       delete (payload as any).password;
     }
 
@@ -258,211 +292,223 @@ export default function TutorFormModal({ open, onClose, mode, tutor, onSave }: P
           )}
         </div>
 
-        {/* Row 3: Contact Number & Password */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Contact Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.phone}
-              onChange={handlePhoneChange}
-              placeholder="+1 (234) 567-8900"
-              autoComplete="new-phone"
-              className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
-                errors.phone ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.phone && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.phone}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Password {mode === "add" && <span className="text-red-500">*</span>}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => {
-                  setForm({ ...form, password: e.target.value });
-                  if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
-                }}
-                placeholder={mode === "edit" ? "••••••••" : "........"}
-                autoComplete="new-password"
-                className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
-                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.password}</p>
-            )}
-          </div>
+        {/* Contact Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+            Contact Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            value={form.phone}
+            onChange={handlePhoneChange}
+            placeholder="+1 (234) 567-8900"
+            autoComplete="new-phone"
+            className={`w-full border rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+              errors.phone ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.phone && (
+            <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.phone}</p>
+          )}
         </div>
 
-        {/* Row 4: Domains & Tags */}
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Domains
-            </label>
-            {isAddingCustomDomain ? (
-              <div className="space-y-2">
+        {/* Password Section */}
+        {mode === "add" ? (
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
                 <input
-                  type="text"
-                  value={customDomainInput}
-                  onChange={(e) => setCustomDomainInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddCustomDomain();
-                    }
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => {
+                    setForm({ ...form, password: e.target.value });
+                    if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
                   }}
-                  placeholder="Enter custom domain... (e.g. DOCKER)"
-                  className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px]"
-                  autoFocus
+                  placeholder="Enter password"
+                  autoComplete="new-password"
+                  className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+                    errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                  }`}
                 />
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddingCustomDomain(false);
-                      setCustomDomainInput("");
-                      setErrors(prev => ({ ...prev, domains: "" }));
-                    }}
-                    className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-muted dark:hover:bg-muted/80 text-gray-700 dark:text-foreground rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleAddCustomDomain}
-                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
-                  >
-                    Add
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={(e) => {
+                    setForm({ ...form, confirmPassword: e.target.value });
+                    if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: "" }));
+                  }}
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+                    errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-border/50">
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isUpdatingPassword}
+                onChange={(e) => {
+                  setIsUpdatingPassword(e.target.checked);
+                  if (!e.target.checked) {
+                    setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                    setErrors((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                  }
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Update Password
+            </label>
+
+            {isUpdatingPassword && (
+              <div className="grid grid-cols-2 gap-6 pt-1">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                    New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => {
+                        setForm({ ...form, password: e.target.value });
+                        if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
+                      }}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+                        errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.password}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                    Confirm New Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={form.confirmPassword}
+                      onChange={(e) => {
+                        setForm({ ...form, confirmPassword: e.target.value });
+                        if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: "" }));
+                      }}
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                      className={`w-full border rounded-xl px-4 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 transition-colors h-[46px] ${
+                        errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors z-10"
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.confirmPassword}</p>
+                  )}
                 </div>
               </div>
-            ) : (
-              <Select
-                value=""
-                onValueChange={(val) => {
-                  if (val === "ADD_CUSTOM") {
-                    setIsAddingCustomDomain(true);
-                  } else if (val && !form.domains.includes(val)) {
-                    setForm({ ...form, domains: [...form.domains, val] });
-                  }
-                }}
-                onOpenChange={(open) => {
-                  if (open) {
-                    setLoadDomains(true);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-4 py-2.5 text-sm bg-gray-50 dark:bg-muted/50/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors h-[46px] flex items-center justify-between text-gray-400">
-                  <SelectValue placeholder="Select domain..." />
-                </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-card z-50 border border-gray-200 dark:border-border/70 shadow-lg rounded-xl max-h-60 overflow-y-auto p-1">
-                  <SelectItem value="ADD_CUSTOM" className="font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-muted cursor-pointer">
-                    + Add Custom Domain
-                  </SelectItem>
-                  {availableDomains.map((dom) => (
-                    <SelectItem key={dom} value={dom}>
-                      {dom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            )}
+          </div>
+        )}
+
+        {/* Multi-Domain Selection & Tags */}
+        <div className="grid grid-cols-2 gap-6">
+          {/* Multi-Domain Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
+              Domains (Multi-select)
+            </label>
+            <DomainSelect
+              value=""
+              onChange={(val, domainObj) => {
+                const domainName = (domainObj?.name || val).trim();
+                if (domainName && !form.domains.includes(domainName)) {
+                  setForm(prev => ({ ...prev, domains: [...prev.domains, domainName] }));
+                }
+              }}
+              placeholder="Search and select domains..."
+              allowClear={false}
+              closeOnSelect={false}
+              selectedValues={form.domains}
+            />
+            {/* Display Selected Domains */}
+            {form.domains.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {form.domains.map((dom) => (
+                  <Chip
+                    key={dom}
+                    label={dom}
+                    variant="domain"
+                    onRemove={() => handleRemoveDomain(dom)}
+                  />
+                ))}
+              </div>
             )}
             {errors.domains && (
               <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.domains}</p>
             )}
-
-            {/* Selected domains tags */}
-            {form.domains.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2 max-h-[72px] overflow-y-auto pr-1">
-                {form.domains.map((domain) => (
-                  <span key={domain} className="bg-blue-50 text-blue-600 text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border border-blue-100">
-                    {domain}
-                    <button onClick={() => handleRemoveDomain(domain)} className="text-blue-400 hover:text-blue-600 transition-colors">
-                      <X size={12} strokeWidth={3} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
+          {/* Tags */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Tags
-            </label>
-            <div className="w-full border border-gray-200 dark:border-border/70 rounded-xl px-3 bg-gray-50 dark:bg-muted/50/50 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-colors h-[46px] flex items-center justify-between">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val.includes(",")) {
-                    const parts = val.split(",");
-                    const tagToAdd = parts[0].trim().toUpperCase();
-                    if (tagToAdd && !form.tags.includes(tagToAdd)) {
-                      setForm(prev => ({ ...prev, tags: [...prev.tags, tagToAdd] }));
-                    }
-                    setTagInput(parts.slice(1).join(","));
-                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
-                  } else {
-                    setTagInput(val);
-                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
-                  }
-                }}
-                onKeyDown={handleAddTag}
-                placeholder="Add tag... (Enter or comma)"
-                className="w-full bg-transparent border-0 outline-none text-sm placeholder-gray-400"
-              />
-              {tagInput.trim() && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newTag = tagInput.trim().toUpperCase();
-                    if (newTag && !form.tags.includes(newTag)) {
-                      setForm(prev => ({ ...prev, tags: [...prev.tags, newTag] }));
-                    }
-                    setTagInput("");
-                    if (errors.tags) setErrors(prev => ({ ...prev, tags: "" }));
-                  }}
-                  className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-800 ml-2 whitespace-nowrap focus:outline-none"
-                >
-                  Add
-                </button>
-              )}
-            </div>
-            {errors.tags && (
-              <p className="text-red-500 text-xs mt-1.5 font-semibold">{errors.tags}</p>
-            )}
-
-            {/* Selected tags */}
-            {form.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2 max-h-[72px] overflow-y-auto pr-1">
-                {form.tags.map((tag, i) => (
-                  <span key={tag} className={`text-xs font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 border ${i % 2 === 0 ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-                    {tag}
-                    <button onClick={() => handleRemoveTag(tag)} className="opacity-60 hover:opacity-100 transition-opacity">
-                      <X size={12} strokeWidth={3} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <TagsInput
+              label="Tags"
+              variant="tag"
+              value={form.tags}
+              onChange={(newTags) => setForm(prev => ({ ...prev, tags: newTags }))}
+              error={errors.tags}
+            />
           </div>
         </div>
 

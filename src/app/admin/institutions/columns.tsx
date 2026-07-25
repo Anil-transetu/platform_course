@@ -36,7 +36,7 @@ export function buildInstitutionColumns(): Column<Institution>[] {
       key: "id",
       label: "Institution ID",
       render: (value, row) => (
-        <div className="font-semibold text-slate-600 text-sm">{row.batch_id || row.id}</div>
+        <div className="font-semibold text-slate-600 text-sm">#INS-{row.batch_id || row.id}</div>
       ),
     },
     {
@@ -45,7 +45,7 @@ export function buildInstitutionColumns(): Column<Institution>[] {
       render: (value, row) => (
         <div className="flex items-center gap-2">
           <div className={cn(
-            "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
+            "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
             getAvatarColor(row.id)
           )}>
             {getInitials(row.name)}

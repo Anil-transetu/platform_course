@@ -33,13 +33,11 @@ import { Toaster } from "@/components/ui/sonner";
 
 function ActionMenu({
   status,
-  onView,
   onEdit,
   onToggleStatus,
   onDelete,
 }: {
   status: string;
-  onView: () => void;
   onEdit: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
@@ -57,16 +55,6 @@ function ActionMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-md border border-gray-100 p-1 min-w-[120px] z-50">
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onView();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Eye size={14} className="text-gray-400" />
-          View
-        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
@@ -315,13 +303,13 @@ function BatchesPageContent() {
           loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
+          onRowClick={(batch) => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
           actions={(batch) => {
             const isActive = (batch.status || "Active").toLowerCase() === "active";
             return (
               <div className="flex items-center justify-center">
                 <ActionMenu 
                   status={batch.status || "Active"}
-                  onView={() => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
                   onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
                   onToggleStatus={() =>
                     setStatusConfirmDialog({
@@ -381,26 +369,26 @@ function BatchesPageContent() {
         }}
       >
         <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
+          <AlertDialogHeader className="text-left sm:text-left space-y-2">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-foreground">
               Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-slate-500 dark:text-muted-foreground text-sm leading-relaxed">
               Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} batch{" "}
-              <span className="font-semibold text-slate-800">{statusConfirmDialog.batch?.name}</span>?
+              <span className="font-semibold text-slate-900 dark:text-foreground">{statusConfirmDialog.batch?.name}</span>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 flex sm:justify-center gap-3">
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
             <AlertDialogCancel
               onClick={() => setStatusConfirmDialog({ open: false, batch: null, nextStatus: "active" })}
-              className="rounded-xl px-6"
+              className="rounded-xl px-5"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatusToggle}
               disabled={updateBatchStatus.isPending}
-              className={`rounded-xl px-6 text-white shadow-sm gap-2 flex items-center ${
+              className={`rounded-xl px-5 text-white shadow-sm gap-2 flex items-center ${
                 statusConfirmDialog.nextStatus === "active"
                   ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                   : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"

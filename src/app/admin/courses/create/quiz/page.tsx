@@ -247,10 +247,10 @@ export default function QuizLibraryPage() {
                 <p className="text-slate-500 text-sm font-medium">Select an existing quiz to add to your course structure.</p>
               </div>
 
-              {/* SEARCH & FILTERS BAR */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+              {/* SEARCH BAR */}
+              <div className="w-full mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
                 {/* Search */}
-                <div className="relative flex-1 w-full sm:max-w-md">
+                <div className="relative w-full">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-450" />
                   <Input 
                     type="text" 
@@ -262,26 +262,6 @@ export default function QuizLibraryPage() {
                     }}
                     className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
-                </div>
-                
-                {/* Select Filter */}
-                <div className="w-full sm:w-48">
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={(val) => {
-                      setStatusFilter(val);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-10 w-full bg-slate-50/50 border border-slate-250 text-xs font-bold text-slate-700 rounded-lg">
-                      <SelectValue placeholder="Status Filter" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-slate-200">
-                      <SelectItem value="ALL" className="text-xs font-semibold">All Quizzes</SelectItem>
-                      <SelectItem value="ACTIVE" className="text-xs font-semibold">Active Only</SelectItem>
-                      <SelectItem value="DRAFT" className="text-xs font-semibold">Draft Only</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

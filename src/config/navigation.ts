@@ -11,7 +11,8 @@ import {
   FileText,
   CalendarCheck,
   GraduationCap,
-  LineChart
+  LineChart,
+  Globe
 } from "lucide-react";
 
 export type NavItem = {
@@ -58,6 +59,7 @@ export const navigationConfig: Record<string, RoleNavConfig> = {
       { label: "Students", href: "/admin/students", icon: Users },
       { label: "Batches", href: "/admin/batches", icon: Layers },
       { label: "Courses", href: "/admin/courses", icon: BookOpen },
+      { label: "Domains", href: "/admin/domains", icon: Globe },
       { label: "Tutors", href: "/admin/tutors", icon: UserCheck },
       { label: "Quizzes", href: "/admin/quizzes", icon: HelpCircle },
       { label: "Assignments", href: "/admin/assignments", icon: FileEdit },

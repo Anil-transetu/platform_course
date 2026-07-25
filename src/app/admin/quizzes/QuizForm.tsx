@@ -7,8 +7,9 @@ import { useCreateQuiz, useUpdateQuiz } from "@/features/admin/quizzes/api/use-q
 import { toast, Toaster } from "sonner";
 import QuestionBuilder from "./QuestionBuilder";
 import { useRouter } from "next/navigation";
-
-const availableDomains = ["COMPUTER SCI", "DATA SCI", "MATHS", "ENGINEERING"];
+import DomainSelect from "@/components/reusable/DomainSelect";
+import Chip from "@/components/reusable/Chip";
+import TagsInput from "@/components/reusable/TagsInput";
 
 interface Props {
   mode: "add" | "edit";
@@ -23,8 +24,7 @@ export default function QuizForm({ mode, initialData }: Props) {
   const [title, setTitle] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [totalMarks, setTotalMarks] = useState("");
-  const [selectedDomains, setSelectedDomains] = useState<string[]>(["COMPUTER SCI"]);
-  const [domainSearch, setDomainSearch] = useState("");
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -39,7 +39,12 @@ export default function QuizForm({ mode, initialData }: Props) {
       setTitle(initialData.title || initialData.quiz_title || "");
       setDurationMinutes(initialData.durationMinutes?.toString() || "");
       setTotalMarks(initialData.totalMarks?.toString() || "");
-      setSelectedDomains(initialData.domain ? [initialData.domain] : ["COMPUTER SCI"]);
+      const initialDoms = Array.isArray(initialData.domains) && initialData.domains.length > 0
+        ? initialData.domains
+        : initialData.domain
+        ? [initialData.domain]
+        : [];
+      setSelectedDomains(initialDoms);
       setTags(initialData.tags || []);
       setQuestions(initialData.questions || []);
       setIsPublished(initialData.status === "PUBLISHED" || initialData.status === "ACTIVE" || initialData.status === "published");
@@ -48,7 +53,7 @@ export default function QuizForm({ mode, initialData }: Props) {
       setTitle("");
       setDurationMinutes("");
       setTotalMarks("");
-      setSelectedDomains(["COMPUTER SCI"]);
+      setSelectedDomains([]);
       setTags([]);
       setQuestions([]);
       setIsPublished(false);
@@ -56,18 +61,36 @@ export default function QuizForm({ mode, initialData }: Props) {
     }
     setErrors({});
     setTouched({});
-    setDomainSearch("");
     setTagInput("");
   }, [mode, initialData]);
 
-  const filteredDomains = useMemo(
-    () =>
-      availableDomains.filter(
-        (item) =>
-          item.toLowerCase().includes(domainSearch.toLowerCase()) && !selectedDomains.includes(item),
-      ),
-    [domainSearch, selectedDomains],
-  );
+  const handleDomainSelect = (val: string, domainObj?: { id: number; name: string }) => {
+    const domainName = (domainObj?.name || val).trim();
+    if (!domainName) return;
+    const exists = selectedDomains.some((d) => d.toUpperCase() === domainName.toUpperCase());
+    let updated: string[];
+    if (exists) {
+      updated = selectedDomains.filter((d) => d.toUpperCase() !== domainName.toUpperCase());
+    } else {
+      updated = [...selectedDomains, domainName];
+    }
+    setSelectedDomains(updated);
+    if (errors.domains) {
+      setErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.domains;
+        return copy;
+      });
+    }
+  };
+
+  const handleRemoveDomain = (domainToRemove: string) => {
+    const updated = selectedDomains.filter((d) => d.toUpperCase() !== domainToRemove.toUpperCase());
+    setSelectedDomains(updated);
+    if (updated.length === 0 && touched.domains) {
+      setErrors((prev) => ({ ...prev, domains: "Select at least one domain" }));
+    }
+  };
 
   const addTag = () => {
     const normalized = tagInput.trim().toUpperCase();
@@ -282,92 +305,49 @@ export default function QuizForm({ mode, initialData }: Props) {
         </section>
 
         {/* Categorization */}
-        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm relative z-20">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50 rounded-t-2xl">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Categorization</h2>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">
+              <label className="mb-2 block text-sm font-semibold text-slate-800 dark:text-foreground">
                 Domains <span className="text-red-500">*</span>
               </label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                {selectedDomains.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1.5 text-xs font-bold tracking-wide text-blue-700"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDomains((prev) => prev.filter((d) => d !== item))}
-                      className="text-blue-500 hover:text-blue-800"
-                    >
-                      <X size={14} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={domainSearch}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && filteredDomains.length > 0) {
-                      e.preventDefault();
-                      setSelectedDomains((prev) => [...prev, filteredDomains[0]]);
-                      setDomainSearch("");
-                    }
-                  }}
-                  onChange={(e) => setDomainSearch(e.target.value)}
-                  placeholder={selectedDomains.length === 0 ? "Search domains..." : "Search domains..."}
-                  className="flex-1 min-w-[120px] bg-transparent px-2 py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-3">Select one or more professional domains for this quiz.</p>
-
-              {filteredDomains.length > 0 && domainSearch.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white dark:bg-card border border-slate-100 rounded-xl shadow-sm absolute z-10 w-full max-w-sm">
-                  {filteredDomains.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDomains((prev) => [...prev, item]);
-                        setDomainSearch("");
-                      }}
-                      className="rounded-lg border border-slate-200 bg-white dark:bg-card px-3 py-1.5 text-xs font-bold tracking-wide text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                    >
-                      + {item}
-                    </button>
+              <DomainSelect
+                value=""
+                onChange={handleDomainSelect}
+                placeholder="Search and select domains..."
+                allowClear={false}
+                closeOnSelect={false}
+                selectedValues={selectedDomains}
+                error={touched.domains && !!errors.domains}
+              />
+              {selectedDomains.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {selectedDomains.map((dom) => (
+                    <Chip
+                      key={dom}
+                      label={dom}
+                      variant="domain"
+                      onRemove={() => handleRemoveDomain(dom)}
+                    />
                   ))}
                 </div>
               )}
-              {touched.domains && errors.domains && <p className="text-red-500 text-xs mt-2 font-medium">{errors.domains}</p>}
+              {touched.domains && errors.domains && (
+                <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.domains}</p>
+              )}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">Tags</label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                {tags.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-200 px-2.5 py-1.5 text-xs font-bold tracking-wide text-slate-700"
-                  >
-                    {item}
-                    <button type="button" onClick={() => setTags((prev) => prev.filter((t) => t !== item))} className="text-slate-500 hover:text-slate-800">
-                      <X size={14} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                  placeholder={tags.length === 0 ? "Type and press Enter..." : "Type and press Enter..."}
-                  className="flex-1 min-w-[120px] bg-transparent px-2 py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-3">Helpful for searching and filtering assessments.</p>
+              <TagsInput
+                label="Tags"
+                variant="tag"
+                value={tags}
+                onChange={(newTags) => setTags(newTags)}
+              />
+              <p className="text-xs text-slate-400 font-medium mt-2">Helpful for searching and filtering assessments.</p>
             </div>
           </div>
         </section>

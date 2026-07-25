@@ -326,26 +326,26 @@ export default function AcceptedUsersTab({
         }}
       >
         <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
+          <AlertDialogHeader className="text-left sm:text-left space-y-2">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-foreground">
               Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-slate-500 dark:text-muted-foreground text-sm leading-relaxed">
               Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} user{" "}
-              <span className="font-semibold text-slate-800">{statusConfirmDialog.user?.name}</span>?
+              <span className="font-semibold text-slate-900 dark:text-foreground">{statusConfirmDialog.user?.name}</span>?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-4 flex sm:justify-center gap-3">
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
             <AlertDialogCancel
               onClick={() => setStatusConfirmDialog({ open: false, user: null, nextStatus: "active" })}
-              className="rounded-xl px-6"
+              className="rounded-xl px-5"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStatusToggle}
               disabled={updateUserStatus.isPending}
-              className={`rounded-xl px-6 text-white shadow-sm gap-2 flex items-center ${
+              className={`rounded-xl px-5 text-white shadow-sm gap-2 flex items-center ${
                 statusConfirmDialog.nextStatus === "active"
                   ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
                   : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
