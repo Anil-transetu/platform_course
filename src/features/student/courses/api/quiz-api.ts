@@ -137,3 +137,29 @@ export function useQuizResult(courseId: string, quizId: string) {
     enabled: !!courseId && !!quizId,
   });
 }
+
+/**
+ * Fetch Quiz Review
+ */
+export async function fetchQuizReview(courseId: string, quizId: string): Promise<any> {
+  const url = `${API_HOST}/api/v1/student-portal/course/${courseId}/quiz/${quizId}/review`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  return result?.data || result;
+}
+
+/**
+ * React Query hook for Quiz Review
+ */
+export function useQuizReview(courseId: string, quizId: string) {
+  return useQuery({
+    queryKey: ["quiz-review", courseId, quizId],
+    queryFn: () => fetchQuizReview(courseId, quizId),
+    enabled: !!courseId && !!quizId,
+  });
+}

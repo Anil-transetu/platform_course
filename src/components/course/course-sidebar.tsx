@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { 
   ChevronDown, ChevronRight, FileText, Target, 
-  HelpCircle, ClipboardList, Lock, CheckCircle2, Play, Award
+  HelpCircle, ClipboardList, Lock, CheckCircle2, Play, Award, RefreshCw
 } from "lucide-react";
 import { 
   CourseSidebarResponse, SidebarModule, SidebarLesson, ActiveSidebarItem, SidebarItemType
@@ -17,6 +17,7 @@ interface CourseSidebarProps {
   toggleModule: (id: string) => void;
   expandedLessons: Record<string, boolean>;
   toggleLesson: (id: string) => void;
+  headerAction?: React.ReactNode;
 }
 
 export function CourseSidebar({
@@ -26,7 +27,8 @@ export function CourseSidebar({
   expandedModules,
   toggleModule,
   expandedLessons,
-  toggleLesson
+  toggleLesson,
+  headerAction
 }: CourseSidebarProps) {
   const queryClient = useQueryClient();
   
@@ -64,7 +66,7 @@ export function CourseSidebar({
           indentLevel === 1 && "ml-4 w-[calc(100%-16px)]",
           indentLevel === 2 && "ml-8 w-[calc(100%-32px)]",
           isActive 
-            ? "bg-primary/10 text-primary font-semibold" 
+            ? "bg-muted text-foreground font-semibold" 
             : isLocked
               ? "text-muted-foreground/70 cursor-not-allowed"
               : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -122,7 +124,7 @@ export function CourseSidebar({
                 "w-full px-3 py-2 rounded-lg cursor-pointer transition-colors flex items-center justify-between",
                 indentLevel === 1 && "ml-2 w-[calc(100%-8px)]",
                 lesson.isLocked ? "opacity-60 cursor-not-allowed text-muted-foreground" : "hover:bg-muted/50",
-                isLessActive && !lesson.isLocked && "bg-muted text-foreground"
+                isLessActive && !lesson.isLocked && "bg-muted text-foreground font-semibold"
               )}
             >
               <div className="flex items-center gap-3 overflow-hidden w-full text-sm font-medium">
@@ -156,28 +158,40 @@ export function CourseSidebar({
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto pb-12 bg-background border-r">
-      {/* Sidebar Header */}
+    <div className="w-full h-full flex flex-col bg-background border-r">
+      {/* Sidebar Header (Sticky) */}
       <div 
-        onClick={() => onSelectItem({ type: "course", id: courseData.courseId, data: courseData })}
         className={cn(
-          "p-6 cursor-pointer border-b transition-colors",
+          "p-6 border-b transition-colors sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 flex items-start justify-between gap-4",
           activeItem?.type === "course" ? "bg-muted/50" : "hover:bg-muted/30"
         )}
       >
-        <div className="flex items-center gap-2 mb-1 text-xs font-bold text-primary uppercase tracking-wider">
-          <Target size={14} /> Dashboard
+        <div 
+          className="flex-1 cursor-pointer min-w-0"
+          onClick={() => onSelectItem({ type: "course", id: courseData.courseId, data: courseData })}
+        >
+          <div className="flex items-center gap-2 mb-1 text-xs font-bold text-primary uppercase tracking-wider">
+            <Target size={14} /> Dashboard
+          </div>
+          <h3 className="font-semibold text-foreground text-sm line-clamp-2">
+            {courseData.courseName || "Untitled Course"}
+          </h3>
         </div>
-        <h3 className="font-semibold text-foreground text-sm line-clamp-2">
-          {courseData.courseName || "Untitled Course"}
-        </h3>
+        {headerAction && (
+          <div className="shrink-0 pt-1">
+            {headerAction}
+          </div>
+        )}
       </div>
 
-      <div className="p-3 space-y-3">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 pb-12">
         {courseData.sidebar?.map((module: SidebarModule, mIdx: number) => {
           const isModExpanded = !!expandedModules[String(module.id)];
           const isModActive = activeItem?.type === "module" && activeItem?.id === module.id;
           const isLocked = !!module.isLocked;
+          const progress = (module as any).progress ?? module.progressPct ?? 0;
+          const isModuleCompleted = module.status === "completed" || (module as any).isCompleted === true || progress === 100;
           
           return (
             <div key={module.id} className="relative">
@@ -190,21 +204,21 @@ export function CourseSidebar({
                   }
                 }}
                 className={cn(
-                  "w-full p-3 rounded-xl cursor-pointer transition-colors flex items-center justify-between border",
+                  "w-full p-3 rounded-xl cursor-pointer transition-colors flex items-center justify-between border group/module-card",
                   isLocked 
                     ? "opacity-60 cursor-not-allowed bg-muted/30 border-transparent text-muted-foreground" 
                     : "hover:bg-muted/30 border-border",
                   !isLocked && isModActive 
-                    ? "bg-primary/5 border-primary/20 text-foreground"
+                    ? "bg-muted border-muted-foreground/20 text-foreground"
                     : "bg-card text-foreground"
                 )}
               >
                 <div className="flex items-center gap-3 overflow-hidden w-full">
                   <div className={cn(
                     "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
-                    isLocked ? "bg-muted" : "bg-primary/10 text-primary"
+                    isLocked ? "bg-muted text-muted-foreground" : isModuleCompleted ? "bg-green-100 text-green-700" : isModActive ? "bg-primary/10 text-primary" : "bg-primary/10 text-primary"
                   )}>
-                    {isLocked ? <Lock size={14} /> : String(mIdx + 1).padStart(2, '0')}
+                    {isLocked ? <Lock size={14} /> : isModuleCompleted ? <CheckCircle2 size={16} /> : String(mIdx + 1).padStart(2, '0')}
                   </div>
                   
                   <div className="flex flex-col min-w-0 flex-1">
@@ -212,18 +226,31 @@ export function CourseSidebar({
                       {module.name}
                     </span>
                     
-                    {module.progressPct !== undefined && !isLocked && (
-                      <div className="flex items-center gap-2 mt-1">
+                    {!isLocked && ((module as any).progress !== undefined || module.progressPct !== undefined) && (
+                      <div className="flex items-center gap-2 mt-1 group/progress">
                         <div className="h-1 flex-1 bg-muted rounded-full overflow-hidden">
                           <div 
                             className={cn(
                               "h-full rounded-full", 
-                              module.progressPct === 100 ? "bg-green-500" : "bg-primary"
+                              isModuleCompleted ? "bg-green-500" : "bg-primary"
                             )}
-                            style={{ width: `${Math.min(100, Math.max(0, module.progressPct))}%` }}
+                            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-medium text-muted-foreground">{module.progressPct}%</span>
+                        <span className="text-[10px] font-medium text-muted-foreground">
+                          {progress}%
+                        </span>
+                        
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            queryClient.invalidateQueries({ queryKey: ["course-sidebar", String(courseData.courseId)] });
+                          }}
+                          className="p-1 rounded opacity-0 group-hover/progress:opacity-100 transition-opacity bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border"
+                          title="Refresh progress"
+                        >
+                          <RefreshCw size={10} />
+                        </button>
                       </div>
                     )}
                   </div>

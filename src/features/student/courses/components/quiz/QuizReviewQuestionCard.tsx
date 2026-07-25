@@ -5,13 +5,15 @@ import { QuizResultQuestion, QuizOption } from "@/types/student-course";
 import { CheckCircle2, XCircle, Info } from "lucide-react";
 
 interface QuizReviewQuestionCardProps {
-  question: QuizResultQuestion;
+  question: any;
   index: number;
 }
 
 export const QuizReviewQuestionCard: React.FC<QuizReviewQuestionCardProps> = React.memo(({ question, index }) => {
   const isCorrect = question.isCorrect;
-  const isSkipped = question.studentOptionId === null || question.studentOptionId === undefined;
+  const studentAnswer = question.studentSelectedAnswer?.option;
+  const correctAnswer = question.correctAnswer?.option;
+  const isSkipped = !studentAnswer;
 
   return (
     <Card className="p-6 overflow-hidden border-2 mb-6 shadow-sm">
@@ -20,12 +22,6 @@ export const QuizReviewQuestionCard: React.FC<QuizReviewQuestionCardProps> = Rea
           <Badge variant="secondary" className="uppercase tracking-wider text-xs font-bold text-muted-foreground">
             Question {index + 1}
           </Badge>
-          {question.type === 'mcq' && (
-            <Badge variant="outline" className="text-xs">Multiple Choice</Badge>
-          )}
-          {question.type === 'boolean' && (
-            <Badge variant="outline" className="text-xs">True / False</Badge>
-          )}
         </div>
 
         <div>
@@ -50,48 +46,37 @@ export const QuizReviewQuestionCard: React.FC<QuizReviewQuestionCardProps> = Rea
       </h3>
 
       <div className="space-y-3 mb-6">
-        {question.options.map((opt: QuizOption) => {
-          const isCorrectAnswer = String(opt.optionId) === String(question.correctOptionId);
-          const isStudentAnswer = String(opt.optionId) === String(question.studentOptionId);
-          
-          let containerStyles = "border-transparent bg-muted/40";
-          let icon = null;
-          let labelText = "";
+        {/* Correct Answer */}
+        <div className="relative flex items-start sm:items-center p-4 rounded-xl border-2 border-green-200 bg-green-50/50 text-green-900">
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+            <div className="flex-1">
+              <div className="text-sm font-medium leading-relaxed">
+                {correctAnswer || "Not provided"}
+              </div>
+              <div className="text-[10px] font-bold uppercase tracking-wider mt-1 text-green-600">
+                {isCorrect ? "YOUR ANSWER & CORRECT ANSWER" : "CORRECT ANSWER"}
+              </div>
+            </div>
+          </div>
+        </div>
 
-          if (isCorrectAnswer) {
-            containerStyles = "border-green-200 bg-green-50/50 text-green-900";
-            icon = <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />;
-            labelText = isStudentAnswer ? "YOUR ANSWER & CORRECT ANSWER" : "CORRECT ANSWER";
-          } else if (isStudentAnswer && !isCorrectAnswer) {
-            containerStyles = "border-red-200 bg-red-50/50 text-red-900";
-            icon = <XCircle className="w-5 h-5 text-red-600 shrink-0" />;
-            labelText = "YOUR ANSWER";
-          } else {
-            containerStyles = "border-border bg-background";
-          }
-
-          return (
-            <div
-              key={opt.optionId}
-              className={`relative flex items-start sm:items-center p-4 rounded-xl border-2 ${containerStyles}`}
-            >
-              <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                {icon ? icon : <div className="w-5 h-5 shrink-0" />}
-                
-                <div className="flex-1">
-                  <div className="text-sm font-medium leading-relaxed">
-                    {opt.option}
-                  </div>
-                  {labelText && (
-                    <div className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${isCorrectAnswer ? 'text-green-600' : 'text-red-600'}`}>
-                      {labelText}
-                    </div>
-                  )}
+        {/* Student's Wrong Answer */}
+        {!isCorrect && !isSkipped && studentAnswer && (
+          <div className="relative flex items-start sm:items-center p-4 rounded-xl border-2 border-red-200 bg-red-50/50 text-red-900">
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <XCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <div className="flex-1">
+                <div className="text-sm font-medium leading-relaxed">
+                  {studentAnswer}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider mt-1 text-red-600">
+                  YOUR ANSWER
                 </div>
               </div>
             </div>
-          );
-        })}
+          </div>
+        )}
       </div>
 
       {question.explanation && (

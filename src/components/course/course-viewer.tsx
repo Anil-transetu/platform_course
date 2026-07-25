@@ -2,7 +2,7 @@ import React from "react";
 import { CourseContent, ActiveSidebarItem, SidebarModule, SidebarLesson, Quiz, Assignment } from "@/types/student-course";
 import { ViewerSkeleton } from "./skeleton";
 import { EmptyState } from "./empty-state";
-import { Clock, Play, Award, ClipboardList, HelpCircle, FileText, Target, Folder, Layers, BookOpen, ArrowRight } from "lucide-react";
+import { Clock, Play, Award, ClipboardList, HelpCircle, FileText, Target, Folder, Layers, BookOpen, ArrowRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCourseView } from "@/hooks/use-course-view";
 import { useCourseHome } from "@/hooks/use-course-home";
@@ -403,10 +403,15 @@ function TopicViewer({ courseId, content, data }: { courseId: string; content: C
   );
 }
 
-function QuizViewer({ courseId, content, data }: { courseId: string; content: CourseContent; data: Quiz }) {
+function QuizViewer({ courseId, content, data }: { courseId: string; content: any; data: Quiz }) {
+  const quizInfo = content?.quiz || {};
+  const quizResultInfo = content?.quiz_result || {};
+
   const isCompleted = 
+    quizResultInfo?.status === "completed" ||
+    quizInfo?.status === "completed" ||
     (content as any)?.isCompleted || 
-    content.metadata?.is_completed || 
+    content?.metadata?.is_completed || 
     (data as any)?.is_completed || 
     (data as any)?.isCompleted || 
     (content as any)?.progressPct === 100 || 
@@ -414,22 +419,21 @@ function QuizViewer({ courseId, content, data }: { courseId: string; content: Co
     (content as any)?.progress === 100 ||
     (data as any)?.status === "completed";
     
-  const [quizState, setQuizState] = React.useState<'intro' | 'attempting' | 'result' | 'review'>(
-    isCompleted ? 'result' : 'intro'
-  );
-  const timeLimit = data.time_limit_minutes || content.metadata?.time_limit_minutes || data.quizTime;
-  const maxAttempts = data.max_attempts || content.metadata?.max_attempts;
-  const totalMarks = data.total_marks || content.metadata?.total_marks;
-  const passingScore = data.passing_score || content.metadata?.passing_score;
+  const [quizState, setQuizState] = React.useState<'intro' | 'attempting' | 'result' | 'review'>('intro');
+  const timeLimit = quizInfo.time || data.time_limit_minutes || content?.metadata?.time_limit_minutes || data.quizTime;
+  const totalQuestions = quizInfo.total_questions || data.total_questions;
+  const totalMarks = quizInfo.total_marks || data.total_marks || content?.metadata?.total_marks;
+  const passingScore = data.passing_score || content?.metadata?.passing_score;
 
   // We merge content and data to form a robust Quiz object for QuizAttemptView
   const mergedQuiz: Quiz = {
     ...data,
     ...content,
-    questions: (content as any).questions || data.questions || [],
-    quizId: content.id || data.id || data.quizId,
-    quizTitle: content.title || data.name || data.quiz_title || data.title,
-    description: content.description || data.instructions,
+    ...quizInfo,
+    questions: (content as any)?.questions || data.questions || [],
+    quizId: quizInfo.id || content?.id || data.id || data.quizId,
+    quizTitle: quizInfo.title || content?.title || data.name || data.quiz_title || data.title,
+    description: quizInfo.description || content?.description || data.instructions,
     quizTime: timeLimit,
   };
 
@@ -471,38 +475,73 @@ function QuizViewer({ courseId, content, data }: { courseId: string; content: Co
         <CardContent className="p-8 md:p-10">
           <Badge variant="secondary" className="mb-4">Quiz Assessment</Badge>
           <h1 className="text-3xl font-bold text-foreground mb-4">
-            {content.title || data.name || data.quiz_title || data.title}
+            {mergedQuiz.quizTitle}
           </h1>
           <p className="text-muted-foreground mb-8">
-            {content.description || data.instructions || "Carefully review the quiz rules below. Once started, the timer cannot be paused."}
+            {mergedQuiz.description || "Carefully review the quiz rules below. Once started, the timer cannot be paused."}
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="p-4 bg-muted rounded-lg border text-center">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Time Limit</span>
-              <span className="text-lg font-bold text-foreground">{timeLimit ? `${timeLimit}m` : "20m"}</span>
+          {isCompleted && Object.keys(quizResultInfo).length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Answered</span>
+                <span className="text-lg font-bold text-foreground">{quizResultInfo.answered_questions || "-"}</span>
+              </div>
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Time Taken</span>
+                <span className="text-lg font-bold text-foreground">{quizResultInfo.time_taken || "-"}</span>
+              </div>
+              <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20 text-center">
+                <span className="text-xs font-semibold text-green-700 uppercase tracking-wider block mb-1">Correct</span>
+                <span className="text-lg font-bold text-green-700">{quizResultInfo.correct_answers ?? "-"}</span>
+              </div>
+              <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20 text-center">
+                <span className="text-xs font-semibold text-red-700 uppercase tracking-wider block mb-1">Wrong</span>
+                <span className="text-lg font-bold text-red-700">{quizResultInfo.wrong_answers ?? "-"}</span>
+              </div>
             </div>
-            <div className="p-4 bg-muted rounded-lg border text-center">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Attempts</span>
-              <span className="text-lg font-bold text-foreground">{maxAttempts || "1"}</span>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Time Limit</span>
+                <span className="text-lg font-bold text-foreground">{timeLimit ? `${timeLimit}m` : "20m"}</span>
+              </div>
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Questions</span>
+                <span className="text-lg font-bold text-foreground">{totalQuestions || "-"}</span>
+              </div>
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Total Points</span>
+                <span className="text-lg font-bold text-foreground">{totalMarks || "10"}</span>
+              </div>
+              <div className="p-4 bg-muted rounded-lg border text-center">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Status</span>
+                <span className="text-lg font-bold text-foreground capitalize">{(quizInfo.status || "Not Started").replace("_", " ")}</span>
+              </div>
             </div>
-            <div className="p-4 bg-muted rounded-lg border text-center">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Total Points</span>
-              <span className="text-lg font-bold text-foreground">{totalMarks || "10"}</span>
-            </div>
-            <div className="p-4 bg-muted rounded-lg border text-center">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Pass Score</span>
-              <span className="text-lg font-bold text-foreground">{passingScore ? `${passingScore}%` : "70%"}</span>
-            </div>
-          </div>
+          )}
 
-          <div className="pt-6 border-t flex justify-end">
-            <button 
-              onClick={() => setQuizState('attempting')}
-              className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
-            >
-              Start Assessment <ArrowRight size={16} />
-            </button>
+          <div className="pt-6 border-t flex justify-end gap-3">
+            {isCompleted ? (
+              <>
+                <button 
+                  onClick={() => setQuizState('result')}
+                  className="px-6 py-2.5 bg-muted text-foreground font-medium rounded-md hover:bg-muted/80 transition-colors"
+                >
+                  View Detailed Results
+                </button>
+                <div className="px-6 py-2.5 bg-green-500/10 text-green-700 font-medium rounded-md flex items-center gap-2 border border-green-500/20">
+                  <CheckCircle2 size={16} /> Completed
+                </div>
+              </>
+            ) : (
+              <button 
+                onClick={() => setQuizState('attempting')}
+                className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
+                Start Quiz <ArrowRight size={16} />
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>

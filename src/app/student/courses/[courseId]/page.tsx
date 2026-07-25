@@ -19,6 +19,18 @@ export default function StudentCoursePage() {
   const courseId = params.courseId as string;
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = React.useState(true);
 
+  React.useEffect(() => {
+    const savedState = localStorage.getItem("course_sidebar_open");
+    if (savedState !== null) {
+      setIsDesktopSidebarOpen(savedState === "true");
+    }
+  }, []);
+
+  const toggleDesktopSidebar = (open: boolean) => {
+    setIsDesktopSidebarOpen(open);
+    localStorage.setItem("course_sidebar_open", String(open));
+  };
+
   const { data: courseData, isLoading, error } = useCourseSidebar(courseId);
   const {
     activeItem,
@@ -79,15 +91,6 @@ export default function StudentCoursePage() {
         {/* LEFT SIDEBAR: Course Structure (Desktop) */}
         {isDesktopSidebarOpen && (
           <aside className="hidden md:flex w-[320px] border-r border-gray-200/80 bg-white flex-col shrink-0 overflow-hidden transition-all duration-300 relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsDesktopSidebarOpen(false)}
-              className="absolute top-4 right-4 z-10 rounded-full h-8 w-8 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-              title="Close Sidebar"
-            >
-              <PanelLeftClose size={18} />
-            </Button>
             <CourseSidebar
               courseData={courseData}
               activeItem={activeItem}
@@ -96,6 +99,17 @@ export default function StudentCoursePage() {
               toggleModule={toggleModule}
               expandedLessons={expandedLessons}
               toggleLesson={toggleLesson}
+              headerAction={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleDesktopSidebar(false)}
+                  className="rounded-full h-8 w-8 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors -mr-2"
+                  title="Close Sidebar"
+                >
+                  <PanelLeftClose size={18} />
+                </Button>
+              }
             />
           </aside>
         )}
@@ -106,7 +120,7 @@ export default function StudentCoursePage() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setIsDesktopSidebarOpen(true)}
+              onClick={() => toggleDesktopSidebar(true)}
               className="hidden md:flex absolute top-4 left-4 z-10 rounded-full h-8 w-8 bg-white shadow-sm hover:bg-slate-100 text-slate-600 transition-all"
               title="Open Sidebar"
             >

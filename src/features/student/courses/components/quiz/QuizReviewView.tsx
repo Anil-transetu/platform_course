@@ -1,5 +1,5 @@
 import React from "react";
-import { useQuizResult } from "@/features/student/courses/api/quiz-api";
+import { useQuizReview } from "@/features/student/courses/api/quiz-api";
 import { QuizResultResponse } from "@/types/student-course";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ interface QuizReviewViewProps {
 }
 
 export function QuizReviewView({ courseId, quizId, onBackToResults }: QuizReviewViewProps) {
-  const { data, isLoading, error, refetch } = useQuizResult(courseId, quizId);
+  const { data, isLoading, error, refetch } = useQuizReview(courseId, quizId);
 
   if (isLoading) {
     return (
@@ -35,8 +35,7 @@ export function QuizReviewView({ courseId, quizId, onBackToResults }: QuizReview
     );
   }
 
-  const result: QuizResultResponse = data.summary ? data : { summary: data, questions: [] };
-  const { summary, questions } = result;
+  const questions = data.review || [];
 
   return (
     <div className="max-w-4xl mx-auto w-full pb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
