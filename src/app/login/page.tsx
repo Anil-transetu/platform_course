@@ -56,6 +56,14 @@ export default function LoginPage() {
     try {
       const data = await loginToApi(email, password);
       
+      // Check for expected authentication/validation failures (e.g. Account is inactive, invalid credentials)
+      if (data.success === false || (!data.token && !data.accessToken && (data.message || data.error))) {
+        const errorMsg = data.message || data.error || "Invalid email or password";
+        toast.error(errorMsg);
+        setIsLoading(false);
+        return;
+      }
+
       // Normalize role and add fallback based on email if backend role is missing
       let rawRole = data?.role || data?.user?.role || (data as any)?.data?.user?.role || (data as any)?.data?.role;
       if (!rawRole) {

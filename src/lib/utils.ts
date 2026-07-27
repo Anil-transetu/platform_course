@@ -6,8 +6,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function toSentenceCase(str: string): string {
+export function toSentenceCase(str: any): string {
   if (!str) return "";
+
+  if (typeof str !== "string") {
+    if (typeof str === "object" && str !== null) {
+      str = str.name || str.domain_name || str.title || "";
+    } else {
+      str = String(str);
+    }
+  }
+  if (!str || typeof str !== "string") return "";
 
   const acronyms = new Set(["HTML", "CSS", "JS", "UI", "UX", "API", "SQL", "AI", "ML", "PHP", "AWS"]);
 

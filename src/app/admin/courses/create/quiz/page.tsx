@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Search, HelpCircle, Clock, CheckSquare, Loader2 } from "lucide-react";
+import { Search, HelpCircle, Clock, CheckSquare, Loader2, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
-import Pagination from "@/components/ui/Pagination/Pagination";
-import { useQuizzes, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
+import { useQuizLookup, useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
 import { useUpdateModule, useUpdateLesson, useUnlinkQuiz } from '@/features/admin/courses/api/course-api';
 import { Quiz as ApiQuiz, QuizQuestion, QuizQuestionOption } from "@/features/admin/quizzes/api/quiz-api";
 import { Input } from "@/components/ui/input";
@@ -40,7 +39,6 @@ export default function QuizLibraryPage() {
   }
 
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [forceLibraryView, setForceLibraryView] = useState(false);
@@ -51,17 +49,12 @@ export default function QuizLibraryPage() {
   const isRealId = !!(activeQuizIdStr && !activeQuizIdStr.startsWith("temp-"));
   const isLibraryEnabled = !isRealId || forceLibraryView;
 
-  // 1. Fetch real list of quizzes with pagination & search
-  const { data: quizzesData, isLoading: listLoading } = useQuizzes(
-    currentPage, 
-    6, 
-    debouncedSearch || undefined, 
-    statusFilter === "ALL" ? undefined : statusFilter,
+  // 1. Fetch lookup list of quizzes — triggered only when library view is enabled
+  const { data: quizzesData, isLoading: listLoading } = useQuizLookup(
+    debouncedSearch || undefined,
     { enabled: isLibraryEnabled }
   );
-  const quizItems = quizzesData?.data || [];
-  const totalItems = quizzesData?.total || 0;
-  const totalPages = Math.ceil(totalItems / 6);
+  const quizItems: ApiQuiz[] = Array.isArray(quizzesData) ? quizzesData : (quizzesData as any)?.data || [];
 
   // 2. Fetch specific quiz details if it is a real database ID
   const { data: quizDetail, isLoading: detailLoading } = useQuiz(isRealId ? activeQuizIdStr : "", { enabled: isRealId });
@@ -256,10 +249,7 @@ export default function QuizLibraryPage() {
                     type="text" 
                     placeholder="Search quizzes..." 
                     value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setSearch(e.target.value)}
                     className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
                 </div>
@@ -281,30 +271,40 @@ export default function QuizLibraryPage() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {quizItems.map((quiz: ApiQuiz) => {
-                      const badge = getStatusBadge(quiz.status);
+                      const durationVal = quiz.durationMinutes ?? (quiz as any).duration_minutes ?? quiz.duration;
+                      const durationStr = durationVal ? (typeof durationVal === 'number' || !String(durationVal).includes('min') ? `${durationVal} mins` : String(durationVal)) : "-- mins";
+                      
+                      const marksVal = quiz.totalMarks ?? (quiz as any).total_marks ?? (quiz as any).total_score ?? quiz.marks;
+                      const marksStr = marksVal !== undefined && marksVal !== null ? String(marksVal) : "0";
+                      
+                      const qCount = (quiz.questions || []).length || (quiz as any).questionsCount || (quiz as any).question_count || (quiz as any).questions_count || 0;
+
                       return (
-                        <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.045)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
-                          <div className="flex justify-between items-center mb-4">
-                            {getIcon()}
-                            <span className={badge.color}>
-                              {badge.text}
-                            </span>
+                        <div key={quiz.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.06)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
+                          {/* ICON BADGE */}
+                          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100/60 mb-4 shrink-0">
+                            <CheckSquare size={20} strokeWidth={2.2} />
                           </div>
-                          
-                          <h3 className="font-bold text-slate-800 text-base mb-2 group-hover:text-blue-600 transition-colors leading-snug line-clamp-1">{quiz.title}</h3>
-                          <p className="text-slate-550 text-xs mb-4 leading-relaxed flex-1 line-clamp-3">
-                            {truncateText(quiz.description || quiz.desc) || "No description provided."}
-                          </p>
-                          
-                          <div className="flex items-center gap-4 mb-5 pt-3 border-t border-slate-100">
-                            <div className="flex items-center gap-1.5 text-slate-500">
-                              <HelpCircle size={13} />
-                              <span className="text-[11px] font-semibold">{(quiz.questions || []).length || quiz.questionsCount || 0} Questions</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-500">
-                              <Clock size={13} />
-                              <span className="text-[11px] font-semibold">{quiz.durationMinutes || 15} mins</span>
-                            </div>
+
+                          {/* TITLE */}
+                          <h3 className="font-bold text-slate-800 text-base mb-5 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {quiz.title || "Untitled Quiz"}
+                          </h3>
+
+                          {/* STATS ROW */}
+                          <div className="flex items-center gap-4 flex-wrap text-xs text-slate-500 font-semibold pb-4 border-b border-slate-100 mb-4">
+                            <span className="flex items-center gap-1.5">
+                              <HelpCircle size={14} className="text-slate-400" />
+                              {qCount} {qCount === 1 ? "Question" : "Questions"}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={14} className="text-slate-400" />
+                              {durationStr}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Target size={14} className="text-slate-400" />
+                              {marksStr} Marks
+                            </span>
                           </div>
 
                           <div className="mt-auto">
@@ -321,21 +321,11 @@ export default function QuizLibraryPage() {
                   </div>
 
                   {quizItems.length === 0 && (
-                    <div className="py-20 flex items-center justify-center text-slate-400 font-semibold">
-                      No quizzes found matching your criteria.
-                    </div>
-                  )}
-
-                  {/* PAGINATION */}
-                  {totalPages > 1 && (
-                    <div className="mt-4">
-                      <Pagination 
-                        currentPage={currentPage} 
-                        totalPages={totalPages} 
-                        onPageChange={setCurrentPage} 
-                        totalItems={totalItems}
-                        itemsPerPage={6}
-                      />
+                    <div className="py-16 flex flex-col items-center justify-center text-center p-8 bg-white rounded-2xl border border-slate-100 shadow-xs max-w-md mx-auto my-6">
+                      <h3 className="font-bold text-slate-800 text-base mb-1.5">No published quizzes found</h3>
+                      <p className="text-slate-500 text-xs leading-relaxed">
+                        Create and publish a quiz first before attaching it to a course.
+                      </p>
                     </div>
                   )}
                 </>

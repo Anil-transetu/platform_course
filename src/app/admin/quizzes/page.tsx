@@ -190,7 +190,7 @@ export default function QuizzesPage() {
           <StatsGrid>
             <StatsCard
               title="Total Quizzes"
-              value={stats?.total_quizzes ?? totalCount}
+              value={stats?.totalQuizzes ?? stats?.total_quizzes ?? totalCount}
               icon={<FileText size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
@@ -198,15 +198,15 @@ export default function QuizzesPage() {
             />
             <StatsCard
               title="Active Quizzes"
-              value={stats?.active_quizzes ?? 0}
+              value={stats?.activeQuizzes ?? stats?.active_quizzes ?? 0}
               icon={<Award size={20} />}
               iconBgClass="bg-green-50"
               iconColorClass="text-green-600"
               tooltip="Quizzes currently active and available to students"
             />
             <StatsCard
-              title="Pending Reviews"
-              value={stats?.pending_reviews ?? 0}
+              title="Pending Quizzes"
+              value={stats?.pendingQuizzes ?? stats?.pending_reviews ?? 0}
               icon={<HelpCircle size={20} />}
               iconBgClass="bg-orange-50"
               iconColorClass="text-orange-600"

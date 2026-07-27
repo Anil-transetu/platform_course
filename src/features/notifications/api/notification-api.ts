@@ -142,8 +142,8 @@ export function useMarkAllNotificationsRead() {
   });
 }
 
-export function useNotificationUnreadCount() {
-  const { data } = useNotifications(1, 20);
+export function useNotificationUnreadCount(options?: { enabled?: boolean }) {
+  const { data } = useNotifications(1, 20, undefined, options);
   const notifications = data?.data;
   return Array.isArray(notifications) ? notifications.filter((n) => !n.is_read).length : 0;
 }

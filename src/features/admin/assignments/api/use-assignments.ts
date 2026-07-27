@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   fetchAssignments,
+  fetchAssignmentLookup,
   fetchAssignmentStats,
   fetchAssignmentById,
   createAssignment,
@@ -30,8 +31,25 @@ export function useAssignments(
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: false,
+    refetchOnMount: true,
     enabled: options?.enabled,
+  });
+}
+
+/**
+ * Hook to fetch assignment lookup list (GET /api/v1/assignments/lookup)
+ */
+export function useAssignmentLookup(search?: string, options?: { enabled?: boolean }) {
+  return useQuery<Assignment[]>({
+    queryKey: ["assignmentsLookup", search],
+    queryFn: ({ signal }) => fetchAssignmentLookup(search, signal),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
+    placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -46,7 +64,7 @@ export function useAssignmentStats(options?: { enabled?: boolean }) {
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: false,
+    refetchOnMount: true,
     enabled: options?.enabled,
   });
 }
@@ -63,7 +81,7 @@ export function useAssignment(id: string | number | undefined, options?: { enabl
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: false,
+    refetchOnMount: true,
     enabled: (options?.enabled ?? true) && isValidId,
   });
 }

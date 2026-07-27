@@ -1,13 +1,15 @@
-interface LoginResponse {
+export interface LoginResponse {
+  success?: boolean;
   token?: string;
   accessToken?: string;
-  role: string;
+  role?: string;
   user?: {
     email: string;
     name: string;
     role?: string;
   };
-  message: string;
+  message?: string;
+  error?: string;
 }
 
 /**
@@ -29,10 +31,23 @@ export async function loginToApi(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({
+    const status = response.status;
+    const body = await response.json().catch(() => ({
       message: "Login failed",
     }));
-    throw new Error(error.message || "Login failed");
+
+    // For expected authentication & business validation errors (4xx range), return response object
+    if (status >= 400 && status < 500) {
+      return {
+        success: false,
+        message: body.message || body.error || "Login failed",
+        error: body.error || body.message || "Login failed",
+        ...body,
+      };
+    }
+
+    // For 5xx server errors, throw an exception
+    throw new Error(body.message || body.error || "Server error occurred. Please try again.");
   }
 
   const data = (await response.json()) as LoginResponse;

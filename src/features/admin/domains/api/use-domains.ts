@@ -25,7 +25,8 @@ export function useDomains(
   return useQuery({
     queryKey: [...DOMAINS_QUERY_KEY, { page, limit, search, statusFilter }],
     queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     placeholderData: keepPreviousData,
     enabled: options?.enabled ?? true,
   });
@@ -35,7 +36,8 @@ export function useDomainStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: DOMAIN_STATS_QUERY_KEY,
     queryFn: ({ signal }) => fetchDomainStats(signal),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     enabled: options?.enabled ?? true,
   });
 }

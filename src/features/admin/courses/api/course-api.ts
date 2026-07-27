@@ -237,9 +237,9 @@ export function useCreateCourse() {
       }
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"], refetchType: 'all' });
     },
   });
 }
@@ -282,9 +282,9 @@ export function useUpdateCourse() {
       updateCachedCourseLists(queryClient, variables.id, { ...variables.data, ...updatedCourse, id: updatedCourse.id ?? variables.id });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"], refetchType: 'all' });
     },
   });
 }
@@ -310,9 +310,9 @@ export function useDeleteCourse() {
       removeCachedCourseLists(queryClient, id);
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["courseStats"] });
-      queryClient.invalidateQueries({ queryKey: ["domains"] });
-      queryClient.invalidateQueries({ queryKey: ["domain-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["domainsLookup"] });
+      queryClient.invalidateQueries({ queryKey: ["domains"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domain-stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["domainsLookup"], refetchType: 'all' });
       queryClient.removeQueries({ queryKey: ["courseDetails", normalizeId(id)] });
       queryClient.removeQueries({ queryKey: ["courseCurriculum", normalizeId(id)] });
     },
