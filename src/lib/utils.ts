@@ -6,6 +6,40 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function toSentenceCase(str: any): string {
+  if (!str) return "";
+
+  if (typeof str !== "string") {
+    if (typeof str === "object" && str !== null) {
+      str = str.name || str.domain_name || str.title || "";
+    } else {
+      str = String(str);
+    }
+  }
+  if (!str || typeof str !== "string") return "";
+
+  const acronyms = new Set(["HTML", "CSS", "JS", "UI", "UX", "API", "SQL", "AI", "ML", "PHP", "AWS"]);
+
+  if (str !== str.toUpperCase()) {
+    return str;
+  }
+
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word, index) => {
+      const upperWord = word.toUpperCase();
+      if (acronyms.has(upperWord)) {
+        return upperWord;
+      }
+      if (["&", "and", "or", "in", "of", "on", "to", "for", "with"].includes(word) && index !== 0) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
 export function getDisplayThumbnailUrl(url?: string): string | undefined {
   if (!url) return undefined;
 
@@ -95,13 +129,18 @@ export function mapCourseDetailsToStore(detail: Record<string, any>) {
     return url || "";
   };
 
+  const domainObj = typeof detail.domain === "object" && detail.domain !== null ? detail.domain : null;
   const domain =
-    typeof detail.domain === "object" && detail.domain !== null
-      ? detail.domain.name || detail.domain.domain_name || ""
-      : detail.domain ||
-        detail.domain_name ||
-        (typeof detail.category === "object" ? detail.category?.name : detail.category) ||
-        "";
+    domainObj
+      ? domainObj.name || domainObj.domain_name || ""
+      : typeof detail.domain === "string"
+        ? detail.domain
+        : detail.domain_name ||
+          (typeof detail.category === "object" ? detail.category?.name : detail.category) ||
+          "";
+
+  const rawDomainId = detail.domain_id ?? domainObj?.id ?? (typeof detail.domain === "number" ? detail.domain : null);
+  const domain_id = rawDomainId !== null && rawDomainId !== undefined && rawDomainId !== "" ? Number(rawDomainId) : null;
 
   const tags = Array.isArray(detail.tags)
     ? detail.tags.filter(Boolean).map((tag: any) => String(tag).trim())
@@ -118,6 +157,7 @@ export function mapCourseDetailsToStore(detail: Record<string, any>) {
     description: detail.description || "",
     thumbnail_url: cleanThumbnail(detail.thumbnail_url),
     domain,
+    domain_id,
     tags,
     status: detail.status || "draft",
     final_assessment: finalAssessment,

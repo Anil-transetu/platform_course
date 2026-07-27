@@ -7,6 +7,8 @@ import {
   Link as LinkIcon, Code, ChevronLeft
 } from "lucide-react";
 import { isEmpty, inputErrorClass, errorTextClass } from "@/lib/validation";
+import DomainSelect from "@/components/reusable/DomainSelect";
+import TagsInput from "@/components/reusable/TagsInput";
 
 interface EditFormProps {
   id: string;
@@ -18,7 +20,7 @@ export default function EditForm({ id }: EditFormProps) {
   const [title, setTitle] = useState("Introduction to Web Ethics");
   const [description, setDescription] = useState("The objective of this assignment is to explore the ethical considerations of web development and software engineering. Students will analyze case studies related to data privacy, accessibility, algorithmic bias, and the environmental impact of large-scale digital infrastructure.");
   const [domain, setDomain] = useState("Web Development");
-  const [tags, setTags] = useState("FRONTEND, ETHICS");
+  const [tagsList, setTagsList] = useState<string[]>(["FRONTEND", "ETHICS"]);
   const [criteria, setCriteria] = useState([
     { name: "Code Quality and Best Practices", marks: "80" },
     { name: "Documentation and Readability", marks: "20" }
@@ -102,7 +104,7 @@ export default function EditForm({ id }: EditFormProps) {
     const allTouched: Record<string, boolean> = {};
     let hasError = false;
 
-    for (const [field, value] of [["title", title], ["description", description], ["tags", tags]] as [string, string][]) {
+    for (const [field, value] of [["title", title], ["description", description], ["tags", tagsList.join(",")]] as [string, string][]) {
       allTouched[field] = true;
       const error = validateField(field, value);
       if (error) hasError = true;
@@ -130,7 +132,7 @@ export default function EditForm({ id }: EditFormProps) {
 
   return (
     <div className="min-h-screen bg-muted/50 p-8 font-sans">
-      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50 overflow-hidden">
+      <div className="max-w-4xl mx-auto bg-card rounded-2xl shadow-sm border border-gray-100 dark:border-border/50">
         
         {/* HEADER */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-border/50">
@@ -180,27 +182,20 @@ export default function EditForm({ id }: EditFormProps) {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Domains</label>
-                  <select 
+                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Domain</label>
+                  <DomainSelect
                     value={domain}
-                    onChange={(e) => setDomain(e.target.value)}
-                    className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-card-foreground"
-                  >
-                    <option>Web Development</option>
-                    <option>Data Science</option>
-                    <option>Design</option>
-                  </select>
+                    onChange={(val, domainObj) => setDomain(domainObj?.name || val)}
+                    initialName={domain}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-card-foreground mb-1.5">Tags <span className="text-red-400">*</span></label>
-                  <input
-                    type="text"
-                    value={tags}
-                    onChange={(e) => handleFieldChange("tags", e.target.value, setTags)}
-                    onBlur={() => handleBlur("tags", tags)}
-                    className={getInputClass("tags", "w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition text-card-foreground")}
+                  <TagsInput
+                    label="Tags"
+                    variant="tag"
+                    value={tagsList}
+                    onChange={(newTags) => setTagsList(newTags)}
                   />
-                  <ErrorMsg field="tags" />
                 </div>
               </div>
 

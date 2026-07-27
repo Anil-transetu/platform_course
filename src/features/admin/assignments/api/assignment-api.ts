@@ -93,6 +93,31 @@ export async function fetchAssignments(
 }
 
 /**
+ * Fetch assignment lookup (GET /api/v1/assignments/lookup)
+ */
+export async function fetchAssignmentLookup(
+  search?: string,
+  signal?: AbortSignal
+): Promise<Assignment[]> {
+  let url = `${BASE_URL}/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url = `${url}?${query.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+    signal,
+  });
+
+  const data = await handleResponse(response);
+  const items = Array.isArray(data) ? data : data.data || data.assignments || [];
+  return items.map((i: any) => mapAssignment(i));
+}
+
+/**
  * Fetch stats for assignments
  */
 export async function fetchAssignmentStats(signal?: AbortSignal): Promise<AssignmentStats> {

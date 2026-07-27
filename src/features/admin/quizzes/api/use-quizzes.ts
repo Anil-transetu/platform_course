@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import {
   fetchQuizzes,
+  fetchQuizLookup,
   fetchQuizStats,
   fetchQuizById,
   createQuiz,
@@ -26,9 +27,26 @@ export function useQuizzes(
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: false,
+    refetchOnMount: true,
     placeholderData: keepPreviousData,
     enabled: options?.enabled,
+  });
+}
+
+/**
+ * Fetch quiz lookup list (GET /api/v1/quizzes/lookup)
+ */
+export function useQuizLookup(search?: string, options?: { enabled?: boolean }) {
+  return useQuery<Quiz[]>({
+    queryKey: ["quizzesLookup", search],
+    queryFn: ({ signal }) => fetchQuizLookup(search, signal),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
+    placeholderData: keepPreviousData,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -44,7 +62,7 @@ export function useQuiz(id: string | number, options?: { enabled?: boolean }) {
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
-    refetchOnMount: false,
+    refetchOnMount: true,
     enabled: (options?.enabled ?? true) && isValidId,
   });
 }
@@ -56,12 +74,12 @@ export function useQuizStats(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["quizStats"],
     queryFn: ({ signal }) => fetchQuizStats(signal),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    refetchOnMount: false,
-    enabled: options?.enabled,
+    refetchOnMount: true,
+    enabled: options?.enabled ?? true,
   });
 }
 

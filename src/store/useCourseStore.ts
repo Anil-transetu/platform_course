@@ -88,6 +88,7 @@ export type Course = {
   id?: number | string;
   title: string;
   domain?: string;
+  domain_id?: number | string | null;
   tags?: string[];
   thumbnail_url?: string;
   description?: string;
@@ -121,7 +122,7 @@ interface CourseState {
   toggleModuleExpand: (moduleId: string) => void;
   toggleLessonExpand: (lessonId: string) => void;
 
-  setCourseDetails: (title: string, description: string, thumbnail_url: string, domain?: string, tags?: string[], status?: string) => void;
+  setCourseDetails: (title: string, description: string, thumbnail_url: string, domain?: string, tags?: string[], status?: string, domain_id?: number | string | null) => void;
   setCourseMetadata: (details: Record<string, any>) => void;
   setCourse: (course: any, options?: { force?: boolean }) => void;
   resetCourse: () => void;
@@ -245,13 +246,14 @@ export const useCourseStore = create<CourseState>()(
     expandedLessons: { ...state.expandedLessons, [lessonId]: !state.expandedLessons[lessonId] }
   })),
 
-  setCourseDetails: (title, description, thumbnail_url, domain = '', tags = [], status) => set((state) => ({
+  setCourseDetails: (title, description, thumbnail_url, domain = '', tags = [], status, domain_id) => set((state) => ({
     course: { 
       ...state.course, 
       title, 
       description, 
       thumbnail_url, 
       domain, 
+      domain_id: domain_id !== undefined ? domain_id : state.course.domain_id,
       tags, 
       status: status !== undefined ? status : state.course.status 
     }
@@ -277,6 +279,7 @@ export const useCourseStore = create<CourseState>()(
       description: metadata.description || state.course.description || "",
       thumbnail_url: metadata.thumbnail_url || state.course.thumbnail_url || "",
       domain: metadata.domain || state.course.domain || "",
+      domain_id: metadata.domain_id !== undefined ? metadata.domain_id : (state.course.domain_id ?? null),
       tags: (metadata.tags && metadata.tags.length > 0) ? metadata.tags : (state.course.tags || []),
       status: metadata.status || state.course.status || "draft",
       final_assessment,

@@ -17,7 +17,7 @@ import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 import { supabase } from "@/lib/supabase";
 
 // Fields to completely ignore (not even read-only)
-const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id", "attendance"];
+const IGNORED_FIELDS = ["id", "password", "profile_image", "avatar", "tutor_id", "user_id", "attendance", "status"];
 
 // Fields that should be displayed but not editable
 const READ_ONLY_FIELDS = ["role", "created_date", "created_at", "updated_at", "allocated_batches", "allocated_batches_count"];

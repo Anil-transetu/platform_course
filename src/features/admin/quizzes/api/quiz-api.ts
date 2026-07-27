@@ -15,6 +15,8 @@ export interface QuizQuestion {
   type: QuestionType;
   prompt: string;
   options: QuizQuestionOption[];
+  marks?: number;
+  explanation?: string;
 }
 
 export interface Quiz {
@@ -29,14 +31,18 @@ export interface Quiz {
   totalMarks?: number;
   status: string;
   questions?: QuizQuestion[];
+  shuffleQuestions?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface QuizStats {
-  total_quizzes: number;
-  active_quizzes: number;
-  pending_reviews: number;
+  totalQuizzes: number;
+  activeQuizzes: number;
+  pendingQuizzes: number;
+  total_quizzes?: number;
+  active_quizzes?: number;
+  pending_reviews?: number;
 }
 
 
@@ -74,19 +80,33 @@ export function mapQuiz(data: any): Quiz {
       mappedOptions = q.options;
     }
 
+    const rawMarks = q.marks ?? q.score;
+    const marksVal = rawMarks !== undefined && rawMarks !== null && !isNaN(Number(rawMarks)) ? Number(rawMarks) : 1;
+
     return {
       ...q,
       type: frontendType,
-      prompt: q.question_text || q.prompt || "",
-      options: mappedOptions
+      prompt: q.question_text || q.prompt || q.question || "",
+      options: mappedOptions,
+      marks: marksVal,
+      explanation: q.explanation ?? "",
     };
   });
+
+  const shuffleVal = data.shuffle_questions !== undefined 
+    ? Boolean(data.shuffle_questions)
+    : data.shuffleQuestions !== undefined
+    ? Boolean(data.shuffleQuestions)
+    : data.shuffle !== undefined
+    ? Boolean(data.shuffle)
+    : false;
 
   return {
     ...data,
     title: data.quiz_title || data.title || "",
     durationMinutes: data.time_limit_minutes || data.durationMinutes || data.duration || null,
     totalMarks: data.total_marks || data.totalMarks || null,
+    shuffleQuestions: shuffleVal,
     tags,
     questions: mappedQuestions,
   };
@@ -137,6 +157,31 @@ export async function fetchQuizzes(
 }
 
 /**
+ * Fetch quiz lookup (GET /api/v1/quizzes/lookup)
+ */
+export async function fetchQuizLookup(
+  search?: string,
+  signal?: AbortSignal
+): Promise<Quiz[]> {
+  let url = `${BASE_URL}/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url = `${url}?${query.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+    signal,
+  });
+
+  const data = await handleResponse(response);
+  const items = Array.isArray(data) ? data : data.data || data.quizzes || [];
+  return items.map((i: any) => mapQuiz(i));
+}
+
+/**
  * Fetch stats for quizzes
  */
 export async function fetchQuizStats(signal?: AbortSignal): Promise<QuizStats> {
@@ -146,10 +191,18 @@ export async function fetchQuizStats(signal?: AbortSignal): Promise<QuizStats> {
     signal,
   });
   const result = await handleResponse(response);
-  return result.data || {
-    total_quizzes: 0,
-    active_quizzes: 0,
-    pending_reviews: 0
+  const d = result?.data || result || {};
+  const total = Number(d.totalQuizzes ?? d.total_quizzes ?? 0);
+  const active = Number(d.activeQuizzes ?? d.active_quizzes ?? 0);
+  const pending = Number(d.pendingQuizzes ?? d.pending_quizzes ?? d.pending_reviews ?? 0);
+
+  return {
+    totalQuizzes: total,
+    activeQuizzes: active,
+    pendingQuizzes: pending,
+    total_quizzes: total,
+    active_quizzes: active,
+    pending_reviews: pending,
   };
 }
 

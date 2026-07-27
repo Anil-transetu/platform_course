@@ -21,7 +21,7 @@ export default function ContactAdministratorPage({ onBackToLogin }: ContactAdmin
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
-    role: "",
+    role: "institution_representative",
     message: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -151,20 +151,19 @@ export default function ContactAdministratorPage({ onBackToLogin }: ContactAdmin
               <label htmlFor="role" className="text-[13px] font-semibold text-slate-700 block">
                 Role
               </label>
-              <Select value={formData.role} onValueChange={handleRoleChange} required>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 z-10">
-                    <IdCard size={18} />
-                  </div>
-                  <SelectTrigger className="w-full text-slate-900 pl-10 pr-4 py-6 bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-[14px]">
-                    <SelectValue placeholder="Select your role" />
-                  </SelectTrigger>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <IdCard size={18} />
                 </div>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="institution_representative">Institution Representative</SelectItem>
-                </SelectContent>
-              </Select>
+                <input
+                  id="role"
+                  name="role"
+                  type="text"
+                  readOnly
+                  value="Institution Representative"
+                  className="w-full text-slate-700 font-medium pl-10 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl cursor-not-allowed text-[14px]"
+                />
+              </div>
             </div>
 
             {/* Message/Request */}

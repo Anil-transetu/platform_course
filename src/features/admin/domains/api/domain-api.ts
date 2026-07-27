@@ -2,53 +2,52 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Domain, DomainStats } from "@/types/domain";
 import { getAuthHeaders, handleResponse } from "@/lib/api-client";
 
-
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/domains`;
-
-
 
 /**
  * Mapping helper: Normalizes domain data from backend to frontend format
  */
 export function mapDomain(d: Record<string, any>): Domain {
-  const statusFormatted = d.status 
-    ? (d.status.charAt(0).toUpperCase() + d.status.slice(1).toLowerCase()) 
-    : "Active";
+  const statusRaw = (d.status || "active").toLowerCase();
+  const statusFormatted = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);
 
-  // Category in UI can represent tags or description
-  const categoryText = d.tags && d.tags.length > 0 
-    ? d.tags.map((t: string) => t.toUpperCase()).join(", ") 
-    : (d.description || "N/A");
-
-  const formattedDate = d.last_updated_date 
-    ? new Date(d.last_updated_date).toLocaleDateString("en-US", {
+  const rawDate = d.created_at || d.created_date || d.last_updated_date;
+  const formattedDate = rawDate
+    ? new Date(rawDate).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric"
       })
     : "N/A";
 
+  const totalCourses = d.total_courses !== undefined 
+    ? Number(d.total_courses) 
+    : (d.total_courses_count !== undefined ? Number(d.total_courses_count) : (d.courses ? d.courses.length : 0));
+
   return {
-    id: d.domain_id,
-    name: d.domain_name || "N/A",
-    category: categoryText,
-    courses: d.total_courses_count !== undefined ? d.total_courses_count : (d.courses ? d.courses.length : 0),
+    id: d.id || d.domain_id,
+    name: d.name || d.domain_name || "N/A",
+    category: d.description || "N/A",
+    courses: totalCourses,
+    total_courses: totalCourses,
     updated: formattedDate,
-    status: statusFormatted,
+    created_at: rawDate || "",
+    created_date: formattedDate,
+    updated_at: d.updated_at || rawDate || "",
+    status: statusRaw, // lowercase for internal consistency
+    statusFormatted: statusFormatted,
     description: d.description || "",
     tags: d.tags || [],
-    course_ids: d.course_ids || (d.courses ? d.courses.map((c: any) => c.id) : []),
-    assignment_ids: d.assignment_ids || (d.assignments ? d.assignments.map((a: any) => a.id) : []),
+    course_ids: d.course_ids || [],
+    assignment_ids: d.assignment_ids || [],
     courses_list: d.courses || [],
     assignments_list: d.assignments || [],
-    view: d.view
   };
 }
 
 /**
  * Fetch all domains (with pagination, search, status filters)
- * This covers API #6 and #7
  */
 export async function fetchDomains(
   page: number = 1,
@@ -67,7 +66,7 @@ export async function fetchDomains(
     query.append("search", search);
   }
 
-  if (statusFilter && statusFilter !== "All") {
+  if (statusFilter && statusFilter !== "All" && statusFilter !== "All Domains" && statusFilter !== "All Institutions") {
     query.append("status", statusFilter.toLowerCase());
   }
 
@@ -94,7 +93,7 @@ export async function fetchDomains(
 }
 
 /**
- * Fetch domain by ID (API #2)
+ * Fetch domain by ID
  */
 export async function fetchDomainById(id: string | number, signal?: AbortSignal): Promise<Domain> {
   const response = await fetch(`${BASE_URL}/${id}`, {
@@ -109,16 +108,32 @@ export async function fetchDomainById(id: string | number, signal?: AbortSignal)
 }
 
 /**
- * Create a domain (API #1)
+ * Fetch domain lookup (only active domains)
  */
-export async function createDomain(data: Record<string, any>) {
+export async function fetchDomainLookup(search?: string): Promise<any[]> {
+  let url = `${BASE_URL}/lookup`;
+  if (search) {
+    const query = new URLSearchParams();
+    query.append("search", search);
+    url += `?${query.toString()}`;
+  }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Create a domain (Name & Description only)
+ */
+export async function createDomain(data: { name: string; description?: string }) {
   const payload = {
     name: data.name,
     description: data.description || "",
-    course_ids: data.course_ids || [],
-    assignment_ids: data.assignment_ids || [],
-    tags: data.tags || [],
-    status: data.status ? data.status.toLowerCase() : "active"
   };
 
   const response = await fetch(BASE_URL, {
@@ -131,17 +146,12 @@ export async function createDomain(data: Record<string, any>) {
 }
 
 /**
- * Edit domain by ID (API #3)
+ * Edit domain by ID (Name & Description only)
  */
-export async function updateDomain(id: string | number, data: Record<string, any>) {
+export async function updateDomain(id: string | number, data: { name?: string; description?: string }) {
   const payload: Record<string, any> = {};
-  
-  if (data.course_ids !== undefined) payload.course_ids = data.course_ids;
-  if (data.assignment_ids !== undefined) payload.assignment_ids = data.assignment_ids;
   if (data.name !== undefined) payload.name = data.name;
   if (data.description !== undefined) payload.description = data.description;
-  if (data.tags !== undefined) payload.tags = data.tags;
-  if (data.status !== undefined) payload.status = data.status.toLowerCase();
 
   const response = await fetch(`${BASE_URL}/${id}`, {
     method: "PUT",
@@ -153,29 +163,20 @@ export async function updateDomain(id: string | number, data: Record<string, any
 }
 
 /**
- * Fetch domain courses (API #4)
+ * Update domain status (PATCH /api/v1/domains/:id/status)
  */
-export async function fetchDomainCourses(
-  id: string | number,
-  page: number = 1,
-  limit: number = 10,
-  signal?: AbortSignal
-) {
-  const query = new URLSearchParams();
-  query.append("page", page.toString());
-  query.append("limit", limit.toString());
-
-  const response = await fetch(`${BASE_URL}/${id}/courses?${query.toString()}`, {
-    method: "GET",
+export async function updateDomainStatus(id: string | number, status: string) {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
     headers: getAuthHeaders(),
-    signal,
+    body: JSON.stringify({ status: status.toLowerCase() }),
   });
 
   return handleResponse(response);
 }
 
 /**
- * Fetch domain statistics (API #5)
+ * Fetch domain statistics
  */
 export async function fetchDomainStats(signal?: AbortSignal): Promise<DomainStats> {
   const response = await fetch(`${BASE_URL}/stats`, {
@@ -187,13 +188,16 @@ export async function fetchDomainStats(signal?: AbortSignal): Promise<DomainStat
   const result = await handleResponse(response);
   const d = result.data || result || {};
   return {
+    total_domains: d.total_domains ?? d.total ?? 0,
+    active_domains: d.active_domains ?? d.active ?? 0,
+    inactive_domains: d.inactive_domains ?? d.inactive ?? 0,
     total: d.total_domains ?? d.total ?? 0,
-    active: d.active_domains ?? d.active ?? 0
+    active: d.active_domains ?? d.active ?? 0,
   };
 }
 
 /**
- * Delete domain by ID (API #8)
+ * Delete domain by ID
  */
 export async function deleteDomain(id: string | number) {
   const response = await fetch(`${BASE_URL}/${id}`, {
@@ -201,15 +205,12 @@ export async function deleteDomain(id: string | number) {
     headers: getAuthHeaders(),
   });
 
-  if (!response.ok && response.status !== 204) {
-    return handleResponse(response);
-  }
+  return handleResponse(response);
 }
 
 /**
- * TanStack Query Hooks
+ * TanStack Query Hook for fetching domains
  */
-
 export function useDomains(
   page: number = 1,
   limit: number = 10,
@@ -220,10 +221,9 @@ export function useDomains(
   return useQuery({
     queryKey: ["domains", { page, limit, search, statusFilter }],
     queryFn: ({ signal }) => fetchDomains(page, limit, search, statusFilter, signal),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     placeholderData: keepPreviousData,
     enabled: options?.enabled,
   });
 }
-
-

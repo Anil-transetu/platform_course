@@ -23,11 +23,13 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     role: "",
     institution_id: "",
-    is_active: "",
   });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
 
   useEffect(() => {
@@ -42,22 +44,29 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
           name: user.name || user.full_name || "",
           email: user.email || "",
           password: "",
+          confirmPassword: "",
           role: initialRole,
           institution_id: (user.institution_id as string) || "",
-          is_active: user.status === "inactive" ? "false" : "true",
         });
       } else {
         setForm({
           name: "",
           email: "",
           password: "",
+          confirmPassword: "",
           role: "",
           institution_id: "",
-          is_active: "",
         });
       }
+      setIsUpdatingPassword(false);
       setErrors({});
       setShowPassword(false);
+      setShowConfirmPassword(false);
+    } else {
+      setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+      setIsUpdatingPassword(false);
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     }
   }, [mode, user, open]);
 
@@ -66,13 +75,20 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     if (!form.name.trim()) e.name = "Full name is required";
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.role.trim()) e.role = "Role is required";
-    if (form.is_active === "") e.is_active = "Status is required" as any;
     if (form.role === "institution_representative" && !form.institution_id?.toString().trim()) {
       e.institution_id = "Institution is required";
     }
-    if (mode === "add" && !form.password.trim()) {
-      e.password = "Password is required";
+
+    if (mode === "add") {
+      if (!form.password.trim()) e.password = "Password is required";
+      if (!form.confirmPassword.trim()) e.confirmPassword = "Confirm password is required";
+      else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
+    } else if (mode === "edit" && isUpdatingPassword) {
+      if (!form.password.trim()) e.password = "Password is required";
+      if (!form.confirmPassword.trim()) e.confirmPassword = "Confirm password is required";
+      else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
     }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -81,10 +97,9 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
     if (!validate()) return;
     
     const payload: any = { ...form };
-    if (payload.is_active === "true") payload.is_active = true;
-    else if (payload.is_active === "false") payload.is_active = false;
+    delete payload.confirmPassword;
 
-    if (mode === "edit" && !payload.password) {
+    if (mode === "edit" && (!isUpdatingPassword || !payload.password)) {
       delete payload.password;
     }
     
@@ -136,44 +151,22 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
         )}
         
         <div className="flex flex-col gap-4">
-          {/* Full Name & Status Row */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. John Doe"
-                className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
-                  errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="sm:w-1/3">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <Select value={form.is_active} onValueChange={(val) => setForm({ ...form, is_active: val })}>
-                <SelectTrigger className={`w-full bg-white dark:bg-card ${
-                  (errors as any).is_active ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-              {(errors as any).is_active && (
-                <p className="text-red-500 text-xs mt-1">{(errors as any).is_active}</p>
-              )}
-            </div>
+          {/* Full Name */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="e.g. John Doe"
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                errors.name ? "border-red-500" : "border-gray-200 dark:border-border/70"
+              }`}
+            />
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+            )}
           </div>
 
           {/* Email Address */}
@@ -196,34 +189,147 @@ export default function UserFormModal({ open, onClose, mode, user }: Props) {
             )}
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
-              Initial Password {mode === "add" && <span className="text-red-500">*</span>}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder={mode === "edit" ? "Leave blank to keep current" : "password123"}
-                autoComplete="new-password"
-                className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
-                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {/* Password Section */}
+          {mode === "add" ? (
+            <>
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Enter password"
+                    autoComplete="new-password"
+                    className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                      errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                  Confirm Password <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                      errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                )}
+              </div>
+            </>
+          ) : (
+            /* Edit mode Optional Update Password */
+            <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-border/50">
+              <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isUpdatingPassword}
+                  onChange={(e) => {
+                    setIsUpdatingPassword(e.target.checked);
+                    if (!e.target.checked) {
+                      setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                      setErrors((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                    }
+                  }}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                Update Password
+              </label>
+
+              {isUpdatingPassword && (
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                      New Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        placeholder="Enter new password"
+                        autoComplete="new-password"
+                        className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                          errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-foreground mb-1.5">
+                      Confirm New Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={form.confirmPassword}
+                        onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                        placeholder="Confirm new password"
+                        autoComplete="new-password"
+                        className={`w-full border rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-card ${
+                          errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {errors.confirmPassword && (
+                      <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-            )}
-          </div>
+          )}
 
           {/* Role */}
           <div>

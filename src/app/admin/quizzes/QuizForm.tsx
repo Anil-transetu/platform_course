@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, X, Info, LayoutGrid, Check, Plus, SlidersHorizontal } from "lucide-react";
+import { Info, LayoutGrid, Check, Plus, SlidersHorizontal, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Quiz, QuizQuestion } from "@/features/admin/quizzes/api/quiz-api";
 import { useCreateQuiz, useUpdateQuiz } from "@/features/admin/quizzes/api/use-quizzes";
 import { toast, Toaster } from "sonner";
 import QuestionBuilder from "./QuestionBuilder";
 import { useRouter } from "next/navigation";
-
-const availableDomains = ["COMPUTER SCI", "DATA SCI", "MATHS", "ENGINEERING"];
+import DomainSelect from "@/components/reusable/DomainSelect";
+import Chip from "@/components/reusable/Chip";
+import TagsInput from "@/components/reusable/TagsInput";
 
 interface Props {
   mode: "add" | "edit";
@@ -23,8 +24,7 @@ export default function QuizForm({ mode, initialData }: Props) {
   const [title, setTitle] = useState("");
   const [durationMinutes, setDurationMinutes] = useState("");
   const [totalMarks, setTotalMarks] = useState("");
-  const [selectedDomains, setSelectedDomains] = useState<string[]>(["COMPUTER SCI"]);
-  const [domainSearch, setDomainSearch] = useState("");
+  const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -33,22 +33,48 @@ export default function QuizForm({ mode, initialData }: Props) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [showAllErrors, setShowAllErrors] = useState(false);
 
   useEffect(() => {
     if (mode === "edit" && initialData) {
       setTitle(initialData.title || initialData.quiz_title || "");
       setDurationMinutes(initialData.durationMinutes?.toString() || "");
       setTotalMarks(initialData.totalMarks?.toString() || "");
-      setSelectedDomains(initialData.domain ? [initialData.domain] : ["COMPUTER SCI"]);
+      const rawDoms = Array.isArray(initialData.domains) && initialData.domains.length > 0
+        ? initialData.domains
+        : initialData.domain
+        ? [initialData.domain]
+        : [];
+      const initialDoms = rawDoms
+        .map((d: any) => {
+          if (typeof d === "object" && d !== null) {
+            return d.name || d.domain_name || d.title || "";
+          }
+          return String(d || "");
+        })
+        .filter(Boolean);
+      setSelectedDomains(initialDoms);
       setTags(initialData.tags || []);
-      setQuestions(initialData.questions || []);
+      setQuestions(
+        (initialData.questions || []).map((q) => ({
+          ...q,
+          marks: q.marks !== undefined && q.marks !== null && !isNaN(Number(q.marks)) ? Number(q.marks) : 1,
+          explanation: q.explanation ?? "",
+        }))
+      );
       setIsPublished(initialData.status === "PUBLISHED" || initialData.status === "ACTIVE" || initialData.status === "published");
-      setShuffleQuestions(initialData.shuffleQuestions || false);
+      setShuffleQuestions(
+        initialData.shuffle_questions !== undefined
+          ? Boolean(initialData.shuffle_questions)
+          : initialData.shuffleQuestions !== undefined
+          ? Boolean(initialData.shuffleQuestions)
+          : Boolean(initialData.shuffle)
+      );
     } else {
       setTitle("");
       setDurationMinutes("");
       setTotalMarks("");
-      setSelectedDomains(["COMPUTER SCI"]);
+      setSelectedDomains([]);
       setTags([]);
       setQuestions([]);
       setIsPublished(false);
@@ -56,26 +82,106 @@ export default function QuizForm({ mode, initialData }: Props) {
     }
     setErrors({});
     setTouched({});
-    setDomainSearch("");
+    setShowAllErrors(false);
     setTagInput("");
   }, [mode, initialData]);
 
-  const filteredDomains = useMemo(
-    () =>
-      availableDomains.filter(
-        (item) =>
-          item.toLowerCase().includes(domainSearch.toLowerCase()) && !selectedDomains.includes(item),
-      ),
-    [domainSearch, selectedDomains],
-  );
+  // Derived marks calculations
+  const targetTotalMarks = useMemo(() => {
+    const val = Number(totalMarks);
+    return isNaN(val) || val <= 0 ? 0 : val;
+  }, [totalMarks]);
 
-  const addTag = () => {
-    const normalized = tagInput.trim().toUpperCase();
-    if (!normalized) return;
-    if (!tags.includes(normalized)) {
-      setTags((prev) => [...prev, normalized]);
+  const assignedQuestionMarks = useMemo(() => {
+    return questions.reduce((sum, q) => {
+      const m = Number(q.marks);
+      return sum + (isNaN(m) ? 0 : m);
+    }, 0);
+  }, [questions]);
+
+  const remainingMarks = useMemo(() => {
+    return targetTotalMarks - assignedQuestionMarks;
+  }, [targetTotalMarks, assignedQuestionMarks]);
+
+  const marksValidationStatus = useMemo(() => {
+    if (!totalMarks || isNaN(Number(totalMarks)) || Number(totalMarks) <= 0) {
+      return { valid: false, message: "Enter a valid positive number for Quiz Total Marks.", type: "error" };
     }
-    setTagInput("");
+    if (questions.length === 0) {
+      return { valid: false, message: "Add at least one question to the quiz.", type: "warning" };
+    }
+    for (let i = 0; i < questions.length; i++) {
+      const m = questions[i].marks;
+      if (m === undefined || m === null || String(m).trim() === "") {
+        return { valid: false, message: `Question ${i + 1} has empty marks.`, type: "error" };
+      }
+      const val = Number(m);
+      if (isNaN(val) || !Number.isInteger(val) || val <= 0) {
+        return { valid: false, message: `Question ${i + 1} marks must be a positive integer.`, type: "error" };
+      }
+      const exp = questions[i].explanation;
+      if (!exp || exp.trim() === "") {
+        return { valid: false, message: `Question ${i + 1} requires an explanation.`, type: "error" };
+      }
+    }
+    if (assignedQuestionMarks !== targetTotalMarks) {
+      if (assignedQuestionMarks < targetTotalMarks) {
+        return { 
+          valid: false, 
+          message: `Assign the remaining ${remainingMarks} mark${remainingMarks > 1 ? 's' : ''} before saving.`, 
+          type: "warning" 
+        };
+      } else {
+        return { 
+          valid: false, 
+          message: `Exceeded Quiz Total Marks by ${Math.abs(remainingMarks)} mark${Math.abs(remainingMarks) > 1 ? 's' : ''}.`, 
+          type: "error" 
+        };
+      }
+    }
+    return { valid: true, message: "✓ Marks allocation complete", type: "success" };
+  }, [questions, targetTotalMarks, assignedQuestionMarks, totalMarks, remainingMarks]);
+
+  const isFormValid = useMemo(() => {
+    const hasValidQuestions = questions.length > 0 && questions.every(
+      (q) => q.prompt && q.prompt.trim() !== "" && q.explanation && q.explanation.trim() !== ""
+    );
+    return (
+      title.trim().length >= 3 &&
+      Number(durationMinutes) > 0 &&
+      targetTotalMarks > 0 &&
+      selectedDomains.length > 0 &&
+      hasValidQuestions &&
+      marksValidationStatus.valid
+    );
+  }, [title, durationMinutes, targetTotalMarks, selectedDomains, questions, marksValidationStatus]);
+
+  const handleDomainSelect = (val: string, domainObj?: { id: number; name: string }) => {
+    const domainName = (domainObj?.name || val).trim();
+    if (!domainName) return;
+    const exists = selectedDomains.some((d) => d.toUpperCase() === domainName.toUpperCase());
+    let updated: string[];
+    if (exists) {
+      updated = selectedDomains.filter((d) => d.toUpperCase() !== domainName.toUpperCase());
+    } else {
+      updated = [...selectedDomains, domainName];
+    }
+    setSelectedDomains(updated);
+    if (errors.domains) {
+      setErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.domains;
+        return copy;
+      });
+    }
+  };
+
+  const handleRemoveDomain = (domainToRemove: string) => {
+    const updated = selectedDomains.filter((d) => d.toUpperCase() !== domainToRemove.toUpperCase());
+    setSelectedDomains(updated);
+    if (updated.length === 0 && touched.domains) {
+      setErrors((prev) => ({ ...prev, domains: "Select at least one domain" }));
+    }
   };
 
   const validateField = (field: string, value: string): string => {
@@ -114,6 +220,7 @@ export default function QuizForm({ mode, initialData }: Props) {
   };
 
   const validateAll = (): boolean => {
+    setShowAllErrors(true);
     const validations: [string, string][] = [
       ["title", title],
       ["durationMinutes", durationMinutes],
@@ -131,6 +238,22 @@ export default function QuizForm({ mode, initialData }: Props) {
       setErrors((prev) => ({ ...prev, domains: "Select at least one domain" }));
       hasError = true;
     }
+
+    const missingExpIdx = questions.findIndex((q) => !q.explanation || q.explanation.trim() === "");
+    if (missingExpIdx !== -1) {
+      toast.error(`Question ${missingExpIdx + 1} requires an explanation.`);
+      hasError = true;
+    }
+
+    if (!marksValidationStatus.valid) {
+      toast.error(
+        assignedQuestionMarks !== targetTotalMarks
+          ? "The total of all question marks must exactly equal the Quiz Total Marks."
+          : marksValidationStatus.message
+      );
+      hasError = true;
+    }
+
     setTouched((prev) => ({ ...prev, ...allTouched }));
     return !hasError;
   };
@@ -143,13 +266,12 @@ export default function QuizForm({ mode, initialData }: Props) {
     e?.preventDefault();
 
     if (!validateAll()) {
-      toast.error("Please fix the errors above before saving.");
       return;
     }
 
     const payload: Record<string, any> = {
       quiz_title: title.trim(),
-      title: title.trim(), // Send both just in case
+      title: title.trim(),
       domain: selectedDomains[0] || "GENERAL",
       tags,
       duration: Number(durationMinutes),
@@ -159,17 +281,19 @@ export default function QuizForm({ mode, initialData }: Props) {
       totalMarks: Number(totalMarks),
       status: isPublished ? "published" : "draft",
       is_published: isPublished,
-      questions: questions.map(q => {
-        const correctOpt = q.options.find(o => o.isCorrect) || q.options[0];
+      shuffle_questions: shuffleQuestions,
+      questions: questions.map((q) => {
+        const correctOpt = q.options.find((o) => o.isCorrect) || q.options[0];
         return {
+          question: q.prompt,
           question_text: q.prompt,
           type: q.type === "multiple_choice" ? "mcq" : "true_false",
-          options: q.options.map(o => o.text),
-          correct_answer: correctOpt.text,
-          marks: Math.max(1, Math.floor(Number(totalMarks) / (questions.length || 1)))
+          options: q.options.map((o) => o.text),
+          correct_answer: correctOpt ? correctOpt.text : "",
+          marks: Number(q.marks),
+          explanation: (q.explanation || "").trim(),
         };
       }),
-      shuffle_questions: shuffleQuestions
     };
 
     if (mode === "add") {
@@ -199,6 +323,8 @@ export default function QuizForm({ mode, initialData }: Props) {
       id: `q_${Date.now()}`,
       type,
       prompt: "",
+      marks: 1,
+      explanation: "",
       options: type === "multiple_choice" 
         ? [
             { text: "", isCorrect: true },
@@ -282,92 +408,49 @@ export default function QuizForm({ mode, initialData }: Props) {
         </section>
 
         {/* Categorization */}
-        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50">
+        <section className="rounded-2xl border border-slate-100 bg-white dark:bg-card shadow-sm relative z-20">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-6 py-4 bg-slate-50/50 rounded-t-2xl">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Categorization</h2>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">
+              <label className="mb-2 block text-sm font-semibold text-slate-800 dark:text-foreground">
                 Domains <span className="text-red-500">*</span>
               </label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                {selectedDomains.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-100 px-2.5 py-1.5 text-xs font-bold tracking-wide text-blue-700"
-                  >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDomains((prev) => prev.filter((d) => d !== item))}
-                      className="text-blue-500 hover:text-blue-800"
-                    >
-                      <X size={14} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={domainSearch}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && filteredDomains.length > 0) {
-                      e.preventDefault();
-                      setSelectedDomains((prev) => [...prev, filteredDomains[0]]);
-                      setDomainSearch("");
-                    }
-                  }}
-                  onChange={(e) => setDomainSearch(e.target.value)}
-                  placeholder={selectedDomains.length === 0 ? "Search domains..." : "Search domains..."}
-                  className="flex-1 min-w-[120px] bg-transparent px-2 py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-3">Select one or more professional domains for this quiz.</p>
-
-              {filteredDomains.length > 0 && domainSearch.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white dark:bg-card border border-slate-100 rounded-xl shadow-sm absolute z-10 w-full max-w-sm">
-                  {filteredDomains.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDomains((prev) => [...prev, item]);
-                        setDomainSearch("");
-                      }}
-                      className="rounded-lg border border-slate-200 bg-white dark:bg-card px-3 py-1.5 text-xs font-bold tracking-wide text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                    >
-                      + {item}
-                    </button>
+              <DomainSelect
+                value=""
+                onChange={handleDomainSelect}
+                placeholder="Search and select domains..."
+                allowClear={false}
+                closeOnSelect={false}
+                selectedValues={selectedDomains}
+                error={touched.domains && !!errors.domains}
+              />
+              {selectedDomains.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  {selectedDomains.map((dom) => (
+                    <Chip
+                      key={dom}
+                      label={dom}
+                      variant="domain"
+                      onRemove={() => handleRemoveDomain(dom)}
+                    />
                   ))}
                 </div>
               )}
-              {touched.domains && errors.domains && <p className="text-red-500 text-xs mt-2 font-medium">{errors.domains}</p>}
+              {touched.domains && errors.domains && (
+                <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.domains}</p>
+              )}
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-800">Tags</label>
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 min-h-[52px] focus-within:border-blue-500 focus-within:bg-white dark:bg-card focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-                {tags.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-slate-200 px-2.5 py-1.5 text-xs font-bold tracking-wide text-slate-700"
-                  >
-                    {item}
-                    <button type="button" onClick={() => setTags((prev) => prev.filter((t) => t !== item))} className="text-slate-500 hover:text-slate-800">
-                      <X size={14} strokeWidth={2.5} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                  placeholder={tags.length === 0 ? "Type and press Enter..." : "Type and press Enter..."}
-                  className="flex-1 min-w-[120px] bg-transparent px-2 py-1 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                />
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-3">Helpful for searching and filtering assessments.</p>
+              <TagsInput
+                label="Tags"
+                variant="tag"
+                value={tags}
+                onChange={(newTags) => setTags(newTags)}
+              />
+              <p className="text-xs text-slate-400 font-medium mt-2">Helpful for searching and filtering assessments.</p>
             </div>
           </div>
         </section>
@@ -402,6 +485,57 @@ export default function QuizForm({ mode, initialData }: Props) {
           </div>
           
           <div className="p-6 bg-slate-50/30">
+            {/* Live Marks Summary Header */}
+            <div className="mb-6 rounded-xl border border-slate-200 bg-white dark:bg-card p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-6 text-sm">
+                  <div>
+                    <span className="text-slate-500 font-medium">Quiz Total Marks:</span>{" "}
+                    <span className="font-bold text-slate-800">{targetTotalMarks}</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+                  <div>
+                    <span className="text-slate-500 font-medium">Assigned Question Marks:</span>{" "}
+                    <span className="font-bold text-blue-600">{assignedQuestionMarks}</span>
+                  </div>
+                  <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+                  <div>
+                    <span className="text-slate-500 font-medium">Remaining Marks:</span>{" "}
+                    <span
+                      className={`font-bold ${
+                        remainingMarks === 0
+                          ? "text-green-600"
+                          : remainingMarks > 0
+                          ? "text-amber-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {remainingMarks}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                      marksValidationStatus.valid
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : marksValidationStatus.type === "warning"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-red-50 text-red-700 border border-red-200"
+                    }`}
+                  >
+                    {marksValidationStatus.valid ? (
+                      <CheckCircle2 size={14} className="text-green-600" />
+                    ) : (
+                      <AlertCircle size={14} />
+                    )}
+                    {marksValidationStatus.message}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {questions.length === 0 ? (
               <div className="py-16 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-card">
                 <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mb-4">
@@ -427,7 +561,7 @@ export default function QuizForm({ mode, initialData }: Props) {
                 </div>
               </div>
             ) : (
-              <QuestionBuilder questions={questions} onChange={setQuestions} />
+              <QuestionBuilder questions={questions} onChange={setQuestions} showAllErrors={showAllErrors} />
             )}
           </div>
         </section>
@@ -488,8 +622,8 @@ export default function QuizForm({ mode, initialData }: Props) {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={isPending}
-            className="px-6 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 font-semibold transition-colors shadow-sm"
+            disabled={isPending || !isFormValid}
+            className="px-6 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-colors shadow-sm"
           >
             {isPending ? "Saving..." : mode === "add" ? "Create Quiz" : "Update Quiz"}
           </button>

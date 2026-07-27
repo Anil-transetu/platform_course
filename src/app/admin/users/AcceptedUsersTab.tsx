@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useUsers, useUserStats } from "@/features/admin/users/api/user-api";
+import { useUsers, useUserStats, useUpdateUserStatus } from "@/features/admin/users/api/user-api";
 import { User } from "@/types/user";
 import { buildUserColumns } from "./columns";
 import UserFormModal from "./UserFormModal";
@@ -15,17 +15,34 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ShieldCheck, Users, Building, MoreVertical, Pencil, Trash2, Power, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
 
 function ActionMenu({
+  status,
   onEdit,
+  onToggleStatus,
   onDelete,
 }: {
+  status: string;
   onEdit: () => void;
+  onToggleStatus: () => void;
   onDelete: () => void;
 }) {
+  const isActive = (status || "").toLowerCase() === "active";
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
@@ -45,16 +62,42 @@ function ActionMenu({
           <Pencil size={14} className="text-gray-400" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Trash2 size={14} className="text-red-500" />
-          Delete
-        </DropdownMenuItem>
+
+        {isActive ? (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors focus:bg-amber-50 outline-none font-medium flex items-center gap-2"
+          >
+            <Power size={14} className="text-amber-500" />
+            Disable
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors focus:bg-emerald-50 outline-none font-medium flex items-center gap-2"
+            >
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              Enable
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} className="text-red-500" />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -76,8 +119,21 @@ export default function AcceptedUsersTab({
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All Roles");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const [statusConfirmDialog, setStatusConfirmDialog] = useState<{
+    open: boolean;
+    user: User | null;
+    nextStatus: "active" | "inactive";
+  }>({
+    open: false,
+    user: null,
+    nextStatus: "active",
+  });
+
+  const updateUserStatus = useUpdateUserStatus();
 
   // Debounce search term
   useEffect(() => {
@@ -87,17 +143,17 @@ export default function AcceptedUsersTab({
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Reset page when search, role, or rowsPerPage changes
+  // Reset page when search, role, statusFilter, or rowsPerPage changes
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, roleFilter, rowsPerPage]);
+  }, [debouncedSearch, roleFilter, statusFilter, rowsPerPage]);
 
   const { data: usersData, isLoading, isFetching } = useUsers(
     page,
     rowsPerPage,
     debouncedSearch || undefined,
     roleFilter,
-    "active"
+    statusFilter
   );
 
   const { data: stats } = useUserStats();
@@ -134,11 +190,25 @@ export default function AcceptedUsersTab({
         { value: "All Roles", label: "Select Roles" },
         { value: "Admin", label: "Admin" },
         { value: "Institution Representative", label: "Institution Representative" }
-     
       ],
       onChange: (val: string | string[]) => {
         const selected = Array.isArray(val) ? val[0] : val;
         setRoleFilter(selected || "All Roles");
+      },
+    },
+    {
+      id: "status",
+      label: "Status: All",
+      type: "select" as const,
+      value: statusFilter,
+      options: [
+        { value: "All", label: "All Status" },
+        { value: "Active", label: "Active" },
+        { value: "Inactive", label: "Inactive" },
+      ],
+      onChange: (val: string | string[]) => {
+        const selected = Array.isArray(val) ? val[0] : val;
+        setStatusFilter(selected || "All");
       },
     },
   ];
@@ -146,6 +216,31 @@ export default function AcceptedUsersTab({
   const paginationInfo = totalCount > 0
     ? `${start + 1}-${Math.min(page * rowsPerPage, totalCount)} of ${totalCount}`
     : "0-0 of 0";
+
+  const handleConfirmStatusToggle = () => {
+    if (!statusConfirmDialog.user) return;
+    const targetStatus = statusConfirmDialog.nextStatus;
+    const targetUser = statusConfirmDialog.user;
+
+    setStatusConfirmDialog({ open: false, user: null, nextStatus: "active" });
+
+    updateUserStatus.mutate(
+      { id: targetUser.id, status: targetStatus },
+      {
+        onSuccess: () => {
+          toast.success(`User ${targetStatus === "active" ? "enabled" : "disabled"} successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update user status");
+        },
+        onSettled: () => {
+          if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = "";
+          }
+        },
+      }
+    );
+  };
 
   if (isLoading && !usersData) {
     return <UserPageSkeleton />;
@@ -190,14 +285,25 @@ export default function AcceptedUsersTab({
         loading={isLoading || isFetching}
         search={searchConfig}
         filters={filterConfig}
-        actions={(user) => (
-          <div className="flex justify-center">
-            <ActionMenu
-              onEdit={() => setFormModal({ open: true, mode: "edit", user })}
-              onDelete={() => setDeleteDialog({ open: true, user })}
-            />
-          </div>
-        )}
+        actions={(user) => {
+          const isActive = (user.status || "").toLowerCase() === "active";
+          return (
+            <div className="flex justify-center">
+              <ActionMenu
+                status={user.status || "active"}
+                onEdit={() => setFormModal({ open: true, mode: "edit", user })}
+                onToggleStatus={() =>
+                  setStatusConfirmDialog({
+                    open: true,
+                    user,
+                    nextStatus: isActive ? "inactive" : "active",
+                  })
+                }
+                onDelete={() => setDeleteDialog({ open: true, user })}
+              />
+            </div>
+          );
+        }}
         currentPage={page}
         totalPages={totalPages}
         onPageChange={setPage}
@@ -206,6 +312,55 @@ export default function AcceptedUsersTab({
         paginationInfo={paginationInfo}
         showPagination={true}
       />
+
+      {/* STATUS CONFIRMATION DIALOG */}
+      <AlertDialog
+        open={statusConfirmDialog.open}
+        onOpenChange={(val) => {
+          if (!val) {
+            setStatusConfirmDialog({ open: false, user: null, nextStatus: "active" });
+            if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+              document.body.style.pointerEvents = "";
+            }
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader className="text-left sm:text-left space-y-2">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-foreground">
+              Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 dark:text-muted-foreground text-sm leading-relaxed">
+              Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} user{" "}
+              <span className="font-semibold text-slate-900 dark:text-foreground">{statusConfirmDialog.user?.name}</span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
+            <AlertDialogCancel
+              onClick={() => setStatusConfirmDialog({ open: false, user: null, nextStatus: "active" })}
+              className="rounded-xl px-5"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmStatusToggle}
+              disabled={updateUserStatus.isPending}
+              className={`rounded-xl px-5 text-white shadow-sm gap-2 flex items-center ${
+                statusConfirmDialog.nextStatus === "active"
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                  : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+              }`}
+            >
+              {statusConfirmDialog.nextStatus === "active" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <Power className="w-4 h-4" />
+              )}
+              {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

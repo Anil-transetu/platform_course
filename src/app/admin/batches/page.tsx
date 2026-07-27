@@ -10,18 +10,42 @@ import DataTable from "@/components/reusable/DataTable";
 import { useRouter, useSearchParams } from "next/navigation";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import UserPageSkeleton from "@/components/users/UserPageSkeleton";
-import { useBatches, useBatchesDashboardStats } from "@/hooks/use-batches";
+import { useBatches, useBatchesDashboardStats, useUpdateBatchStatus } from "@/hooks/use-batches";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Layers, CheckCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Layers, CheckCircle, Users, MoreVertical, Pencil, Trash2, Eye, Upload, Power, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 
-function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: () => void; onDelete: () => void }) {
+function ActionMenu({
+  status,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+}: {
+  status: string;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  onDelete: () => void;
+}) {
+  const isActive = (status || "").toLowerCase() === "active";
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}
@@ -34,16 +58,6 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
         <DropdownMenuItem
           onClick={(e) => {
             e.stopPropagation();
-            onView();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Eye size={14} className="text-gray-400" />
-          View
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
             onEdit();
           }}
           className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors focus:bg-gray-50 outline-none font-medium flex items-center gap-2"
@@ -51,16 +65,42 @@ function ActionMenu({ onView, onEdit, onDelete }: { onView: () => void; onEdit: 
           <Pencil size={14} className="text-gray-400" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
-        >
-          <Trash2 size={14} className="text-red-500" />
-          Delete
-        </DropdownMenuItem>
+
+        {isActive ? (
+          <DropdownMenuItem
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleStatus();
+            }}
+            className="cursor-pointer px-3 py-2 text-sm text-amber-600 hover:bg-amber-50 rounded-lg transition-colors focus:bg-amber-50 outline-none font-medium flex items-center gap-2"
+          >
+            <Power size={14} className="text-amber-500" />
+            Disable
+          </DropdownMenuItem>
+        ) : (
+          <>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleStatus();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors focus:bg-emerald-50 outline-none font-medium flex items-center gap-2"
+            >
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              Enable
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:bg-red-50 outline-none font-medium flex items-center gap-2"
+            >
+              <Trash2 size={14} className="text-red-500" />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -88,6 +128,18 @@ function BatchesPageContent() {
     open: false,
     batch: null,
   });
+
+  const [statusConfirmDialog, setStatusConfirmDialog] = useState<{
+    open: boolean;
+    batch: Batch | null;
+    nextStatus: "active" | "inactive";
+  }>({
+    open: false,
+    batch: null,
+    nextStatus: "active",
+  });
+
+  const updateBatchStatus = useUpdateBatchStatus();
 
   const [bulkModal, setBulkModal] = useState<{ open: boolean; batchId?: string | number }>({
     open: false,
@@ -178,6 +230,32 @@ function BatchesPageContent() {
     </button>
   );
 
+  const handleConfirmStatusToggle = () => {
+    if (!statusConfirmDialog.batch) return;
+    const targetStatus = statusConfirmDialog.nextStatus;
+    const targetBatch = statusConfirmDialog.batch;
+
+    // Immediately close dialog to ensure Radix UI unmounts overlays and restores focus
+    setStatusConfirmDialog({ open: false, batch: null, nextStatus: "active" });
+
+    updateBatchStatus.mutate(
+      { id: targetBatch.id, status: targetStatus },
+      {
+        onSuccess: () => {
+          toast.success(`Batch ${targetStatus === "active" ? "enabled" : "disabled"} successfully!`);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || "Failed to update batch status");
+        },
+        onSettled: () => {
+          if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+            document.body.style.pointerEvents = "";
+          }
+        },
+      }
+    );
+  };
+
   return (
     <ListingScreenTemplate
       headerText="Batch Management"
@@ -225,15 +303,26 @@ function BatchesPageContent() {
           loading={isLoading || isFetching}
           search={searchConfig}
           filters={filterConfig}
-          actions={(batch) => (
-            <div className="flex items-center justify-center">
-              <ActionMenu 
-                onView={() => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
-                onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
-                onDelete={() => setDeleteDialog({ open: true, batch })}
-              />
-            </div>
-          )}
+          onRowClick={(batch) => router.push(`/admin/batches/${batch.id}?name=${encodeURIComponent(batch.name)}`)}
+          actions={(batch) => {
+            const isActive = (batch.status || "Active").toLowerCase() === "active";
+            return (
+              <div className="flex items-center justify-center">
+                <ActionMenu 
+                  status={batch.status || "Active"}
+                  onEdit={() => setFormModal({ open: true, mode: "edit", batch })}
+                  onToggleStatus={() =>
+                    setStatusConfirmDialog({
+                      open: true,
+                      batch,
+                      nextStatus: isActive ? "inactive" : "active",
+                    })
+                  }
+                  onDelete={() => setDeleteDialog({ open: true, batch })}
+                />
+              </div>
+            );
+          }}
           currentPage={page}
           totalPages={totalPages}
           onPageChange={setPage}
@@ -266,6 +355,55 @@ function BatchesPageContent() {
         batch={deleteDialog.batch}
         onClose={() => setDeleteDialog({ open: false, batch: null })}
       />
+
+      {/* STATUS CONFIRMATION DIALOG */}
+      <AlertDialog
+        open={statusConfirmDialog.open}
+        onOpenChange={(val) => {
+          if (!val) {
+            setStatusConfirmDialog({ open: false, batch: null, nextStatus: "active" });
+            if (typeof document !== "undefined" && document.body.style.pointerEvents === "none") {
+              document.body.style.pointerEvents = "";
+            }
+          }
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={(e) => e.preventDefault()}>
+          <AlertDialogHeader className="text-left sm:text-left space-y-2">
+            <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-foreground">
+              Confirm {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 dark:text-muted-foreground text-sm leading-relaxed">
+              Are you sure you want to {statusConfirmDialog.nextStatus === "active" ? "enable" : "disable"} batch{" "}
+              <span className="font-semibold text-slate-900 dark:text-foreground">{statusConfirmDialog.batch?.name}</span>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 flex items-center justify-end gap-3">
+            <AlertDialogCancel
+              onClick={() => setStatusConfirmDialog({ open: false, batch: null, nextStatus: "active" })}
+              className="rounded-xl px-5"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmStatusToggle}
+              disabled={updateBatchStatus.isPending}
+              className={`rounded-xl px-5 text-white shadow-sm gap-2 flex items-center ${
+                statusConfirmDialog.nextStatus === "active"
+                  ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
+                  : "bg-amber-600 hover:bg-amber-700 shadow-amber-600/20"
+              }`}
+            >
+              {statusConfirmDialog.nextStatus === "active" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <Power className="w-4 h-4" />
+              )}
+              {statusConfirmDialog.nextStatus === "active" ? "Enable" : "Disable"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
     </ListingScreenTemplate>
   );

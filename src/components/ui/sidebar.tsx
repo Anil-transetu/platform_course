@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/tooltip"
 import { ChevronRight } from "lucide-react"
 
+import { useSidebarStore } from "@/store/sidebar-store"
+
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
@@ -68,19 +70,25 @@ function SidebarProvider({
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
 
-  const [_open, _setOpen] = React.useState(defaultOpen)
-  const open = openProp ?? _open
+  const { sidebarCollapsed, setSidebarCollapsed } = useSidebarStore()
+
+  const open = openProp ?? !sidebarCollapsed
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === "function" ? value(open) : value
       if (setOpenProp) {
         setOpenProp(openState)
       } else {
-        _setOpen(openState)
+        setSidebarCollapsed(!openState)
       }
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+      try {
+        localStorage.setItem(SIDEBAR_COOKIE_NAME, String(openState))
+      } catch {
+        // Ignore localStorage write errors
+      }
     },
-    [setOpenProp, open]
+    [setOpenProp, open, setSidebarCollapsed]
   )
 
   const toggleSidebar = React.useCallback(() => {

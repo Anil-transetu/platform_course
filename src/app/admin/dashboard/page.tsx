@@ -104,19 +104,17 @@ export default function DashboardPage() {
 
         {/* Create Batch */}
         <Link href="/admin/batches?action=create" className="block">
-          <div className="bg-blue-600 text-white rounded-xl p-4 sm:p-6 flex justify-between items-center shadow-md hover:bg-blue-700 transition-colors">
+          <div className="bg-card rounded-xl p-4 sm:p-6 border-l-4 border-blue-500 flex justify-between items-center hover:bg-muted/50 transition-colors cursor-pointer">
             <div className="flex gap-3 items-center">
-              <div className="bg-blue-500 p-2 rounded-md">
-                <Plus size={18}/>
-              </div>
+              <Layers size={18} className="text-blue-500"/>
               <div>
-                <p className="font-semibold">Create New Batch</p>
-                <p className="text-xs opacity-80">
+                <p className="font-semibold text-foreground">Create New Batch</p>
+                <p className="text-xs text-card-foreground">
                   Configure schedules & tutors
                 </p>
               </div>
             </div>
-            <ArrowRight size={18}/>
+            <ArrowRight size={18} className="text-muted-foreground"/>
           </div>
         </Link>
 

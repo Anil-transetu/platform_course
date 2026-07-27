@@ -163,7 +163,6 @@ export async function createBatch(data: Record<string, unknown>) {
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active",
   };
   if (data.course_id) {
     payload.course_id = Number(data.course_id);
@@ -195,7 +194,6 @@ export async function updateBatch(id: string | number, data: Record<string, unkn
     start_date: data.start_date,
     end_date: data.end_date,
     enroll_students: Array.isArray(data.enroll_students) ? data.enroll_students.map(Number) : [],
-    status: data.status || "active",
   };
   if (data.course_id) {
     payload.course_id = Number(data.course_id);
@@ -211,6 +209,19 @@ export async function updateBatch(id: string | number, data: Record<string, unkn
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
+  });
+
+  return handleResponse(response);
+}
+
+/**
+ * Update batch status (Enable/Disable)
+ */
+export async function updateBatchStatus(id: string | number, status: string) {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   return handleResponse(response);

@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2 } from "lucide-react";
+import { Search, FileText, Code, Palette, BarChart, Plus, ClipboardList, Loader2, Clock, Target } from "lucide-react";
 import { useCourseStore } from "@/store/useCourseStore";
-import Pagination from "@/components/ui/Pagination/Pagination";
-import { useAssignments, useAssignment } from "@/features/admin/assignments/api/use-assignments";
+import { useAssignmentLookup, useAssignment } from "@/features/admin/assignments/api/use-assignments";
 import { useUpdateModule, useUpdateLesson, useUpdateCourse, useUnlinkAssignment } from '@/features/admin/courses/api/course-api';
 import { toast } from 'sonner';
 import { Assignment as ApiAssignment } from "@/features/admin/assignments/api/assignment-api";
@@ -25,26 +24,27 @@ export default function AssignmentLibraryPage() {
     deleteCourseAssignment
   } = useCourseStore();
   
-  const finalAssessmentId = (course as any)?.final_assessment_id || (course as any)?.finalAssessmentId;
+  const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
+  const finalAssessmentId = String(finalAssessment?.id ?? (course as any)?.final_assessment_id ?? (course as any)?.finalAssessmentId ?? "");
 
   // Sync activeAssignmentId on course-level assignment if it is null or different
   useEffect(() => {
-    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== String(finalAssessmentId)) {
-      setActiveAssignment(String(finalAssessmentId));
+    if (!activeModuleId && finalAssessmentId && activeAssignmentId !== finalAssessmentId) {
+      setActiveAssignment(finalAssessmentId);
     }
   }, [activeModuleId, finalAssessmentId, activeAssignmentId, setActiveAssignment]);
 
   let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
   if (!activeModuleId) {
     const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
-    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
+    const effectiveAssignmentId = (!activeModuleId && finalAssessmentId) ? finalAssessmentId : (activeAssignmentId || finalAssessmentId);
 
     if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
       activeAssignment = finalAssessment;
-    } else if (finalAssessmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment || { id: finalAssessmentId };
-    } else {
-      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId));
+    } else if (effectiveAssignmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
+      activeAssignment = finalAssessment || { id: effectiveAssignmentId };
+    } else if (effectiveAssignmentId) {
+      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId)) || { id: effectiveAssignmentId };
     }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
@@ -56,7 +56,6 @@ export default function AssignmentLibraryPage() {
   }
 
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [successMsg, setSuccessMsg] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [forceLibraryView, setForceLibraryView] = useState(false);
@@ -68,17 +67,12 @@ export default function AssignmentLibraryPage() {
   const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
   const isLibraryEnabled = !isRealId || forceLibraryView;
 
-  // 1. Fetch real list of assignments — only when library view is active
-  const { data: assignmentsData, isLoading: listLoading } = useAssignments(
-    currentPage, 
-    6, 
-    debouncedSearch || undefined, 
-    statusFilter === "All" ? undefined : statusFilter,
+  // 1. Fetch lookup list of assignments — only when library view is active
+  const { data: assignmentsData, isLoading: listLoading } = useAssignmentLookup(
+    debouncedSearch || undefined,
     { enabled: isLibraryEnabled }
   );
-  const assignmentItems = assignmentsData?.data || [];
-  const totalItems = assignmentsData?.total || 0;
-  const totalPages = Math.ceil(totalItems / 6);
+  const assignmentItems: ApiAssignment[] = Array.isArray(assignmentsData) ? assignmentsData : (assignmentsData as any)?.data || [];
 
   const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
 
@@ -330,41 +324,18 @@ export default function AssignmentLibraryPage() {
                 <p className="text-slate-550 text-sm font-medium">Browse and add pre-existing assignments to your module.</p>
               </div>
 
-              {/* SEARCH & FILTERS BAR */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+              {/* SEARCH BAR */}
+              <div className="w-full mt-2 bg-white border border-slate-100/80 p-4 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
                 {/* Search */}
-                <div className="relative flex-1 w-full sm:max-w-md">
+                <div className="relative w-full">
                   <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-450" />
                   <Input 
                     type="text" 
                     placeholder="Search assignments..." 
                     value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setSearch(e.target.value)}
                     className="pl-9 h-10 w-full bg-slate-50/50 border-slate-250 text-xs font-semibold text-slate-800 placeholder-slate-450 focus-visible:ring-4 focus-visible:ring-blue-500/10 focus-visible:border-blue-500 rounded-lg"
                   />
-                </div>
-                
-                {/* Select Filter */}
-                <div className="w-full sm:w-48">
-                  <Select 
-                    value={statusFilter} 
-                    onValueChange={(val) => {
-                      setStatusFilter(val);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="h-10 w-full bg-slate-50/50 border border-slate-250 text-xs font-bold text-slate-700 rounded-lg">
-                      <SelectValue placeholder="Status Filter" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-slate-200">
-                      <SelectItem value="All" className="text-xs font-semibold">All Assignments</SelectItem>
-                      <SelectItem value="Active" className="text-xs font-semibold">Active Only</SelectItem>
-                      <SelectItem value="Draft" className="text-xs font-semibold">Draft Only</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
@@ -384,35 +355,40 @@ export default function AssignmentLibraryPage() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {assignmentItems.map((assignment: ApiAssignment) => {
-                      const details = getSubmissionTypeDetails(assignment.submissionType || assignment.submission_type);
-                      const badge = getStatusBadge(assignment.status);
-                      const IconComponent = details.icon;
+                      const durationVal = assignment.durationMinutes ?? (assignment as any).duration_minutes ?? assignment.duration;
+                      const durationStr = durationVal ? (typeof durationVal === 'number' || !String(durationVal).includes('min') ? `${durationVal} min` : String(durationVal)) : "-- min";
+
+                      const marksVal = assignment.marks ?? (assignment as any).total_marks ?? (assignment as any).max_score;
+                      const marksStr = marksVal !== undefined && marksVal !== null ? String(marksVal) : "100";
+
                       return (
-                        <div key={assignment.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.045)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
-                          <div className="flex justify-between items-center mb-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${details.bg} ${details.color} border border-slate-150`}>
-                              <IconComponent size={20} strokeWidth={2.2} />
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] font-bold tracking-wider uppercase bg-slate-550 text-slate-500 px-2.5 py-1 rounded-full border border-slate-200">
-                                {details.label}
-                              </span>
-                              <span className={badge.color}>
-                                {badge.text}
-                              </span>
-                            </div>
+                        <div key={assignment.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.06)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
+                          {/* ICON BADGE */}
+                          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100/60 mb-4 shrink-0">
+                            <ClipboardList size={20} strokeWidth={2.2} />
                           </div>
-                          
-                          <h3 className="font-bold text-slate-800 text-base mb-2 group-hover:text-blue-600 transition-colors leading-snug line-clamp-1">{assignment.title}</h3>
-                          <p className="text-slate-550 text-xs mb-4 leading-relaxed flex-1 line-clamp-3">
-                            {truncateText(assignment.description) || "No description provided."}
-                          </p>
-                          
-                          <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
-                            <span className="text-[11px] font-semibold text-slate-500">Score: {assignment.marks || assignment.total_marks || 100} marks</span>
+
+                          {/* TITLE */}
+                          <h3 className="font-bold text-slate-800 text-base mb-5 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {assignment.title || assignment.assignment_title || "Untitled Assignment"}
+                          </h3>
+
+                          {/* STATS ROW */}
+                          <div className="flex items-center gap-4 flex-wrap text-xs text-slate-500 font-semibold pb-4 border-b border-slate-100 mb-4">
+                            <span className="flex items-center gap-1.5">
+                              <Clock size={14} className="text-slate-400" />
+                              {durationStr}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <Target size={14} className="text-slate-400" />
+                              {marksStr} Marks
+                            </span>
+                          </div>
+
+                          <div className="mt-auto">
                             <button 
                               onClick={() => handleAddToCourse(assignment)}
-                              className="flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-slate-700 px-4 py-2.5 rounded-xl font-bold transition-all text-xs shadow-xs"
+                              className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs shadow-xs"
                             >
                               <Plus size={13} /> Add Assignment
                             </button>
@@ -423,21 +399,11 @@ export default function AssignmentLibraryPage() {
                   </div>
 
                   {assignmentItems.length === 0 && (
-                    <div className="py-20 flex items-center justify-center text-slate-400 font-semibold">
-                      No assignments found matching your criteria.
-                    </div>
-                  )}
-
-                  {/* PAGINATION */}
-                  {totalPages > 1 && (
-                    <div className="mt-4">
-                      <Pagination 
-                        currentPage={currentPage} 
-                        totalPages={totalPages} 
-                        onPageChange={setCurrentPage} 
-                        totalItems={totalItems}
-                        itemsPerPage={6}
-                      />
+                    <div className="py-16 flex flex-col items-center justify-center text-center p-8 bg-white rounded-2xl border border-slate-100 shadow-xs max-w-md mx-auto my-6">
+                      <h3 className="font-bold text-slate-800 text-base mb-1.5">No published assignments found</h3>
+                      <p className="text-slate-500 text-xs leading-relaxed">
+                        Create and publish an assignment first before attaching it to a course.
+                      </p>
                     </div>
                   )}
                 </>

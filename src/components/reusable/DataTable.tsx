@@ -37,6 +37,7 @@ export interface FilterConfig {
   options?: Array<{ value: string; label: string }>;
   value: string | string[];
   onChange: (value: string | string[]) => void;
+  onOpenChange?: (open: boolean) => void;
   clearable?: boolean;
   className?: string;
 }
@@ -153,6 +154,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                     <Select
                       value={Array.isArray(filter.value) ? "" : (filter.value || "")}
                       onValueChange={(val) => filter.onChange(val)}
+                      onOpenChange={(open) => filter.onOpenChange?.(open)}
                     >
                       <SelectTrigger className={cn("w-full sm:w-[150px] bg-card border-border text-xs sm:text-sm", filter.className)}>
                         <SelectValue placeholder={filter.label} />
@@ -315,7 +317,13 @@ export default function DataTable<T extends Record<string, unknown>>({
                           ? "cursor-pointer hover:bg-muted"
                           : ""
                       }`}
-                      onClick={() => onRowClick?.(row)}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (target.closest("button, a, input, select, textarea, [role='menuitem'], [data-prevent-row-click='true']")) {
+                          return;
+                        }
+                        onRowClick?.(row);
+                      }}
                       onKeyDown={handleKeyDown}
                       tabIndex={actions || onRowClick ? 0 : -1}
                       role={actions || onRowClick ? "button" : undefined}

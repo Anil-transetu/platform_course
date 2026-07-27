@@ -138,16 +138,17 @@ export async function fetchActiveStudentCount() {
 }
 
 export async function createStudent(data: Record<string, unknown>) {
-  const payload = {
+  const payload: Record<string, unknown> = {
     first_name: data.first_name,
     last_name: data.last_name,
     email: data.email,
     mobile_number: data.mobile_number,
     password: data.password,
     notes: data.notes,
-    status: data.status,
     institution_id: data.institution_id,
   };
+
+  Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
 
   const response = await fetch(BASE_URL, {
     method: "POST",
@@ -171,7 +172,6 @@ export async function updateStudent(id: string | number, data: Record<string, un
     mobile_number: data.mobile || data.mobile_number,
     password: data.password || undefined,
     notes: data.notes || undefined,
-    status: data.status ? (data.status as string).toLowerCase() : undefined,
     course_id: data.courseId || data.course_id || data.course, // Support both
     institution_id: data.institution_id || data.institutionId || undefined,
   };
@@ -183,6 +183,19 @@ export async function updateStudent(id: string | number, data: Record<string, un
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
+  });
+
+  return handleResponse(response);
+}
+
+/**
+ * Update student status (Enable/Disable)
+ */
+export async function updateStudentStatus(id: string | number, status: string) {
+  const response = await fetch(`${BASE_URL}/${id}/status`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
   });
 
   return handleResponse(response);
@@ -259,6 +272,20 @@ export function useDeleteStudent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["studentCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["studentStats"] });
+    },
+  });
+}
+
+export function useUpdateStudentStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string | number; status: string }) => updateStudentStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["student", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["studentCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["studentStats"] });
     },
   });
 }

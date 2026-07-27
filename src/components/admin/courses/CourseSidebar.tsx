@@ -210,6 +210,13 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleCourseAssignmentClick = (assignmentId: string) => {
+    useCourseStore.setState({
+      activeModuleId: null,
+      activeLessonId: null,
+      activeTopicId: null,
+      activeQuizId: null,
+      activeAssignmentId: assignmentId
+    });
     confirmNavigation("assignment", "assignment", {
       activeModuleId: null,
       activeLessonId: null,
@@ -1022,12 +1029,12 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
           ) : null}
 
           {/* COURSE-LEVEL ASSIGNMENTS */}
-          {(course as any).final_assessment ? (
+          {(course as any).final_assessment || (course as any).finalAssessment || (course as any).final_assessment_id || (course as any).finalAssessmentId ? (
             (() => {
-              const finalAssessment = (course as any).final_assessment;
-              const finalAssessmentId = String(finalAssessment.id ?? "");
-              const isAssignmentActive = activeAssignmentId === finalAssessmentId;
-              const title = finalAssessment.title || finalAssessment.assignment_title || "Final Assessment";
+              const finalAssessment = (course as any).final_assessment || (course as any).finalAssessment;
+              const finalAssessmentId = String(finalAssessment?.id ?? (course as any).final_assessment_id ?? (course as any).finalAssessmentId ?? "");
+              const isAssignmentActive = !activeModuleId && String(activeAssignmentId) === finalAssessmentId;
+              const title = finalAssessment?.title || finalAssessment?.assignment_title || (course as any).final_assessment_title || "Final Assessment";
               return (
                 <React.Fragment key={`course-final-assessment-wrapper-${finalAssessmentId}`}>
                   <div className="my-4 border-t border-slate-200/80" />

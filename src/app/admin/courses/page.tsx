@@ -23,6 +23,7 @@ import {
   useCourseStats,
   useDeleteCourse
 } from "@/features/admin/courses/api/course-api";
+import { useDomainLookup } from "@/features/admin/domains/api/use-domains";
 import CourseDetailViewer from "./CourseDetailViewer";
 import AssignmentDetailViewer from "./AssignmentDetailViewer";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -150,6 +151,8 @@ export default function CoursesPage() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [domainFilter, setDomainFilter] = useState<string>("All");
+  const [isDomainFilterOpen, setIsDomainFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -159,6 +162,10 @@ export default function CoursesPage() {
   useEffect(() => {
     setQueriesReady(true);
   }, []);
+
+  const { data: domainsLookup = [] } = useDomainLookup(undefined, {
+    enabled: isDomainFilterOpen || (domainFilter !== "All" && domainFilter !== "All Domains")
+  });
   
   // Courses React Query hook
   const {
@@ -171,6 +178,7 @@ export default function CoursesPage() {
     rowsPerPage,
     debouncedSearch,
     statusFilter,
+    domainFilter,
     { enabled: queriesReady && !viewingCourse && !viewingAssignmentId && !viewId }
   );
 
@@ -231,7 +239,31 @@ export default function CoursesPage() {
     { value: "Draft", label: "Draft" },
   ];
 
+  const domainOptions = [
+    { value: "All", label: "All Domains" },
+    ...(Array.isArray(domainsLookup)
+      ? domainsLookup.map((d: any) => ({
+          value: String(d.id || d.name),
+          label: d.name,
+        }))
+      : []),
+  ];
+
   const filterConfig = [
+    {
+      id: "domain",
+      label: "All Domains",
+      type: "select" as const,
+      value: domainFilter,
+      options: domainOptions,
+      onOpenChange: (open: boolean) => {
+        if (open) setIsDomainFilterOpen(true);
+      },
+      onChange: (val: string | string[]) => {
+        setDomainFilter(Array.isArray(val) ? val[0] : val);
+        setPage(1);
+      },
+    },
     {
       id: "status",
       label: "All Status",

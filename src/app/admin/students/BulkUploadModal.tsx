@@ -3,11 +3,14 @@ import React, { useState, useRef, DragEvent } from "react";
 import { useBulkUploadStudents } from "@/hooks/use-students";
 import { Modal } from "@/components/ui/modal";
 import { Info, Download, Upload, File, X } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 
 export default function BulkUploadModal({ open, onClose }: Props) {
   const [file, setFile] = useState<File | null>(null);
@@ -37,6 +40,45 @@ export default function BulkUploadModal({ open, onClose }: Props) {
         setFile(null);
       },
     });
+  };
+
+  const handleDownloadStudentTemplate = async () => {
+    try {
+      let token = "";
+      if (typeof document !== "undefined") {
+        const match = document.cookie.match(/(^| )token=([^;]+)/);
+        if (match) token = match[2];
+      }
+
+      const response = await fetch(
+        `${BASE_URL}/api/v1/students/bulk-upload/template`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to download template");
+      }
+
+      const csvText = await response.text();
+
+      const blob = new Blob([csvText], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "student-upload-template.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Failed to download student template");
+      console.error("Failed to download student template:", error);
+    }
   };
 
   return (
@@ -108,14 +150,14 @@ export default function BulkUploadModal({ open, onClose }: Props) {
             <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5 md:mt-0" />
             <span>Make sure your file follows the standard template format.</span>
           </div>
-          <a
-            href="/api/v1/students/template"
-            download
+          <button
+            type="button"
+            onClick={handleDownloadStudentTemplate}
             className="flex items-center gap-1 text-xs text-blue-600 font-bold hover:underline whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5" />
             Download Template
-          </a>
+          </button>
         </div>
 
         {/* Footer */}

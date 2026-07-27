@@ -7,6 +7,8 @@ import {
   useMarkNotificationRead, 
   useMarkAllNotificationsRead 
 } from "@/features/notifications/api/notification-api";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useUserDetails } from "@/features/profile/api/profile-api";
 import { formatDistanceToNow } from "date-fns";
 
 const notificationIcons = {
@@ -20,10 +22,15 @@ const notificationIcons = {
 };
 
 export default function NotificationsSettingsPage() {
+  const { role: storeRole } = useAuthStore();
+  const { data: userDetails } = useUserDetails();
+  const userData = userDetails?.data || userDetails;
+  const isAdmin = (storeRole || userData?.role || "").toUpperCase() === "ADMIN";
+
   const [filterUnread, setFilterUnread] = useState<boolean | undefined>(undefined);
   const [page, setPage] = useState(1);
   const limit = 20;
-  const { data: response, isLoading } = useNotifications(page, limit, filterUnread);
+  const { data: response, isLoading } = useNotifications(page, limit, filterUnread, { enabled: !isAdmin });
   const notifications = response?.data || [];
   const pagination = response?.pagination;
   const { mutate: markRead } = useMarkNotificationRead();

@@ -5,6 +5,7 @@ import {
   fetchBatchById,
   createBatch,
   updateBatch,
+  updateBatchStatus,
   deleteBatch,
   fetchBatchesDashboardStats,
   fetchBatchStudentsStats,
@@ -70,6 +71,7 @@ export function useCreateBatch() {
   return useMutation({
     mutationFn: (data: Record<string, unknown>) => createBatch(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
       toast.success("Batch created successfully");
@@ -86,6 +88,7 @@ export function useUpdateBatch() {
     mutationFn: ({ id, data }: { id: string | number; data: Record<string, unknown> }) =>
       updateBatch(id, data),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "detail", variables.id] });
       toast.success("Batch updated successfully");
@@ -96,11 +99,26 @@ export function useUpdateBatch() {
   });
 }
 
+export function useUpdateBatchStatus() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string | number; status: string }) =>
+      updateBatchStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "detail", variables.id] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
+    },
+  });
+}
+
 export function useDeleteBatch() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => deleteBatch(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "list"] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, "stats", "dashboard"] });
       toast.success("Batch deleted successfully");

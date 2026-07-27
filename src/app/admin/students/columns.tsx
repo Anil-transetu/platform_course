@@ -46,7 +46,7 @@ export function buildStudentColumns(): Column<Student>[] {
             />
           ) : (
             <div className={cn(
-              "h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
+              "h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
               getAvatarColor(row.id)
             )}>
               {getInitials(row.first_name, row.last_name)}

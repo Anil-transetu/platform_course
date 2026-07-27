@@ -25,11 +25,13 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     email: "",
     mobile_number: "",
     password: "",
+    confirmPassword: "",
     notes: "",
-    status: "",
     institution_id: "",
   });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Partial<typeof form>>({});
 
   // Pre-populate in edit mode
@@ -41,9 +43,9 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           last_name: student.last_name || "",
           email: student.email || "",
           mobile_number: student.mobile_number || "",
-          password: "", // Leave blank on edit
+          password: "",
+          confirmPassword: "",
           notes: student.notes || "",
-          status: student.status?.toLowerCase() === "inactive" ? "inactive" : "active",
           institution_id: (student.institution_id as string) || (student.institutionId as string) || "",
         });
       } else {
@@ -53,13 +55,20 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           email: "",
           mobile_number: "",
           password: "",
+          confirmPassword: "",
           notes: "",
-          status: "",
           institution_id: "",
         });
       }
+      setIsUpdatingPassword(false);
       setErrors({});
       setShowPassword(false);
+      setShowConfirmPassword(false);
+    } else {
+      setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+      setIsUpdatingPassword(false);
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     }
   }, [mode, student, open]);
 
@@ -69,11 +78,18 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
     if (!form.last_name.trim()) e.last_name = "Last name is required";
     if (!form.email.trim()) e.email = "Email is required";
     if (!form.mobile_number.trim()) e.mobile_number = "Mobile number is required";
-    if (!form.status) e.status = "Status is required" as any;
     if (!form.institution_id?.toString().trim()) e.institution_id = "Institution is required";
-    if (mode === "add" && !form.password.trim()) {
-      e.password = "Password is required";
+    
+    if (mode === "add") {
+      if (!form.password.trim()) e.password = "Password is required";
+      if (!form.confirmPassword.trim()) e.confirmPassword = "Confirm password is required";
+      else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
+    } else if (mode === "edit" && isUpdatingPassword) {
+      if (!form.password.trim()) e.password = "Password is required";
+      if (!form.confirmPassword.trim()) e.confirmPassword = "Confirm password is required";
+      else if (form.password !== form.confirmPassword) e.confirmPassword = "Passwords do not match";
     }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -81,12 +97,12 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
   const handleSubmit = () => {
     if (!validate()) return;
     
-    // In edit mode, we do not want to send password if it's empty
     const payload: any = { ...form };
+    delete payload.confirmPassword;
     if (payload.institution_id) {
       payload.institution_id = Number(payload.institution_id);
     }
-    if (mode === "edit" && !payload.password) {
+    if (mode === "edit" && (!isUpdatingPassword || !payload.password)) {
       delete payload.password;
     }
 
@@ -162,95 +178,183 @@ export default function StudentFormModal({ open, onClose, mode, student }: Props
           </div>
         </div>
 
-        {/* Row 2: Email and Status */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              EMAIL ADDRESS <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="john.doe@example.com"
-              autoComplete="new-email"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
-                errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
-          
-          <div className="sm:w-1/3">
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              STATUS <span className="text-red-500">*</span>
-            </label>
-            <Select value={form.status} onValueChange={(val) => setForm({ ...form, status: val })}>
-              <SelectTrigger className={`w-full bg-gray-50 dark:bg-muted/50/50 ${
-                (errors as any).status ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            {(errors as any).status && (
-              <p className="text-red-500 text-xs mt-1">{(errors as any).status}</p>
-            )}
-          </div>
+        {/* Row 2: Email */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+            EMAIL ADDRESS <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="john.doe@example.com"
+            autoComplete="new-email"
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+              errors.email ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
         </div>
 
-        {/* Row 3: Mobile + Password */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              MOBILE NUMBER <span className="text-red-500">*</span>
-            </label>
-            <input
-              value={form.mobile_number}
-              onChange={(e) => setForm({ ...form, mobile_number: e.target.value })}
-              placeholder="+1 (555) 000-0000"
-              autoComplete="new-phone"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
-                errors.mobile_number ? "border-red-500" : "border-gray-200 dark:border-border/70"
-              }`}
-            />
-            {errors.mobile_number && (
-              <p className="text-red-500 text-xs mt-1">{errors.mobile_number}</p>
-            )}
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
-              PASSWORD {mode === "add" && <span className="text-red-500">*</span>}
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder={mode === "edit" ? "••••••••" : "Create password"}
-                autoComplete="new-password"
-                className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
-                  errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
-            )}
-          </div>
+        {/* Row 3: Mobile Number */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+            MOBILE NUMBER <span className="text-red-500">*</span>
+          </label>
+          <input
+            value={form.mobile_number}
+            onChange={(e) => setForm({ ...form, mobile_number: e.target.value })}
+            placeholder="+1 (555) 000-0000"
+            autoComplete="new-phone"
+            className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+              errors.mobile_number ? "border-red-500" : "border-gray-200 dark:border-border/70"
+            }`}
+          />
+          {errors.mobile_number && (
+            <p className="text-red-500 text-xs mt-1">{errors.mobile_number}</p>
+          )}
         </div>
+
+        {/* Password Section */}
+        {mode === "add" ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                PASSWORD <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  placeholder="Create password"
+                  autoComplete="new-password"
+                  className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                    errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                CONFIRM PASSWORD <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                    errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-border/50">
+            <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 dark:text-muted-foreground tracking-wider uppercase cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isUpdatingPassword}
+                onChange={(e) => {
+                  setIsUpdatingPassword(e.target.checked);
+                  if (!e.target.checked) {
+                    setForm((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                    setErrors((prev) => ({ ...prev, password: "", confirmPassword: "" }));
+                  }
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              UPDATE PASSWORD
+            </label>
+
+            {isUpdatingPassword && (
+              <div className="grid grid-cols-2 gap-4 pt-1">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                    NEW PASSWORD <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Enter new password"
+                      autoComplete="new-password"
+                      className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                        errors.password ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 tracking-wider uppercase">
+                    CONFIRM NEW PASSWORD <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                      className={`w-full border rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-50 dark:bg-muted/50/50 ${
+                        errors.confirmPassword ? "border-red-500" : "border-gray-200 dark:border-border/70"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-muted-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Row 4: Institution */}
         <div>
