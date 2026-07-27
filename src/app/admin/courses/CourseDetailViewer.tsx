@@ -15,7 +15,8 @@ import {
   Play,
   Award,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Menu
 } from "lucide-react";
 import { useCourseCurriculum, useUpdateCourse, useCourseModuleDetail, useCourseLessonDetail, useCourseTopicDetail } from "@/features/admin/courses/api/course-api";
 import { useQuiz } from "@/features/admin/quizzes/api/use-quizzes";
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ListingScreenTemplate from "@/components/reusable/ListingScreenTemplate";
 import { cn, getDisplayThumbnailUrl, getDisplayMediaUrl } from "@/lib/utils";
 import { ContentBlocksRenderer } from "@/components/ui/ContentBlocksRenderer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 interface QuizItem {
@@ -118,6 +120,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
   const { data: fetchedCourse, isLoading, error } = useCourseCurriculum(courseId);
   const [activeItem, setActiveItem] = useState<ActiveItem | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const activeModuleId = activeItem?.type === "module" ? activeItem.id : undefined;
   const activeLessonId = activeItem?.type === "lesson" ? activeItem.id : undefined;
@@ -848,12 +851,18 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
       buttonRequired={false}
       buttonOnclick={() => {}}
       extraActions={
-        <div className="flex gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="md:hidden flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border border-gray-200 rounded-lg hover:bg-gray-50 bg-white text-gray-700 shadow-sm h-[38px]"
+          >
+            <Menu size={16} /> Curriculum
+          </button>
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm h-[38px]"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold border border-gray-200 dark:border-border/70 rounded-lg hover:bg-gray-50 dark:bg-muted/50 bg-white dark:bg-card transition-all text-gray-700 dark:text-foreground shadow-sm h-[38px]"
           >
-            <ArrowLeft size={16} /> Back to Dashboard
+            <ArrowLeft size={16} /> <span className="hidden sm:inline">Back to Dashboard</span><span className="sm:hidden">Back</span>
           </button>
           {(() => {
             const currentStatus = course.status && (course.status.toLowerCase() === 'active' || course.status.toLowerCase() === 'published')
@@ -863,7 +872,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <button
                 onClick={() => handleStatusToggle('active')}
                 disabled={updateCourseMutation.isPending}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[120px]"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[100px] sm:min-w-[120px]"
               >
                 {updateCourseMutation.isPending && updateCourseMutation.variables?.data.status === 'active' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -874,7 +883,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
               <button
                 onClick={() => handleStatusToggle('draft')}
                 disabled={updateCourseMutation.isPending}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[140px]"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all shadow-sm h-[38px] min-w-[120px] sm:min-w-[140px]"
               >
                 {updateCourseMutation.isPending && updateCourseMutation.variables?.data.status === 'draft' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
@@ -885,16 +894,73 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
           })()}
           <button 
             onClick={onEdit}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold h-[38px]"
+            className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg shadow-sm hover:bg-blue-700 transition-colors text-sm font-semibold h-[38px]"
           >
             <Pencil size={16} /> Edit Course
           </button>
         </div>
       }
     >
-      <div className="flex-1 flex overflow-hidden h-screen bg-slate-50/50">
-        {/* LEFT SIDEBAR: Course Structure */}
-        <aside className="w-[320px] border-r border-gray-200/80 bg-white flex flex-col shrink-0 overflow-y-auto">
+      <div className="flex-1 flex overflow-hidden h-screen bg-slate-50/50 w-full">
+        {/* MOBILE CURRICULUM DRAWER */}
+        <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+          <SheetContent side="left" className="p-0 w-[300px] sm:w-[340px] border-r border-slate-200 bg-white">
+            <SheetHeader className="p-4 border-b border-slate-100">
+              <SheetTitle className="text-xs font-bold uppercase tracking-wider text-blue-600">Course Structure</SheetTitle>
+            </SheetHeader>
+            <div className="h-[calc(100vh-60px)] overflow-y-auto p-4">
+              <div 
+                onClick={() => { setActiveItem({ type: "course", id: course.id, data: course }); setMobileDrawerOpen(false); }}
+                className={cn(
+                  "p-3 rounded-xl border border-gray-100 cursor-pointer hover:bg-slate-50 transition-colors mb-3",
+                  (!activeItem || activeItem.type === "course") && "bg-blue-50/50 font-bold"
+                )}
+              >
+                <span className="text-xs font-bold text-slate-800">{course.name}</span>
+              </div>
+              {/* Mobile Curriculum Items */}
+              {modules.map((module) => (
+                <div key={module.id} className="mb-2">
+                  <div 
+                    onClick={() => setExpandedModules(prev => ({ ...prev, [String(module.id)]: !prev[String(module.id)] }))}
+                    className="p-2 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs font-bold text-slate-700 cursor-pointer"
+                  >
+                    <span className="truncate">{module.name}</span>
+                    {expandedModules[String(module.id)] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  </div>
+                  {expandedModules[String(module.id)] && (
+                    <div className="pl-3 mt-1 space-y-1">
+                      {(module.lessons || module.topics || []).map((lesson) => (
+                        <div key={lesson.id} className="space-y-1">
+                          <button
+                            onClick={() => { setActiveItem({ type: "lesson", id: lesson.id, data: lesson }); setMobileDrawerOpen(false); }}
+                            className="w-full text-left p-1.5 rounded-md text-xs text-slate-600 hover:bg-blue-50 flex items-center gap-2"
+                          >
+                            <FileText size={13} className="text-blue-500 shrink-0" />
+                            <span className="truncate">{lesson.name || lesson.title}</span>
+                          </button>
+                          {(lesson.topics || lesson.lessons || []).map((topic: TopicItem) => (
+                            <button
+                              key={topic.id}
+                              onClick={() => { setActiveItem({ type: "topic", id: topic.id, data: topic }); setMobileDrawerOpen(false); }}
+                              className="w-full text-left pl-5 p-1 rounded-md text-[11px] text-slate-500 hover:bg-purple-50 flex items-center gap-1.5"
+                            >
+                              <Target size={11} className="text-purple-400 shrink-0" />
+                              <span className="truncate">{topic.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* LEFT SIDEBAR: Course Structure (Desktop & Tablet) */}
+        <aside className="hidden md:flex w-[320px] md:w-[35%] md:max-w-[320px] border-r border-gray-200/80 bg-white flex-col shrink-0 overflow-y-auto">
           {/* Sidebar Header */}
           <div 
             onClick={() => setActiveItem({ type: "course", id: course.id, data: course })}
@@ -1098,7 +1164,7 @@ export default function CourseDetailViewer({ courseId, onBack, onEdit }: CourseD
         </aside>
 
         {/* RIGHT CONTENT WORKSPACE */}
-        <main className="flex-1 overflow-y-auto p-8 relative">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative w-full md:w-[65%]">
           <div className="max-w-4xl mx-auto">
             {renderRightPanelContent()}
           </div>

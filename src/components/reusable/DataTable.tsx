@@ -34,7 +34,7 @@ export interface FilterConfig {
   label: string;
   type: "select" | "multiselect" | "text" | "date-range";
   placeholder?: string;
-  options?: Array<{ value: string; label: string }>;
+  options?: Array<{ value: string; label: React.ReactNode }>;
   value: string | string[];
   onChange: (value: string | string[]) => void;
   onOpenChange?: (open: boolean) => void;

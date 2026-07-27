@@ -18,12 +18,13 @@ import CourseDeleteDialog from "./CourseDeleteDialog";
 import { buildCourseColumns, Course } from "./columns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import {
   useCourses,
   useCourseStats,
   useDeleteCourse
 } from "@/features/admin/courses/api/course-api";
-import { useDomainLookup } from "@/features/admin/domains/api/use-domains";
+import { useDomainsFilter } from "@/features/admin/domains/api/use-domains";
 import CourseDetailViewer from "./CourseDetailViewer";
 import AssignmentDetailViewer from "./AssignmentDetailViewer";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -163,10 +164,10 @@ export default function CoursesPage() {
     setQueriesReady(true);
   }, []);
 
-  const { data: domainsLookup = [] } = useDomainLookup(undefined, {
+  const { data: domainsFilter = [] } = useDomainsFilter({
     enabled: isDomainFilterOpen || (domainFilter !== "All" && domainFilter !== "All Domains")
   });
-  
+
   // Courses React Query hook
   const {
     data: coursesResponse,
@@ -241,11 +242,23 @@ export default function CoursesPage() {
 
   const domainOptions = [
     { value: "All", label: "All Domains" },
-    ...(Array.isArray(domainsLookup)
-      ? domainsLookup.map((d: any) => ({
-          value: String(d.id || d.name),
-          label: d.name,
-        }))
+    ...(Array.isArray(domainsFilter)
+      ? domainsFilter.map((d: any) => {
+          const isInactive = String(d.status || "").toLowerCase() === "inactive";
+          return {
+            value: String(d.id || d.name),
+            label: isInactive ? (
+              <span className="flex items-center justify-between gap-2.5 w-full text-slate-500">
+                <span className="truncate">{d.name}</span>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-slate-300 text-slate-500 font-normal shrink-0">
+                  Inactive
+                </Badge>
+              </span>
+            ) : (
+              d.name
+            ),
+          };
+        })
       : []),
   ];
 

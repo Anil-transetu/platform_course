@@ -25,6 +25,7 @@ export default function AssignmentForm({ mode, initialData }: Props) {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
   
   // Domains
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
@@ -48,6 +49,8 @@ export default function AssignmentForm({ mode, initialData }: Props) {
     if (mode === "edit" && initialData) {
       setTitle(initialData.title || initialData.assignment_title || "");
       setDescription(initialData.description || "");
+      const dVal = initialData.duration ?? initialData.duration_minutes ?? initialData.durationMinutes;
+      setDurationMinutes(dVal !== undefined && dVal !== null ? String(dVal) : "");
       setSelectedDomains(initialData.domains && initialData.domains.length > 0 ? initialData.domains : (initialData.domain ? [initialData.domain] : []));
       setTags(initialData.tags || []);
       const em = initialData.evaluation_matrix;
@@ -68,6 +71,7 @@ export default function AssignmentForm({ mode, initialData }: Props) {
     } else {
       setTitle("");
       setDescription("");
+      setDurationMinutes("");
       setSelectedDomains([]);
       setTags([]);
       setCriteria([
@@ -125,6 +129,11 @@ export default function AssignmentForm({ mode, initialData }: Props) {
         if (!value.trim()) error = "Assignment title is required";
         else if (value.trim().length < 3) error = "Title must be at least 3 characters";
         break;
+      case "durationMinutes":
+        if (!value || String(value).trim() === "") error = "Duration is required";
+        else if (isNaN(Number(value)) || !Number.isInteger(Number(value)) || Number(value) <= 0) error = "Duration must be a positive integer greater than 0";
+        else if (Number(value) > 1440) error = "Duration cannot exceed 1440 minutes.";
+        break;
       case "domains":
         if (selectedDomains.length === 0) error = "Select at least one domain";
         break;
@@ -151,6 +160,7 @@ export default function AssignmentForm({ mode, initialData }: Props) {
   const validateAll = (): boolean => {
     const validations: [string, string][] = [
       ["title", title],
+      ["durationMinutes", durationMinutes],
     ];
     const allTouched: Record<string, boolean> = {};
     let hasError = false;
@@ -179,6 +189,8 @@ export default function AssignmentForm({ mode, initialData }: Props) {
     return touched[field] && errors[field] ? `${base} border-red-500` : base;
   };
 
+  const totalMarksCalculated = criteria.reduce((sum, c) => sum + (parseInt(String(c.marks)) || 0), 0);
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -189,12 +201,13 @@ export default function AssignmentForm({ mode, initialData }: Props) {
 
     const payload: Record<string, any> = {
       title: title.trim(),
+      duration: Number(durationMinutes),
       submission_type: "file",
       description,
       domains: selectedDomains,
       tags,
       status: isPublished ? "active" : "inactive",
-      max_score: criteria.reduce((sum, c) => sum + (parseInt(String(c.marks)) || 0), 0),
+      max_score: totalMarksCalculated,
       evaluation_matrix: criteria.map((c: any) => ({
         ...(c.id ? { id: c.id } : {}),
         name: c.name,
@@ -264,6 +277,43 @@ export default function AssignmentForm({ mode, initialData }: Props) {
                 className={getInputClass("title", "w-full rounded-xl border border-slate-200 bg-white dark:bg-card px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
               />
               {touched.title && errors.title && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.title}</p>}
+            </div>
+
+            {/* Total Marks & Duration Grid (Desktop side-by-side, Mobile/Tablet stacked) */}
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800">
+                  Total Marks <span className="text-slate-400 font-normal text-xs">(Calculated from Evaluation Matrix)</span>
+                </label>
+                <input
+                  type="number"
+                  readOnly
+                  value={totalMarksCalculated}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 dark:bg-muted/30 px-4 py-3 text-sm text-slate-700 font-semibold outline-none cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-800">
+                  Duration (Minutes) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={durationMinutes}
+                  onChange={(e) => {
+                    setDurationMinutes(e.target.value);
+                    if (errors.durationMinutes) setErrors(p => ({ ...p, durationMinutes: "" }));
+                  }}
+                  onBlur={() => {
+                    setTouched(p => ({ ...p, durationMinutes: true }));
+                    validateField("durationMinutes", durationMinutes);
+                  }}
+                  placeholder="e.g. 60"
+                  className={getInputClass("durationMinutes", "w-full rounded-xl border border-slate-200 bg-white dark:bg-card px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all")}
+                />
+                {touched.durationMinutes && errors.durationMinutes && (
+                  <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.durationMinutes}</p>
+                )}
+              </div>
             </div>
             
             <div>

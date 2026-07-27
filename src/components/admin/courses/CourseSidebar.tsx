@@ -37,9 +37,10 @@ const toastApiError = (err: any, fallbackMessage: string) => {
 interface CourseSidebarProps {
   isCollapsed?: boolean;
   onToggle?: () => void;
+  onItemSelect?: () => void;
 }
 
-export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProps) {
+export default function CourseSidebar({ isCollapsed = false, onItemSelect }: CourseSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { 
@@ -97,6 +98,19 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   const [deleteTargetModuleId, setDeleteTargetModuleId] = useState<string | null>(null);
   const [deleteTargetLessonId, setDeleteTargetLessonId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    sessionStorage.setItem("course-builder-sidebar-scroll", String(e.currentTarget.scrollTop));
+  };
+
+  React.useEffect(() => {
+    const savedScroll = sessionStorage.getItem("course-builder-sidebar-scroll");
+    if (savedScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = Number(savedScroll);
+    }
+  }, []);
 
 
 
@@ -170,6 +184,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleTopicClick = (moduleId: string, lessonId: string, topicId: string) => {
+    onItemSelect?.();
     confirmNavigation("topic", "topic", {
       activeModuleId: moduleId,
       activeLessonId: lessonId,
@@ -180,6 +195,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleQuizClick = (moduleId: string, lessonId: string | undefined | null, quizId: string) => {
+    onItemSelect?.();
     confirmNavigation("quiz", "quiz", {
       activeModuleId: moduleId,
       activeLessonId: lessonId || null,
@@ -190,6 +206,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleAssignmentClick = (moduleId: string, lessonId: string | undefined | null, assignmentId: string) => {
+    onItemSelect?.();
     confirmNavigation("assignment", "assignment", {
       activeModuleId: moduleId,
       activeLessonId: lessonId || null,
@@ -200,6 +217,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleCourseQuizClick = (quizId: string) => {
+    onItemSelect?.();
     confirmNavigation("quiz", "quiz", {
       activeModuleId: null,
       activeLessonId: null,
@@ -210,6 +228,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
   };
 
   const handleCourseAssignmentClick = (assignmentId: string) => {
+    onItemSelect?.();
     useCourseStore.setState({
       activeModuleId: null,
       activeLessonId: null,
@@ -622,7 +641,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
           Course Curriculum
         </h3>
         
-        <div className="flex-1 overflow-y-auto pr-1 -mr-2 flex flex-col gap-3 no-scrollbar">
+        <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto pr-1 -mr-2 flex flex-col gap-3 no-scrollbar">
 
           {course.modules.length === 0 ? (
             <div className="text-xs text-slate-400 italic">No modules added yet.</div>
@@ -637,7 +656,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                   className="flex flex-col gap-1 mb-1"
                 >
                   <div 
-                    onClick={() => handleModuleClick(module.id)}
+                    onClick={() => toggleModuleExpand(module.id)}
                     className={`group/module rounded-xl p-2.5 flex items-center justify-between cursor-pointer transition-all border ${isModuleActive && !activeLessonId 
                         ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20' 
                         : 'bg-white border-slate-200/80 hover:border-blue-200 hover:bg-blue-50/5 text-slate-800 font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.02)]'
@@ -712,7 +731,7 @@ export default function CourseSidebar({ isCollapsed = false }: CourseSidebarProp
                                 className="flex flex-col gap-1"
                               >
                                 <div
-                                  onClick={() => handleLessonClick(module.id, lesson.id)}
+                                  onClick={() => toggleLessonExpand(lesson.id)}
                                   className={`group/lesson rounded-lg p-2 flex items-center justify-between cursor-pointer transition-all border ${isLessonActive && !activeTopicId && !activeQuizId && !activeAssignmentId
                                       ? 'bg-blue-600 border-blue-500 text-white font-bold shadow-md shadow-blue-500/20'
                                       : 'bg-transparent border-transparent hover:bg-slate-200/50 text-slate-700 hover:text-slate-900'

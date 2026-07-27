@@ -20,6 +20,9 @@ export interface Assignment {
   tags?: string[];
   marks?: number;
   total_marks?: number;
+  duration?: number;
+  duration_minutes?: number;
+  durationMinutes?: number;
   submissionType?: string;
   submission_type?: string;
   description?: string;
@@ -38,11 +41,20 @@ export interface AssignmentStats {
 
 
 export function mapAssignment(data: any): Assignment {
+  const durationVal = data.duration ?? data.duration_minutes ?? data.durationMinutes;
+  const marksVal = data.marks ?? data.total_marks ?? data.max_score;
+  const numDuration = durationVal !== undefined && durationVal !== null && durationVal !== "" ? Number(durationVal) : undefined;
+  const numMarks = marksVal !== undefined && marksVal !== null && marksVal !== "" ? Number(marksVal) : undefined;
+
   return {
     ...data,
     id: data.id || data.assignment_id,
     title: data.title || data.assignment_title || data.assignment_name,
-    marks: data.marks || data.total_marks || data.max_score,
+    marks: numMarks,
+    total_marks: numMarks,
+    duration: numDuration,
+    duration_minutes: numDuration,
+    durationMinutes: numDuration,
     submissionType: data.submissionType || data.submission_type,
     domain: data.domain || (data.domains && data.domains.length > 0 ? data.domains[0] : "GENERAL"),
     domains: data.domains || (data.domain ? [data.domain] : []),

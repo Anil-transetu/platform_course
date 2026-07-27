@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronRight, PanelLeftClose, PanelLeftOpen, AlertTriangle } from "lucide-react";
+import { ChevronRight, PanelLeftClose, PanelLeftOpen, AlertTriangle, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCourseStore, Quiz as StoreQuiz, Assignment as StoreAssignment } from "@/store/useCourseStore";
@@ -9,6 +9,7 @@ import CourseSidebar from "@/components/admin/courses/CourseSidebar";
 import { toast } from "sonner";
 import { useCreateCourse, useUpdateCourse, useUpdateModule, useUpdateLesson, useUpdateTopic, useCreateModule, useCreateLesson, useCreateTopic } from "@/features/admin/courses/api/course-api";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 const toastApiError = (err: any, fallbackMessage: string) => {
   if (typeof window !== "undefined" && !navigator.onLine) {
@@ -234,6 +235,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
   const [mounted, setMounted] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingNavigationKind, setPendingNavigationKind] = useState<"save" | "discard" | "cancel" | null>(null);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   const {
     course,
@@ -901,19 +903,30 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
       {/* CENTRALIZED HEADER / BREADCRUMB */}
       <div className="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-100/80 shadow-[0_2px_12px_rgba(0,0,0,0.015)] shrink-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          {/* Sidebar Toggle — hidden on root config page */}
+          {/* Mobile Curriculum Drawer Trigger */}
+          {!isRootLevel && (
+            <button
+              type="button"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-bold shadow-xs hover:bg-slate-50 transition-colors mr-1 shrink-0"
+            >
+              <Menu size={16} /> Curriculum
+            </button>
+          )}
+
+          {/* Desktop/Tablet Sidebar Toggle — hidden on mobile and root config page */}
           {!isRootLevel && (
             <button
               onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
               title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+              className="hidden md:flex p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all shrink-0"
             >
               {isSidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
           )}
 
           {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none">
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest leading-none min-w-0">
             {isRootLevel ? (
               <span className="text-slate-800">Course</span>
             ) : (
@@ -922,59 +935,59 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
 
             {!isRootLevel && activeModuleId && (
               <>
-                <ChevronRight size={12} className="text-slate-300" />
+                <ChevronRight size={12} className="text-slate-300 shrink-0" />
                 {activeLessonId || activeTopicId || activeQuizId || activeAssignmentId ? (
                   <button type="button" onClick={() => handleBreadcrumbNavigate(`${builderBasePath}/module`)} className="text-slate-400 hover:text-blue-600 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-[140px] text-left" title={getBreadcrumbTitle('module', activeModule) || "Module"}>
                     {getBreadcrumbTitle('module', activeModule) || "Module"}
                   </button>
                 ) : (
-                  <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={getBreadcrumbTitle('module', activeModule) || "New Module"}>{getBreadcrumbTitle('module', activeModule) || "New Module"}</span>
+                  <span className="text-slate-800 truncate max-w-[150px] sm:max-w-[300px] text-left" title={getBreadcrumbTitle('module', activeModule) || "New Module"}>{getBreadcrumbTitle('module', activeModule) || "New Module"}</span>
                 )}
               </>
             )}
 
             {activeLessonId && (
               <>
-                <ChevronRight size={12} className="text-slate-300" />
+                <ChevronRight size={12} className="text-slate-300 shrink-0" />
                 {activeTopicId || (activeQuizId && activeLessonId) || (activeAssignmentId && activeLessonId) ? (
                   <button type="button" onClick={() => handleBreadcrumbNavigate(`${builderBasePath}/lesson`)} className="text-slate-400 hover:text-blue-600 transition-colors truncate max-w-[80px] sm:max-w-[120px] md:max-w-[140px] text-left" title={getBreadcrumbTitle('lesson', activeLesson) || "Lesson"}>
                     {getBreadcrumbTitle('lesson', activeLesson) || "Lesson"}
                   </button>
                 ) : (
-                  <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={getBreadcrumbTitle('lesson', activeLesson) || "New Lesson"}>{getBreadcrumbTitle('lesson', activeLesson) || "New Lesson"}</span>
+                  <span className="text-slate-800 truncate max-w-[150px] sm:max-w-[300px] text-left" title={getBreadcrumbTitle('lesson', activeLesson) || "New Lesson"}>{getBreadcrumbTitle('lesson', activeLesson) || "New Lesson"}</span>
                 )}
               </>
             )}
 
             {activeTopicId && (
               <>
-                <ChevronRight size={12} className="text-slate-300" />
-                <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={getBreadcrumbTitle('topic', activeTopic) || "New Topic"}>{getBreadcrumbTitle('topic', activeTopic) || "New Topic"}</span>
+                <ChevronRight size={12} className="text-slate-300 shrink-0" />
+                <span className="text-slate-800 truncate max-w-[150px] sm:max-w-[300px] text-left" title={getBreadcrumbTitle('topic', activeTopic) || "New Topic"}>{getBreadcrumbTitle('topic', activeTopic) || "New Topic"}</span>
               </>
             )}
 
             {activeQuizId && (
               <>
-                <ChevronRight size={12} className="text-slate-300" />
-                <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={activeQuiz?.title || "New Quiz"}>{activeQuiz?.title || "New Quiz"}</span>
+                <ChevronRight size={12} className="text-slate-300 shrink-0" />
+                <span className="text-slate-800 truncate max-w-[150px] sm:max-w-[300px] text-left" title={activeQuiz?.title || "New Quiz"}>{activeQuiz?.title || "New Quiz"}</span>
               </>
             )}
 
             {activeAssignmentId && (
               <>
-                <ChevronRight size={12} className="text-slate-300" />
-                <span className="text-slate-800 truncate max-w-[300px] sm:max-w-[400px] text-left" title={activeAssignment?.title || "New Assignment"}>{activeAssignment?.title || "New Assignment"}</span>
+                <ChevronRight size={12} className="text-slate-300 shrink-0" />
+                <span className="text-slate-800 truncate max-w-[150px] sm:max-w-[300px] text-left" title={activeAssignment?.title || "New Assignment"}>{activeAssignment?.title || "New Assignment"}</span>
               </>
             )}
           </div>
         </div>
 
         {/* CENTRALIZED ACTIONS */}
-        <div className="flex gap-3 shrink-0">
+        <div className="flex gap-2 sm:gap-3 shrink-0">
           <button
             onClick={handleBack}
             disabled={isSaving}
-            className="px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 sm:px-5 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-semibold shadow-xs hover:bg-slate-50 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Back
           </button>
@@ -982,7 +995,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             <button
               onClick={() => handleSave("draft")}
               disabled={isSaving}
-              className="px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[110px]"
+              className="px-4 sm:px-8 py-2 rounded-lg bg-blue-600 text-white font-bold shadow-md hover:bg-blue-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[90px] sm:min-w-[110px]"
             >
               Save as Draft
             </button>
@@ -991,7 +1004,7 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
             <button
               onClick={() => handleSave("published")}
               disabled={isSaving}
-              className="px-8 py-2 rounded-lg bg-green-600 text-white font-bold shadow-md hover:bg-green-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[80px]"
+              className="px-4 sm:px-8 py-2 rounded-lg bg-green-600 text-white font-bold shadow-md hover:bg-green-700 transition-all text-xs whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[70px] sm:min-w-[80px]"
             >
               {isSaving ? "Saving..." : "Publish"}
             </button>
@@ -1039,13 +1052,29 @@ export default function CourseCreationLayout({ children }: { children: React.Rea
         </div>
       )}
 
+      {/* MOBILE CURRICULUM DRAWER */}
+      {!isRootLevel && (
+        <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
+          <SheetContent side="left" className="p-0 w-[300px] sm:w-[340px] border-r border-slate-200 bg-[#f5f8fc]">
+            <SheetHeader className="p-4 border-b border-slate-200/80 bg-white">
+              <SheetTitle className="text-xs font-bold uppercase tracking-wider text-slate-700">Course Curriculum</SheetTitle>
+            </SheetHeader>
+            <div className="h-[calc(100vh-60px)] overflow-hidden">
+              <CourseSidebar isCollapsed={false} onItemSelect={() => setMobileDrawerOpen(false)} />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
+
       {/* BODY: SIDEBAR + CHILDREN */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar hidden on root Course Configuration page */}
+      <div className="flex-1 flex overflow-hidden w-full">
+        {/* Permanent Sidebar for Tablet & Desktop, hidden on mobile */}
         {!isRootLevel && (
-          <CourseSidebar isCollapsed={isSidebarCollapsed} onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)} />
+          <div className="hidden md:flex shrink-0 border-r border-slate-200/80 w-[320px] md:w-[40%] md:max-w-[340px] lg:w-[320px]">
+            <CourseSidebar isCollapsed={isSidebarCollapsed} onToggle={() => setSidebarCollapsed(!isSidebarCollapsed)} />
+          </div>
         )}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto w-full md:w-[60%] lg:w-full">
           {children}
         </div>
       </div>

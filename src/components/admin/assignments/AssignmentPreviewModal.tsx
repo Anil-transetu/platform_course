@@ -53,9 +53,12 @@ export default function AssignmentPreviewModal({ isOpen, onClose, assignmentId }
             <h2 className="text-xl font-bold text-gray-900 dark:text-foreground">
               {assignmentDetail?.title || assignmentDetail?.assignment_title || "Assignment Details"}
             </h2>
-            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
               <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
-                Max Score: {assignmentDetail?.marks || assignmentDetail?.total_marks || 100} marks
+                Max Score: {assignmentDetail?.marks || assignmentDetail?.total_marks ? `${assignmentDetail.marks || assignmentDetail.total_marks} marks` : "—"}
+              </span>
+              <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                Duration: {assignmentDetail?.duration || assignmentDetail?.duration_minutes ? `${assignmentDetail.duration || assignmentDetail.duration_minutes} min` : "—"}
               </span>
             </p>
           </div>

@@ -177,12 +177,12 @@ export default function AssignmentLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="p-8 flex flex-col gap-6 max-w-5xl">
+      <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6 max-w-5xl w-full">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
               {/* ASSIGNMENT HEADER SUMMARY CARD */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-5 sm:p-8 rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] gap-6">
                 <div className="flex items-start gap-5 flex-1 min-w-0">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-indigo-50 text-indigo-600 border border-indigo-100/50 shrink-0 shadow-[0_4px_10px_rgba(99,102,241,0.04)] mt-1">
                     <ClipboardList size={28} strokeWidth={2} />
@@ -206,10 +206,10 @@ export default function AssignmentLibraryPage() {
                 </div>
                 
                 {/* ACTION BUTTONS */}
-                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0 w-full sm:w-auto">
                   <button 
                     onClick={() => setForceLibraryView(true)}
-                    className="px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-355 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
+                    className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-355 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
                   >
                     Change Assignment
                   </button>
@@ -234,7 +234,7 @@ export default function AssignmentLibraryPage() {
                       setActiveAssignment(null);
                       setForceLibraryView(false);
                     }}
-                   className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                   className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
                    Remove Association
                   </button>
@@ -247,13 +247,13 @@ export default function AssignmentLibraryPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] overflow-hidden">
-                  <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
+                  <div className="px-5 sm:px-8 py-5 border-b border-slate-100 bg-slate-50/50">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2.5 text-sm uppercase tracking-wider">
                       <ClipboardList size={18} className="text-indigo-500" />
                       Preview: Instructions & Deliverables
                     </h3>
                   </div>
-                  <div className="p-8 flex flex-col gap-8">
+                  <div className="p-5 sm:p-8 flex flex-col gap-8">
                     {/* INSTRUCTIONS */}
                     <div className="p-6 border border-slate-100 bg-slate-50/40 rounded-2xl shadow-xs">
                       <h4 className="font-bold text-slate-800 mb-3 text-sm flex items-center gap-2">
@@ -320,7 +320,7 @@ export default function AssignmentLibraryPage() {
             /* --- LIBRARY SCREEN --- */
             <>
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Assignment Library</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">Assignment Library</h1>
                 <p className="text-slate-550 text-sm font-medium">Browse and add pre-existing assignments to your module.</p>
               </div>
 
@@ -353,13 +353,15 @@ export default function AssignmentLibraryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {assignmentItems.map((assignment: ApiAssignment) => {
                       const durationVal = assignment.durationMinutes ?? (assignment as any).duration_minutes ?? assignment.duration;
-                      const durationStr = durationVal ? (typeof durationVal === 'number' || !String(durationVal).includes('min') ? `${durationVal} min` : String(durationVal)) : "-- min";
+                      const hasValidDuration = durationVal !== undefined && durationVal !== null && durationVal !== "" && Number(durationVal) > 0;
+                      const durationStr = hasValidDuration ? `${durationVal} min` : "—";
 
                       const marksVal = assignment.marks ?? (assignment as any).total_marks ?? (assignment as any).max_score;
-                      const marksStr = marksVal !== undefined && marksVal !== null ? String(marksVal) : "100";
+                      const hasValidMarks = marksVal !== undefined && marksVal !== null && marksVal !== "" && Number(marksVal) > 0;
+                      const marksStr = hasValidMarks ? `${marksVal} Marks` : "— Marks";
 
                       return (
                         <div key={assignment.id} className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm hover:shadow-[0_10px_30px_rgba(37,99,235,0.06)] hover:border-blue-200/50 transition-all flex flex-col h-full group">
@@ -381,7 +383,7 @@ export default function AssignmentLibraryPage() {
                             </span>
                             <span className="flex items-center gap-1.5">
                               <Target size={14} className="text-slate-400" />
-                              {marksStr} Marks
+                              {marksStr}
                             </span>
                           </div>
 

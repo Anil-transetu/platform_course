@@ -108,7 +108,7 @@ export async function fetchDomainById(id: string | number, signal?: AbortSignal)
 }
 
 /**
- * Fetch domain lookup (only active domains)
+ * Fetch domain lookup (only active domains for Create/Edit forms)
  */
 export async function fetchDomainLookup(search?: string): Promise<any[]> {
   let url = `${BASE_URL}/lookup`;
@@ -117,6 +117,21 @@ export async function fetchDomainLookup(search?: string): Promise<any[]> {
     query.append("search", search);
     url += `?${query.toString()}`;
   }
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  return result.data || result || [];
+}
+
+/**
+ * Fetch domain filter options (active + inactive domains for Course Management filter)
+ */
+export async function fetchDomainsFilter(): Promise<any[]> {
+  const url = `${BASE_URL}/filter`;
 
   const response = await fetch(url, {
     method: "GET",
