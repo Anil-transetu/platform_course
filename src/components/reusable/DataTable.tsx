@@ -328,13 +328,23 @@ export default function DataTable<T extends Record<string, unknown>>({
                       tabIndex={actions || onRowClick ? 0 : -1}
                       role={actions || onRowClick ? "button" : undefined}
                     >
-                      {columns.map((column) => (
-                        <TableCell key={String(column.key)} className={cn("text-card-foreground py-3 px-4 whitespace-nowrap", column.width)}>
-                          {column.render
-                            ? column.render(row[column.key as keyof T], row, isExpanded, () => toggleExpand(rowId))
-                            : (row[column.key as keyof T] as ReactNode)}
-                        </TableCell>
-                      ))}
+                      {columns.map((column) => {
+                        const cellValue = row[column.key as keyof T];
+                        let content: ReactNode;
+                        if (column.render) {
+                          content = column.render(cellValue, row, isExpanded, () => toggleExpand(rowId));
+                        } else if (typeof cellValue === "object" && cellValue !== null && !React.isValidElement(cellValue)) {
+                          content = (cellValue as any).name || (cellValue as any).title || JSON.stringify(cellValue);
+                        } else {
+                          content = cellValue as ReactNode;
+                        }
+
+                        return (
+                          <TableCell key={String(column.key)} className={cn("text-card-foreground py-3 px-4 whitespace-nowrap", column.width)}>
+                            {content}
+                          </TableCell>
+                        );
+                      })}
                       {actions && (
                         <TableCell className="text-center py-3 px-4">
                           {actions(row)}

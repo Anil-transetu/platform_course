@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export interface TutorBatch {
   id: string | number;
   name: string;
-  course: string;
+  course: string | { id?: string | number; name?: string; title?: string };
   schedule: string;
   allocationTime: string;
   progress: number;
@@ -58,11 +58,17 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
     {
       key: "course",
       label: "ALLOCATED COURSE",
-      render: (value, row) => (
-        <div className="font-semibold text-slate-600 text-sm">
-          {row.course || "N/A"}
-        </div>
-      ),
+      render: (value, row) => {
+        const courseName =
+          typeof row.course === "object" && row.course !== null
+            ? (row.course as any).name || (row.course as any).title || "N/A"
+            : row.course || "N/A";
+        return (
+          <div className="font-semibold text-slate-600 text-sm">
+            {courseName}
+          </div>
+        );
+      },
     },
     {
       key: "allocationTime",

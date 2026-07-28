@@ -52,14 +52,38 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
   const total = result?.data?.total || result?.total || data.length;
 
   // Map data to match frontend columns structure
-  const mappedData = Array.isArray(data) ? data.map((b: any) => ({
-    id: b.id || b.batch_id,
-    name: b.name || b.batch_name || "N/A",
-    course: b.course || b.course_name || "N/A",
-    schedule: b.schedule || "N/A",
-    allocationTime: b.allocationTime || b.allocation_time || "N/A",
-    progress: b.progress || 0,
-  })) : [];
+  const mappedData = Array.isArray(data) ? data.map((b: any) => {
+    let courseName = "N/A";
+    if (typeof b.course === "string") {
+      courseName = b.course;
+    } else if (typeof b.course === "object" && b.course !== null) {
+      courseName = b.course.name || b.course.title || "N/A";
+    } else if (typeof b.course_name === "string") {
+      courseName = b.course_name;
+    } else if (typeof b.course_name === "object" && b.course_name !== null) {
+      courseName = b.course_name.name || b.course_name.title || "N/A";
+    }
+
+    let batchName = "N/A";
+    if (typeof b.name === "string") {
+      batchName = b.name;
+    } else if (typeof b.name === "object" && b.name !== null) {
+      batchName = b.name.name || "N/A";
+    } else if (typeof b.batch_name === "string") {
+      batchName = b.batch_name;
+    }
+
+    return {
+      id: b.id || b.batch_id,
+      name: batchName,
+      course: courseName,
+      schedule: typeof b.schedule === "string" ? b.schedule : "N/A",
+      allocationTime: typeof (b.allocationTime || b.allocation_time) === "string"
+        ? (b.allocationTime || b.allocation_time)
+        : "N/A",
+      progress: typeof b.progress === "number" ? b.progress : 0,
+    };
+  }) : [];
 
   return {
     data: mappedData,
