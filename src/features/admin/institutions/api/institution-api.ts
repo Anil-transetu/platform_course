@@ -28,13 +28,11 @@ export interface Institution {
 }
 
 export interface InstitutionStats {
-  total_institutions: number;
-  active_institutions: number;
-avgCoursesPerInstitution: number;
+  totalInstitutions: number;
+  activeInstitutions: number;
+  avgCoursesPerInstitution: number;
   pendingRegistrations: number;
 }
-
-
 
 export function mapInstitution(data: any): Institution {
   let contacts = data.contacts || data.point_of_contacts || data.pointOfContacts || data.institution_contacts || data.InstitutionContacts || [];
@@ -67,7 +65,7 @@ export async function fetchInstitutions(
   limit: number = 50,
   search?: string, 
   statusFilter?: string
-): Promise<{ data: Institution[], total?: number }> {
+): Promise<{ data: Institution[]; total?: number; meta?: { total: number; page: number; limit: number; totalPages: number } }> {
   let url = BASE_URL;
   const query = new URLSearchParams();
   
@@ -92,11 +90,19 @@ export async function fetchInstitutions(
     headers: getAuthHeaders(),
   });
 
-  const data = await handleResponse(response);
-  const items = Array.isArray(data) ? data : data.data || data.institutions || [];
+  const rawData = await handleResponse(response);
+  const items = Array.isArray(rawData) ? rawData : rawData.data || rawData.institutions || [];
+  const meta = rawData.meta || {
+    total: rawData.total || items.length,
+    page: page,
+    limit: limit,
+    totalPages: Math.ceil((rawData.total || items.length) / limit)
+  };
+
   return {
     data: items.map((i: any) => mapInstitution(i)),
-    total: data.total || items.length
+    total: meta.total,
+    meta
   };
 }
 
@@ -109,11 +115,12 @@ export async function fetchInstitutionStats(): Promise<InstitutionStats> {
     headers: getAuthHeaders(),
   });
   const result = await handleResponse(response);
-  return result.data || {
-    total_institutions: 0,
-    active_institutions: 0,
-    average_courses_per_institution: 0,
-    pending_registrations: 0
+  const data = result.data || result;
+  return {
+    totalInstitutions: data.totalInstitutions ?? data.total_institutions ?? 0,
+    activeInstitutions: data.activeInstitutions ?? data.active_institutions ?? 0,
+    avgCoursesPerInstitution: data.avgCoursesPerInstitution ?? data.average_courses_per_institution ?? 0,
+    pendingRegistrations: data.pendingRegistrations ?? data.pending_registrations ?? 0,
   };
 }
 

@@ -476,8 +476,8 @@ export default function CreateCoursePage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 bg-slate-50">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-slate-50">
+      <div className="max-w-6xl mx-auto flex flex-col gap-6 sm:gap-8">
 
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-5">
@@ -486,20 +486,20 @@ export default function CreateCoursePage() {
               <Sparkles size={20} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight">Course Configuration</h1>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Course Configuration</h1>
               <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">Define your course details before building the curriculum</p>
             </div>
           </div>
         </div>
 
         {/* 3-COLUMN LAYOUT GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
 
           {/* LEFT 2/3 COLUMN */}
-          <div className="lg:col-span-2 flex flex-col gap-8">
+          <div className="lg:col-span-2 flex flex-col gap-6 sm:gap-8">
 
             {/* COURSE INFORMATION CARD */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-4 border-b border-slate-100">
                 <BookOpen className="text-blue-500" size={16} />
                 Course Information
@@ -565,7 +565,7 @@ export default function CreateCoursePage() {
             </div>
 
             {/* METADATA CARD */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.02)] flex flex-col gap-6">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-4 border-b border-slate-100">
                 <Globe className="text-indigo-500" size={16} />
                 Course Settings

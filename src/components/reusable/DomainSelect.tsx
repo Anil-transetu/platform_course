@@ -165,7 +165,7 @@ export default function DomainSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-card border border-gray-200 dark:border-border/70 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[300px] animate-in fade-in-0 zoom-in-95 duration-100">
+        <div className="absolute z-50 left-0 right-0 w-full min-w-full mt-1 bg-white dark:bg-card border border-gray-200 dark:border-border/70 rounded-xl shadow-xl overflow-hidden flex flex-col max-h-[280px] animate-in fade-in-0 zoom-in-95 duration-100">
           <div className="p-2 border-b border-gray-100 dark:border-border/50 sticky top-0 bg-white dark:bg-card z-10">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -222,7 +222,7 @@ export default function DomainSelect({
                       <li
                         key={d.id}
                         onClick={() => handleSelect(String(d.id), d.name, d)}
-                        className={`flex items-center justify-between px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
+                        className={`flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${
                           isSelected
                             ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-medium"
                             : isFocused
@@ -230,7 +230,7 @@ export default function DomainSelect({
                             : "hover:bg-gray-50 dark:hover:bg-muted/50 text-gray-700 dark:text-foreground"
                         }`}
                       >
-                        <span className="truncate">{toSentenceCase(d.name)}</span>
+                        <span className="truncate min-w-0 flex-1">{toSentenceCase(d.name)}</span>
                         {isSelected && <Check size={14} className="shrink-0 text-blue-600" />}
                       </li>
                     );

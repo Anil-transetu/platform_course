@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, HelpCircle, Clock, CheckSquare, Loader2, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
 import { toast } from 'sonner';
+
+function isBackendId(id: string | number | null | undefined): boolean {
+  if (id === null || id === undefined) return false;
+  const str = String(id).trim();
+  if (!str || str === "null" || str === "undefined") return false;
+  if (str.startsWith("temp-") || str.startsWith("draft-") || str.startsWith("new-")) return false;
+  return true;
+}
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -25,6 +33,16 @@ export default function QuizLibraryPage() {
     deleteQuiz,
     deleteCourseQuiz
   } = useCourseStore();
+
+  const [search, setSearch] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
+
+  // Reset forceLibraryView when selection changes
+  useEffect(() => {
+    setForceLibraryView(false);
+  }, [activeQuizId, activeModuleId, activeLessonId]);
   
   let activeQuiz: { id: string | number; title?: string; quiz_title?: string } | undefined;
   if (!activeModuleId) {
@@ -38,15 +56,10 @@ export default function QuizLibraryPage() {
     activeQuiz = activeLesson?.quizzes?.find(q => String(q.id) === String(activeQuizId));
   }
 
-  const [search, setSearch] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [forceLibraryView, setForceLibraryView] = useState(false);
-
   const debouncedSearch = useDebounce(search, 300);
 
   const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : (activeQuizId ? String(activeQuizId) : "");
-  const isRealId = !!(activeQuizIdStr && !activeQuizIdStr.startsWith("temp-"));
+  const isRealId = isBackendId(activeQuizIdStr);
   const isLibraryEnabled = !isRealId || forceLibraryView;
 
   // 1. Fetch lookup list of quizzes — triggered only when library view is enabled
@@ -125,12 +138,12 @@ export default function QuizLibraryPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-100">
-      <div className="p-8 flex flex-col gap-6 max-w-5xl">
+      <div className="p-4 sm:p-6 md:p-8 flex flex-col gap-6 max-w-5xl w-full">
           {shouldShowPreview ? (
             /* --- PREVIEW SCREEN --- */
             <div className="flex flex-col gap-8">
               {/* QUIZ HEADER SUMMARY CARD */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-8 rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between bg-white p-5 sm:p-8 rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] gap-6">
                 <div className="flex items-start gap-5 flex-1 min-w-0">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100/50 shrink-0 shadow-[0_4px_10px_rgba(37,99,235,0.04)] mt-1">
                     <CheckSquare size={26} strokeWidth={2} />
@@ -154,10 +167,10 @@ export default function QuizLibraryPage() {
                 </div>
                 
                 {/* ACTION BUTTONS */}
-                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0 w-full sm:w-auto">
                   <button 
                     onClick={() => setForceLibraryView(true)}
-                    className="px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
+                    className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold border border-slate-200 hover:border-slate-350 hover:bg-slate-50 transition-all text-slate-700 bg-white rounded-xl shadow-xs"
                   >
                     Change Quiz
                   </button>
@@ -177,7 +190,7 @@ export default function QuizLibraryPage() {
                       setActiveQuiz(null);
                       setForceLibraryView(false);
                     }}
-                    className="px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
+                    className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-650 rounded-xl transition-all shadow-xs"
                   >
                     Remove Association
                   </button>
@@ -186,13 +199,13 @@ export default function QuizLibraryPage() {
 
               {/* QUESTIONS LIST CARD */}
               <div className="bg-white rounded-2xl border border-slate-100/80 shadow-[0_4px_25px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
+                <div className="px-5 sm:px-8 py-5 border-b border-slate-100 bg-slate-50/50">
                   <h3 className="font-bold text-slate-800 flex items-center gap-2.5 text-sm uppercase tracking-wider">
                     <CheckSquare size={16} className="text-blue-500" />
                     Preview: Quiz Questions
                   </h3>
                 </div>
-                <div className="p-8 flex flex-col gap-6">
+                <div className="p-5 sm:p-8 flex flex-col gap-6">
                   {detailLoading ? (
                     <div className="py-20 flex items-center justify-center text-slate-450 font-semibold">
                       Loading quiz questions...
@@ -236,7 +249,7 @@ export default function QuizLibraryPage() {
             /* --- LIBRARY SCREEN --- */
             <>
               <div className="flex flex-col gap-1.5">
-                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Quiz Library</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">Quiz Library</h1>
                 <p className="text-slate-500 text-sm font-medium">Select an existing quiz to add to your course structure.</p>
               </div>
 
@@ -269,7 +282,7 @@ export default function QuizLibraryPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {quizItems.map((quiz: ApiQuiz) => {
                       const durationVal = quiz.durationMinutes ?? (quiz as any).duration_minutes ?? quiz.duration;
                       const durationStr = durationVal ? (typeof durationVal === 'number' || !String(durationVal).includes('min') ? `${durationVal} mins` : String(durationVal)) : "-- mins";

@@ -149,7 +149,7 @@ export function mapCourseDetailsToStore(detail: Record<string, any>) {
       : [];
 
   const finalAssessment = detail.final_assessment || detail.finalAssessment || detail.final_assignment || null;
-  const finalAssessmentId = detail.final_assessment_id ?? detail.finalAssessment?.id ?? detail.final_assessment?.id ?? detail.final_assignment?.id ?? null;
+  const finalAssessmentId = detail.final_assessment_id ?? detail.finalAssessmentId ?? finalAssessment?.assignment_id ?? finalAssessment?.assignment?.id ?? finalAssessment?.id ?? null;
 
   return {
     id: detail.id !== undefined ? String(detail.id) : undefined,

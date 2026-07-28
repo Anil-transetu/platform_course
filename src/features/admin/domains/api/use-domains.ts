@@ -3,6 +3,7 @@ import {
   fetchDomains,
   fetchDomainStats,
   fetchDomainLookup,
+  fetchDomainsFilter,
   fetchDomainById,
   createDomain,
   updateDomain,
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 export const DOMAINS_QUERY_KEY = ["domains"];
 export const DOMAIN_STATS_QUERY_KEY = ["domain-stats"];
 export const DOMAIN_LOOKUP_QUERY_KEY = ["domainsLookup"];
+export const DOMAIN_FILTER_QUERY_KEY = ["domainFilter"];
 
 export function useDomains(
   page: number = 1,
@@ -46,6 +48,15 @@ export function useDomainLookup(search?: string, options?: any) {
   return useQuery<any[]>({
     queryKey: [...DOMAIN_LOOKUP_QUERY_KEY, search],
     queryFn: () => fetchDomainLookup(search),
+    staleTime: 5 * 60 * 1000,
+    ...options,
+  });
+}
+
+export function useDomainsFilter(options?: any) {
+  return useQuery<any[]>({
+    queryKey: DOMAIN_FILTER_QUERY_KEY,
+    queryFn: () => fetchDomainsFilter(),
     staleTime: 5 * 60 * 1000,
     ...options,
   });

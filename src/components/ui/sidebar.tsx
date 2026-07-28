@@ -82,11 +82,6 @@ function SidebarProvider({
         setSidebarCollapsed(!openState)
       }
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
-      try {
-        localStorage.setItem(SIDEBAR_COOKIE_NAME, String(openState))
-      } catch {
-        // Ignore localStorage write errors
-      }
     },
     [setOpenProp, open, setSidebarCollapsed]
   )

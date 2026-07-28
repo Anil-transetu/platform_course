@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Role } from '@/constants/roles';
+import { useSidebarStore } from '@/store/sidebar-store';
 
 interface User {
   email: string;
@@ -39,6 +40,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   setIsInitializing: (isInitializing) => set({ isInitializing }),
 
   logout: () => {
+    // Reset persisted sidebar state so next login defaults to expanded
+    useSidebarStore.getState().resetSidebar();
+
     // Clear cookies explicitly so middleware immediately recognizes unauthenticated state
     if (typeof document !== 'undefined') {
       document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -57,3 +61,4 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 }));
+
