@@ -58,7 +58,7 @@ export function QuizReviewView({ courseId, quizId, onBackToResults }: QuizReview
 
       <div className="space-y-6">
         {questions && questions.length > 0 ? (
-          questions.map((question, index) => (
+          questions.map((question: any, index: number) => (
             <QuizReviewQuestionCard
               key={question.questionId}
               index={index}

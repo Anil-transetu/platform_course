@@ -24,6 +24,7 @@ export interface SidebarLesson {
   name: string;
   progressPct?: number;
   isLocked?: boolean;
+  status?: string;
   lessons?: SidebarLesson[]; // Recursive support for nested topics inside lessons
   topics?: any[]; // The actual array for topics returned by API
 }
@@ -33,6 +34,7 @@ export interface SidebarModule {
   name: string;
   progressPct?: number;
   isLocked?: boolean;
+  status?: string;
   lessons?: SidebarLesson[];
   quiz?: any;
   quizzes?: any[];
@@ -143,7 +145,9 @@ export interface Quiz {
 }
 
 export interface QuizSubmitPayload {
-  answers: Record<string, string | number> | Array<{ questionId: string; optionId: string }>;
+  submittedAt: string;
+  isAutoSubmitted: boolean;
+  answers: Array<{ questionId: string; selectedOptionId: string }>;
 }
 
 

@@ -88,6 +88,31 @@ export function useQuiz(courseId: string, quizId: string) {
 }
 
 /**
+ * Start Quiz (Initializes backend timer and returns questions)
+ */
+export async function startQuiz(courseId: string, quizId: string): Promise<any> {
+  const url = `${API_HOST}/api/v1/student-portal/course/${courseId}/quiz/${quizId}/start`;
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  return result?.data || result;
+}
+
+/**
+ * React Query mutation for starting Quiz
+ */
+export function useStartQuiz() {
+  return useMutation({
+    mutationFn: ({ courseId, quizId }: { courseId: string; quizId: string }) =>
+      startQuiz(courseId, quizId),
+  });
+}
+
+/**
  * Submit Quiz
  */
 export async function submitQuiz(courseId: string, quizId: string, payload: QuizSubmitPayload) {

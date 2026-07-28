@@ -11,6 +11,8 @@ import { MarkCompletedButton } from "./mark-completed-button";
 import { QuizAttemptView } from "@/features/student/courses/components/quiz/QuizAttemptView";
 import { QuizResultView } from "@/features/student/courses/components/quiz/QuizResultView";
 import { QuizReviewView } from "@/features/student/courses/components/quiz/QuizReviewView";
+import { useStartQuiz } from "@/features/student/courses/api/quiz-api";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -418,23 +420,50 @@ function QuizViewer({ courseId, content, data }: { courseId: string; content: an
     (content as any)?.status === "completed" || 
     (content as any)?.progress === 100 ||
     (data as any)?.status === "completed";
+
+  const isInProgress = quizInfo?.status === "in_progress";
     
-  const [quizState, setQuizState] = React.useState<'intro' | 'attempting' | 'result' | 'review'>('intro');
+  const [quizState, setQuizState] = React.useState<'intro' | 'attempting' | 'result' | 'review'>(
+    isInProgress ? 'attempting' : 'intro'
+  );
+
+  const [activeAttemptData, setActiveAttemptData] = React.useState<any>(content);
+  
+  const { mutate: startQuiz, isPending: isStarting } = useStartQuiz();
+
   const timeLimit = quizInfo.time || data.time_limit_minutes || content?.metadata?.time_limit_minutes || data.quizTime;
   const totalQuestions = quizInfo.total_questions || data.total_questions;
   const totalMarks = quizInfo.total_marks || data.total_marks || content?.metadata?.total_marks;
   const passingScore = data.passing_score || content?.metadata?.passing_score;
 
-  // We merge content and data to form a robust Quiz object for QuizAttemptView
+  // We merge content, data, and activeAttemptData to form a robust Quiz object for QuizAttemptView
   const mergedQuiz: Quiz = {
     ...data,
     ...content,
     ...quizInfo,
-    questions: (content as any)?.questions || data.questions || [],
+    ...activeAttemptData,
+    questions: activeAttemptData?.questions || (content as any)?.questions || data.questions || [],
     quizId: quizInfo.id || content?.id || data.id || data.quizId,
     quizTitle: quizInfo.title || content?.title || data.name || data.quiz_title || data.title,
     description: quizInfo.description || content?.description || data.instructions,
     quizTime: timeLimit,
+    expires_at: activeAttemptData?.expires_at || content?.expires_at,
+    server_time: activeAttemptData?.server_time || content?.server_time,
+  };
+
+  const handleStartQuiz = () => {
+    startQuiz(
+      { courseId, quizId: String(mergedQuiz.quizId) },
+      {
+        onSuccess: (responseData) => {
+          setActiveAttemptData(responseData);
+          setQuizState('attempting');
+        },
+        onError: (err: Error) => {
+          toast.error(err.message || "Failed to start quiz.");
+        }
+      }
+    );
   };
 
   if (quizState === 'attempting') {
@@ -536,10 +565,11 @@ function QuizViewer({ courseId, content, data }: { courseId: string; content: an
               </>
             ) : (
               <button 
-                onClick={() => setQuizState('attempting')}
-                className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+                onClick={handleStartQuiz}
+                disabled={isStarting}
+                className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
-                Start Quiz <ArrowRight size={16} />
+                {isStarting ? "Starting..." : "Start Quiz"} {!isStarting && <ArrowRight size={16} />}
               </button>
             )}
           </div>

@@ -45,47 +45,46 @@ export const QuizReviewQuestionCard: React.FC<QuizReviewQuestionCardProps> = Rea
         {question.question}
       </h3>
 
-      <div className="space-y-3 mb-6">
-        {/* Correct Answer */}
-        <div className="relative flex items-start sm:items-center p-4 rounded-xl border-2 border-green-200 bg-green-50/50 text-green-900">
-          <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-            <div className="flex-1">
-              <div className="text-sm font-medium leading-relaxed">
-                {correctAnswer || "Not provided"}
-              </div>
-              <div className="text-[10px] font-bold uppercase tracking-wider mt-1 text-green-600">
-                {isCorrect ? "YOUR ANSWER & CORRECT ANSWER" : "CORRECT ANSWER"}
+      <div className="space-y-4 mb-6">
+        {/* Student's Wrong Answer (Shown First if Incorrect) */}
+        {!isCorrect && !isSkipped && studentAnswer && (
+          <div className="relative flex flex-col p-4 rounded-xl border border-red-300 bg-background text-red-900 shadow-sm">
+            <div className="flex items-center gap-3 mb-1">
+              <XCircle className="w-5 h-5 text-red-500 shrink-0" />
+              <div className="text-base font-medium leading-relaxed text-foreground">
+                {studentAnswer}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Student's Wrong Answer */}
-        {!isCorrect && !isSkipped && studentAnswer && (
-          <div className="relative flex items-start sm:items-center p-4 rounded-xl border-2 border-red-200 bg-red-50/50 text-red-900">
-            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-              <div className="flex-1">
-                <div className="text-sm font-medium leading-relaxed">
-                  {studentAnswer}
-                </div>
-                <div className="text-[10px] font-bold uppercase tracking-wider mt-1 text-red-600">
-                  YOUR ANSWER
-                </div>
-              </div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-red-500 ml-8">
+              YOUR ANSWER
             </div>
           </div>
         )}
+
+        {/* Correct Answer */}
+        <div className="relative flex flex-col p-4 rounded-xl border border-green-300 bg-background text-green-900 shadow-sm">
+          <div className="flex items-center gap-3 mb-1">
+            <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+            <div className="text-base font-medium leading-relaxed text-foreground">
+              {correctAnswer || "Not provided"}
+            </div>
+          </div>
+          <div className="text-[11px] font-bold uppercase tracking-wider text-green-600 ml-8">
+            {isCorrect ? "YOUR ANSWER & CORRECT ANSWER" : "CORRECT ANSWER"}
+          </div>
+        </div>
       </div>
 
-      {question.explanation && (
-        <div className="mt-4 p-4 rounded-lg bg-muted/30 border border-muted flex gap-3">
-          <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Explanation</h4>
-            <p className="text-sm text-foreground leading-relaxed">
-              {question.explanation}
+      {/* Explanation */}
+      {!isCorrect && (
+        <div className="p-4 rounded-xl border border-muted bg-background shadow-sm flex flex-col gap-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="w-5 h-5 text-muted-foreground shrink-0" />
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Explanation</h4>
+          </div>
+          <div className="ml-7">
+            <p className="text-sm text-foreground leading-relaxed italic">
+              {question.explanation || "Explanation is not available for this question."}
             </p>
           </div>
         </div>

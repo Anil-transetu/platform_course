@@ -21,27 +21,30 @@ export const QuestionOptions: React.FC<QuestionOptionsProps> = React.memo(({
     { optionId: 'no', option: 'No' }
   ] : (question.options || []);
 
+  const qId = question.questionId || (question as any).id;
+
   const handleChange = (value: string) => {
-    onOptionSelect(question.questionId, value);
+    onOptionSelect(qId, value);
   };
 
   const isShortOptions = options.every(opt => opt.option.length < 40);
 
   return (
     <RadioGroup
-      name={`question-${question.questionId}`}
+      name={`question-${qId}`}
       value={selectedOptionId?.toString() || ""}
       onValueChange={handleChange}
       className={`grid gap-3 mt-4 ${isShortOptions ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
     >
       {options.map((opt) => {
-        const uniqueId = `q${question.questionId}-opt${opt.optionId}`;
-        const isSelected = selectedOptionId?.toString() === opt.optionId.toString();
+        const uniqueId = `q${qId}-opt${opt.optionId ?? opt.option}`;
+        const currentOptId = opt.optionId?.toString() ?? (opt as any).id?.toString() ?? opt.option;
+        const isSelected = selectedOptionId?.toString() === currentOptId;
         
         return (
           <div
-            key={opt.optionId}
-            onClick={() => onOptionSelect(question.questionId, opt.optionId.toString())}
+            key={opt.optionId ?? (opt as any).id ?? opt.option}
+            onClick={() => onOptionSelect(qId, opt.optionId?.toString() ?? (opt as any).id?.toString() ?? opt.option)}
             role="radio"
             aria-checked={isSelected}
             tabIndex={0}

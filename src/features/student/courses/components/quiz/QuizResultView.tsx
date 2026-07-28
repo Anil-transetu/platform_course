@@ -4,7 +4,7 @@ import { QuizResultResponse } from "@/types/student-course";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { Eye, ArrowLeft, CheckCircle2, XCircle, Clock, Award, ChevronRight } from "lucide-react";
 
 interface QuizResultViewProps {
   courseId: string;
@@ -36,18 +36,19 @@ export function QuizResultView({ courseId, quizId, onBackToCourse, onReviewQuiz 
     );
   }
 
-  // Gracefully handle partial API responses
-  const result: QuizResultResponse = data.summary ? data : { summary: data, questions: [] };
-  const { summary } = result;
+  // Gracefully handle the new API format (data.result) or fallback to legacy format
+  const resultData = data.result || data.summary || data;
 
-  const percentage = summary.percentage || 0;
-  const isPass = summary.isPass ?? (percentage >= (summary.passingMarks || 70));
-  const correctCount = summary.correctAnswers || 0;
-  const incorrectCount = summary.incorrectAnswers || 0;
-  const totalCount = summary.totalQuestions || (correctCount + incorrectCount);
+  const percentage = resultData.quizPercentage ?? resultData.percentage ?? 0;
+  const isPass = resultData.isPass ?? (percentage >= (resultData.passingMarks || 70));
+  const correctCount = resultData.correctAnswers || 0;
+  const incorrectCount = resultData.wrongAnswers ?? resultData.incorrectAnswers ?? 0;
+  const totalCount = resultData.totalQuestions || (correctCount + incorrectCount);
+  const grade = resultData.grade || null;
+  const timeTaken = resultData.timeTaken ? `${resultData.timeTaken.minutes}m ${resultData.timeTaken.seconds}s` : null;
 
   // Deriving performance summary if backend doesn't provide it
-  const performanceMessage = summary.status || (
+  const performanceMessage = resultData.status || (
     isPass 
       ? (percentage >= 90 ? "Excellent work! You have a strong grasp of the material." : "Good job! You've passed the quiz.")
       : "Needs improvement. Review the material and try again."
@@ -56,6 +57,19 @@ export function QuizResultView({ courseId, quizId, onBackToCourse, onReviewQuiz 
   return (
     <div className="max-w-4xl mx-auto w-full pb-16 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
+      {/* Top Navigation */}
+      <div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={onBackToCourse}
+          className="-ml-3 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Quiz Home
+        </Button>
+      </div>
+
       {/* Header Card */}
       <Card className="overflow-hidden border-none shadow-sm bg-muted/30">
         <CardContent className="p-8">
@@ -122,27 +136,106 @@ export function QuizResultView({ courseId, quizId, onBackToCourse, onReviewQuiz 
         
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x border-t">
-          <div className="p-8 flex items-start gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/10 text-green-500 shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="p-8 flex flex-col justify-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/10 text-green-500 shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-foreground">Correct Answers</h4>
+                <p className="text-muted-foreground">{correctCount} out of {totalCount} questions</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-lg font-bold text-foreground">Correct Answers</h4>
-              <p className="text-muted-foreground mb-3">{correctCount} out of {totalCount} questions</p>
-            </div>
+            {timeTaken && (
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground">Time Taken</h4>
+                  <p className="text-muted-foreground">{timeTaken}</p>
+                </div>
+              </div>
+            )}
           </div>
           
-          <div className="p-8 flex items-start gap-4 bg-muted/10">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-destructive/10 text-destructive shrink-0">
-              <XCircle className="w-5 h-5" />
+          <div className="p-8 flex flex-col justify-center gap-4 bg-muted/10">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-destructive/10 text-destructive shrink-0">
+                <XCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-foreground">Areas for Review</h4>
+                <p className="text-muted-foreground">{incorrectCount} out of {totalCount} questions</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-lg font-bold text-foreground">Areas for Review</h4>
-              <p className="text-muted-foreground mb-3">{incorrectCount} out of {totalCount} questions</p>
-            </div>
+            {grade && (
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground">Final Grade</h4>
+                  <p className="text-muted-foreground font-semibold">Grade {grade}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Card>
+
+      {/* Snapshot Cards */}
+      {(resultData.firstCorrectQuestion || resultData.firstIncorrectQuestion) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {resultData.firstCorrectQuestion && (
+            <Card 
+              className="border-green-200 shadow-sm overflow-hidden flex flex-col cursor-pointer hover:shadow-md hover:border-green-300 transition-all group"
+              onClick={onReviewQuiz}
+            >
+              <div className="bg-green-50/50 px-6 py-4 border-b border-green-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <h4 className="text-sm font-bold text-green-800 uppercase tracking-wider">Correctly Answered</h4>
+                </div>
+                <ChevronRight className="w-4 h-4 text-green-600/50 group-hover:text-green-600 transition-colors" />
+              </div>
+              <CardContent className="p-6 flex-1 flex flex-col">
+                <p className="font-medium text-foreground mb-4 leading-relaxed line-clamp-2">
+                  "{resultData.firstCorrectQuestion.question}"
+                </p>
+                <div className="mt-auto pt-4 border-t border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 uppercase font-semibold">Your Answer</div>
+                  <div className="text-sm font-medium text-green-700">{resultData.firstCorrectQuestion.studentAnswer}</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {resultData.firstIncorrectQuestion && (
+            <Card 
+              className="border-red-200 shadow-sm overflow-hidden flex flex-col cursor-pointer hover:shadow-md hover:border-red-300 transition-all group"
+              onClick={onReviewQuiz}
+            >
+              <div className="bg-red-50/50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <XCircle className="w-4 h-4 text-red-600" />
+                  <h4 className="text-sm font-bold text-red-800 uppercase tracking-wider">Needs Review</h4>
+                </div>
+                <ChevronRight className="w-4 h-4 text-red-600/50 group-hover:text-red-600 transition-colors" />
+              </div>
+              <CardContent className="p-6 flex-1 flex flex-col">
+                <p className="font-medium text-foreground mb-4 leading-relaxed line-clamp-2">
+                  "{resultData.firstIncorrectQuestion.question}"
+                </p>
+                <div className="mt-auto pt-4 border-t border-border/50">
+                  <div className="text-xs text-muted-foreground mb-1 uppercase font-semibold">Correct Answer</div>
+                  <div className="text-sm font-medium text-foreground">{resultData.firstIncorrectQuestion.correctAnswer}</div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-center pt-4">
         <Button onClick={onBackToCourse} size="lg" className="px-8 py-6 text-lg w-full md:w-auto">
