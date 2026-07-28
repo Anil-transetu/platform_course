@@ -17,7 +17,7 @@ export interface TutorBatch {
 
 export function buildTutorBatchColumns(): Column<TutorBatch>[] {
   return [
-     {
+    {
       key: "id",
       label: "BATCH ID",
       render: (value, row) => (
@@ -40,7 +40,7 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
         const colorClass = colors[colorIndex];
 
         return (
-          
+
           <div className="flex items-center gap-3">
             {/* <div className={`w-1 h-10 rounded-full flex-shrink-0 ${colorClass}`} /> */}
             <div className="min-w-0">
@@ -69,7 +69,7 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
       label: "ALLOCATION TIME",
       render: (value, row) => (
         <div className="text-slate-500 font-medium text-sm flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
           {row.allocationTime || "-"}
         </div>
       ),
@@ -82,7 +82,7 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
         let progressColor = "bg-blue-600";
         if (progress >= 80) progressColor = "bg-green-600";
         else if (progress <= 50) progressColor = "bg-purple-600";
-        
+
         return (
           <div className="w-full max-w-[150px] flex flex-col gap-1">
             <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider">
