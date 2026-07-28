@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, HelpCircle, Clock, CheckSquare, Loader2, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCourseStore } from "@/store/useCourseStore";
@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
 import { toast } from 'sonner';
+
+function isBackendId(id: string | number | null | undefined): boolean {
+  if (id === null || id === undefined) return false;
+  const str = String(id).trim();
+  if (!str || str === "null" || str === "undefined") return false;
+  if (str.startsWith("temp-") || str.startsWith("draft-") || str.startsWith("new-")) return false;
+  return true;
+}
 
 export default function QuizLibraryPage() {
   const router = useRouter();
@@ -25,6 +33,16 @@ export default function QuizLibraryPage() {
     deleteQuiz,
     deleteCourseQuiz
   } = useCourseStore();
+
+  const [search, setSearch] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
+
+  // Reset forceLibraryView when selection changes
+  useEffect(() => {
+    setForceLibraryView(false);
+  }, [activeQuizId, activeModuleId, activeLessonId]);
   
   let activeQuiz: { id: string | number; title?: string; quiz_title?: string } | undefined;
   if (!activeModuleId) {
@@ -38,15 +56,10 @@ export default function QuizLibraryPage() {
     activeQuiz = activeLesson?.quizzes?.find(q => String(q.id) === String(activeQuizId));
   }
 
-  const [search, setSearch] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [forceLibraryView, setForceLibraryView] = useState(false);
-
   const debouncedSearch = useDebounce(search, 300);
 
   const activeQuizIdStr = activeQuiz?.id ? String(activeQuiz.id) : (activeQuizId ? String(activeQuizId) : "");
-  const isRealId = !!(activeQuizIdStr && !activeQuizIdStr.startsWith("temp-"));
+  const isRealId = isBackendId(activeQuizIdStr);
   const isLibraryEnabled = !isRealId || forceLibraryView;
 
   // 1. Fetch lookup list of quizzes — triggered only when library view is enabled

@@ -219,16 +219,12 @@ function InstitutionsPageContent() {
   const { data: stats } = useInstitutionStats();
 
   const institutionsList = Array.isArray(institutionsData) ? institutionsData : institutionsData?.data || [];
-  const apiTotal = !Array.isArray(institutionsData) ? institutionsData?.total : undefined;
-  const totalCount = apiTotal !== undefined ? apiTotal : institutionsList.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+  const meta = !Array.isArray(institutionsData) ? institutionsData?.meta : undefined;
+  const totalCount = meta?.total ?? (!Array.isArray(institutionsData) ? institutionsData?.total : undefined) ?? institutionsList.length;
+  const totalPages = meta?.totalPages ?? Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
-  // Local Pagination
-  let visibleData = institutionsList;
-  const start = (page - 1) * rowsPerPage;
-  if (institutionsList.length > rowsPerPage) {
-    visibleData = institutionsList.slice(start, start + rowsPerPage);
-  }
+  // Server paginated data: single source of truth from backend
+  const visibleData = institutionsList;
 
   // DataTable configs
   const searchConfig = {
@@ -302,7 +298,7 @@ function InstitutionsPageContent() {
           <StatsGrid>
             <StatsCard
               title="Total Institutions"
-              value={stats?.total_institutions ?? totalCount}
+              value={stats?.totalInstitutions ?? 0}
               icon={<Landmark size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
@@ -310,7 +306,7 @@ function InstitutionsPageContent() {
             />
             <StatsCard
               title="Active Institutions"
-              value={stats?.active_institutions ?? institutionsList.filter((i: any) => (i.status || "Active").toLowerCase() === "active").length}
+              value={stats?.activeInstitutions ?? 0}
               icon={<CheckCircle size={20} />}
               iconBgClass="bg-green-50"
               iconColorClass="text-green-600"
@@ -318,7 +314,7 @@ function InstitutionsPageContent() {
             />
             <StatsCard
               title="Avg. Courses / Inst."
-              value={stats?.avgCoursesPerInstitution?.toFixed(1) ?? "0"}
+              value={stats?.avgCoursesPerInstitution ?? 0}
               icon={<BookOpen size={20} />}
               iconBgClass="bg-purple-50"
               iconColorClass="text-purple-600"
@@ -363,7 +359,10 @@ function InstitutionsPageContent() {
             totalPages={totalPages}
             onPageChange={setPage}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={setRowsPerPage}
+            onRowsPerPageChange={(newRows) => {
+              setRowsPerPage(newRows);
+              setPage(1);
+            }}
             paginationInfo={paginationInfo}
             showPagination={true}
             renderExpandedRow={renderExpandedRow}

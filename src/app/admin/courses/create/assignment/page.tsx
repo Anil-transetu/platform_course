@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDebounce } from "@/hooks/use-debounce";
 
+function isBackendId(id: string | number | null | undefined): boolean {
+  if (id === null || id === undefined) return false;
+  const str = String(id).trim();
+  if (!str || str === "null" || str === "undefined") return false;
+  if (str.startsWith("temp-") || str.startsWith("draft-") || str.startsWith("new-")) return false;
+  return true;
+}
+
 export default function AssignmentLibraryPage() {
   const { 
     course, 
@@ -24,8 +32,19 @@ export default function AssignmentLibraryPage() {
     deleteCourseAssignment
   } = useCourseStore();
   
-  const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
-  const finalAssessmentId = String(finalAssessment?.id ?? (course as any)?.final_assessment_id ?? (course as any)?.finalAssessmentId ?? "");
+  const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment || (course as any)?.final_assignment;
+  const rawFaId = (course as any)?.final_assessment_id ?? (course as any)?.finalAssessmentId ?? finalAssessment?.assignment_id ?? finalAssessment?.assignment?.id ?? finalAssessment?.id;
+  const finalAssessmentId = rawFaId !== null && rawFaId !== undefined && String(rawFaId) !== "" ? String(rawFaId) : "";
+
+  const [search, setSearch] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [forceLibraryView, setForceLibraryView] = useState(false);
+
+  // Reset forceLibraryView when selection changes
+  useEffect(() => {
+    setForceLibraryView(false);
+  }, [activeAssignmentId, activeModuleId, activeLessonId]);
 
   // Sync activeAssignmentId on course-level assignment if it is null or different
   useEffect(() => {
@@ -36,15 +55,17 @@ export default function AssignmentLibraryPage() {
 
   let activeAssignment: { id: string | number; title?: string; assignment_title?: string; name?: string } | undefined;
   if (!activeModuleId) {
-    const finalAssessment = (course as any)?.final_assessment || (course as any)?.finalAssessment;
-    const effectiveAssignmentId = (!activeModuleId && finalAssessmentId) ? finalAssessmentId : (activeAssignmentId || finalAssessmentId);
-
-    if (finalAssessment && String(finalAssessment.id) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment;
-    } else if (effectiveAssignmentId && String(finalAssessmentId) === String(effectiveAssignmentId)) {
-      activeAssignment = finalAssessment || { id: effectiveAssignmentId };
-    } else if (effectiveAssignmentId) {
-      activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId)) || { id: effectiveAssignmentId };
+    const effectiveAssignmentId = activeAssignmentId || finalAssessmentId;
+    if (effectiveAssignmentId) {
+      const faId = String(finalAssessment?.assignment_id ?? finalAssessment?.assignment?.id ?? finalAssessment?.id ?? finalAssessmentId);
+      if (finalAssessment && (faId === String(effectiveAssignmentId) || String(finalAssessment.id) === String(effectiveAssignmentId))) {
+        activeAssignment = {
+          ...finalAssessment,
+          id: effectiveAssignmentId
+        };
+      } else {
+        activeAssignment = course.assignments?.find(a => String(a.id) === String(effectiveAssignmentId)) || { id: effectiveAssignmentId };
+      }
     }
   } else if (!activeLessonId) {
     const activeModule = course.modules.find(m => String(m.id) === String(activeModuleId));
@@ -55,17 +76,25 @@ export default function AssignmentLibraryPage() {
     activeAssignment = activeLesson?.assignments?.find(a => String(a.id) === String(activeAssignmentId));
   }
 
-  const [search, setSearch] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [forceLibraryView, setForceLibraryView] = useState(false);
-
   const debouncedSearch = useDebounce(search, 300);
 
   // 2. Fetch specific assignment details from backend if ID is a real backend ID
-  const activeAssignmentIdStr = activeAssignment?.id ? String(activeAssignment.id) : undefined;
-  const isRealId = !!(activeAssignmentIdStr && !activeAssignmentIdStr.includes("-"));
+  const activeAssignmentIdStr = activeAssignment?.id !== undefined && activeAssignment?.id !== null && String(activeAssignment.id) !== ""
+    ? String(activeAssignment.id)
+    : (activeAssignmentId ? String(activeAssignmentId) : (finalAssessmentId ? String(finalAssessmentId) : undefined));
+  const isRealId = isBackendId(activeAssignmentIdStr);
   const isLibraryEnabled = !isRealId || forceLibraryView;
+
+  if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+    console.log("[FinalAssessment State Debug]", {
+      activeAssignmentId,
+      finalAssessmentId,
+      activeAssignmentIdStr,
+      isRealId,
+      forceLibraryView,
+      isLibraryEnabled
+    });
+  }
 
   // 1. Fetch lookup list of assignments — only when library view is active
   const { data: assignmentsData, isLoading: listLoading } = useAssignmentLookup(
@@ -74,10 +103,10 @@ export default function AssignmentLibraryPage() {
   );
   const assignmentItems: ApiAssignment[] = Array.isArray(assignmentsData) ? assignmentsData : (assignmentsData as any)?.data || [];
 
-  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: !!isRealId });
+  const { data: assignmentDetail, isLoading: detailLoading } = useAssignment(isRealId ? activeAssignmentIdStr : undefined, { enabled: isRealId });
 
   const assignmentTitle = activeAssignment?.title || activeAssignment?.assignment_title || activeAssignment?.name || assignmentDetail?.title || "";
-  const shouldShowPreview = (isRealId || !!assignmentTitle) && !forceLibraryView;
+  const shouldShowPreview = isRealId && !forceLibraryView;
 
   const updateModuleMutation = useUpdateModule();
   const updateLessonMutation = useUpdateLesson();

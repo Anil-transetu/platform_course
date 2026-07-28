@@ -42,7 +42,7 @@ export function buildStudentColumns(): Column<Student>[] {
             <img 
               src={row.profile_image} 
               alt={row.first_name || "Student Avatar"} 
-              className="h-9 w-9 rounded-lg object-cover shrink-0" 
+              className="h-9 w-9 rounded-full object-cover shrink-0"
             />
           ) : (
             <div className={cn(
@@ -50,8 +50,8 @@ export function buildStudentColumns(): Column<Student>[] {
               getAvatarColor(row.id)
             )}>
               {getInitials(row.first_name, row.last_name)}
-            </div>
-          )}
+          </div>
+        )}
           <span className="font-semibold text-slate-900 text-sm">
             {row.first_name} {row.last_name}
           </span>
