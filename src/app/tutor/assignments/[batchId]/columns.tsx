@@ -6,18 +6,18 @@ import { Column } from "@/components/reusable/DataTable";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 
-export interface StudentQuizRow {
+export interface StudentAssignmentRow {
   id: string | number;
   studentId: string | number;
   studentProfile?: string | null;
   name: string;
   email: string;
-  latestQuiz: string;
+  latestAssignment: string;
   submittedOn: string;
-  submittedQuizCount: number;
+  submittedAssignmentCount: number;
 }
 
-export function buildQuizSubmissionColumns(batchId: string): Column<StudentQuizRow>[] {
+export function buildStudentAssignmentColumns(batchId: string): Column<StudentAssignmentRow>[] {
   return [
     {
       key: "studentId",
@@ -51,11 +51,11 @@ export function buildQuizSubmissionColumns(batchId: string): Column<StudentQuizR
       ),
     },
     {
-      key: "latestQuiz",
-      label: "LATEST QUIZ",
+      key: "latestAssignment",
+      label: "LATEST ASSIGNMENT",
       render: (_, row) => (
         <span className="text-sm font-medium text-slate-700">
-          {row.latestQuiz}
+          {row.latestAssignment}
         </span>
       ),
     },
@@ -69,11 +69,11 @@ export function buildQuizSubmissionColumns(batchId: string): Column<StudentQuizR
       ),
     },
     {
-      key: "submittedQuizCount",
+      key: "submittedAssignmentCount",
       label: "SUBMISSIONS",
       render: (_, row) => (
         <span className="font-bold text-slate-900 text-sm">
-          {row.submittedQuizCount}
+          {row.submittedAssignmentCount}
         </span>
       ),
     },
@@ -87,8 +87,8 @@ export function buildQuizSubmissionColumns(batchId: string): Column<StudentQuizR
           className="rounded-lg border-blue-200 text-blue-600 hover:bg-blue-50 font-medium"
           asChild
         >
-          <Link href={`/tutor/quizzes/${batchId}/${row.studentId}`}>
-            View History
+          <Link href={`/tutor/assignments/${batchId}/${row.studentId}`}>
+            Review Assignment
           </Link>
         </Button>
       ),

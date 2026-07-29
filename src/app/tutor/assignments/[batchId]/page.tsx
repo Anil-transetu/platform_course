@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { Toaster, toast } from "sonner";
-import { Users, FileCheck, Award } from "lucide-react";
+import { Users, FileCheck, Clock } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
-import { useBatchQuizStats, useBatchQuizzes } from "@/features/tutor/api/batch-quiz-api";
-import { buildQuizSubmissionColumns } from "./columns";
+import { useBatchAssignmentStats, useBatchAssignments } from "@/features/tutor/api/batch-assignment-api";
+import { buildStudentAssignmentColumns } from "./columns";
 import DataTable from "@/components/reusable/DataTable";
 
-export default function BatchQuizStatsPage() {
+export default function BatchAssignmentStatsPage() {
   const params = useParams();
   const batchId = params.batchId as string;
 
@@ -22,18 +22,18 @@ export default function BatchQuizStatsPage() {
     isLoading: isLoadingStats,
     isError: isStatsError,
     error: statsError,
-  } = useBatchQuizStats(batchId);
+  } = useBatchAssignmentStats(batchId);
 
   useEffect(() => {
     if (isStatsError) {
-      toast.error(statsError?.message || "Failed to load quiz statistics.");
+      toast.error(statsError?.message || "Failed to load assignment statistics.");
     }
   }, [isStatsError, statsError]);
 
   const stats = statsData || {};
   const totalStudents = stats.totalStudents ?? stats.total_students ?? 0;
-  const quizAttempts = stats.quizAttempts ?? stats.quiz_attempts ?? stats.total_submissions ?? 0;
-  const averageScore = stats.averageScore ?? stats.average_score ?? 0;
+  const submittedAssignments = stats.submittedAssignments ?? stats.submitted_assignments ?? stats.total_submissions ?? 0;
+  const pendingEvaluations = stats.pendingEvaluations ?? stats.pending_evaluations ?? 0;
 
   // Table States
   const [page, setPage] = useState(1);
@@ -54,16 +54,16 @@ export default function BatchQuizStatsPage() {
     setPage(1);
   }, [debouncedSearch]);
 
-  const { data: quizzesData, isFetching: isFetchingQuizzes } = useBatchQuizzes(
+  const { data: assignmentsData, isFetching: isFetchingAssignments } = useBatchAssignments(
     batchId,
     page,
     rowsPerPage,
     debouncedSearch
   );
 
-  const columns = buildQuizSubmissionColumns(batchId);
-  const studentList = quizzesData?.data || [];
-  const totalItems = quizzesData?.total || 0;
+  const columns = buildStudentAssignmentColumns(batchId);
+  const studentList = assignmentsData?.data || [];
+  const totalItems = assignmentsData?.total || 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
   return (
@@ -73,10 +73,10 @@ export default function BatchQuizStatsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">
-          Student Quiz List {batchName ? `: ${batchName}` : ""}
+          Student Assignment List {batchName ? `: ${batchName}` : ""}
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          View and track quiz submissions by students in this batch.
+          Review and grade assignment submissions by students in this batch.
         </p>
       </div>
 
@@ -96,21 +96,21 @@ export default function BatchQuizStatsPage() {
             />
 
             <StatsCard
-              title="Quiz Attempts"
-              value={quizAttempts}
+              title="Submitted Assignments"
+              value={submittedAssignments}
               icon={<FileCheck size={20} />}
               iconBgClass="bg-purple-50"
               iconColorClass="text-purple-600"
-              tooltip="Total quiz submissions made by students in this batch."
+              tooltip="Total assignment submissions made by students in this batch."
             />
 
             <StatsCard
-              title="Average Score"
-              value={typeof averageScore === "number" ? `${averageScore}%` : averageScore}
-              icon={<Award size={20} />}
-              iconBgClass="bg-green-50"
-              iconColorClass="text-green-600"
-              tooltip="Average quiz score achieved by students in this batch."
+              title="Pending Evaluations"
+              value={pendingEvaluations}
+              icon={<Clock size={20} />}
+              iconBgClass="bg-orange-50"
+              iconColorClass="text-orange-600"
+              tooltip="Total assignment submissions waiting for tutor evaluation in this batch."
             />
           </div>
 
@@ -118,7 +118,7 @@ export default function BatchQuizStatsPage() {
             <DataTable
               data={studentList}
               columns={columns}
-              loading={isFetchingQuizzes}
+              loading={isFetchingAssignments}
               rowKey={(row) => row.id || row.studentId}
               search={{
                 enabled: true,

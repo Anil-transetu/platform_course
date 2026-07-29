@@ -247,6 +247,7 @@ export default function TutorAttendancePage() {
               icon={<Users size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
+              tooltip="Total number of students enrolled in this batch."
             />
             <StatsCard
               title="Present"
@@ -254,6 +255,7 @@ export default function TutorAttendancePage() {
               icon={<CheckCircle2 size={20} />}
               iconBgClass="bg-green-50"
               iconColorClass="text-green-600"
+              tooltip="Total number of students marked present."
             />
             <StatsCard
               title="Absent"
@@ -261,6 +263,7 @@ export default function TutorAttendancePage() {
               icon={<XCircle size={20} />}
               iconBgClass="bg-red-50"
               iconColorClass="text-red-600"
+              tooltip="Total number of students marked absent."
             />
             <StatsCard
               title="Late"
@@ -268,6 +271,7 @@ export default function TutorAttendancePage() {
               icon={<Clock size={20} />}
               iconBgClass="bg-orange-50"
               iconColorClass="text-orange-600"
+              tooltip="Total number of students marked late."
             />
           </div>
 

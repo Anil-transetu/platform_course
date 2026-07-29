@@ -1,17 +1,15 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Column } from "@/components/reusable/DataTable";
 import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+
+import { Avatar } from "@/components/ui/avatar";
 
 export interface TutorBatch {
   id: string | number;
   name: string;
   course: string | { id?: string | number; name?: string; title?: string };
-  schedule: string;
-  allocationTime: string;
   progress: number;
 }
 
@@ -28,36 +26,24 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
       key: "name",
       label: "BATCH NAME",
       width: "w-1/4",
-      render: (value, row) => {
-        // Different colors for different batches
-        const colors = [
-          "bg-blue-600",
-          "bg-purple-600",
-          "bg-green-600",
-          "bg-indigo-600",
-        ];
-        const colorIndex = String(row.id).length % colors.length;
-        const colorClass = colors[colorIndex];
-
-        return (
-
-          <div className="flex items-center gap-3">
-            {/* <div className={`w-1 h-10 rounded-full flex-shrink-0 ${colorClass}`} /> */}
-            <div className="min-w-0">
-              <p className="font-semibold text-foreground text-sm truncate">
-                {row.name}
-              </p>
-              {/* <p className="text-xs text-muted-foreground truncate">
-                {row.schedule || "No Schedule"}
-              </p> */}
-            </div>
+      render: (value, row) => (
+        <div className="flex items-center gap-3 min-w-0">
+          <Avatar
+            name={row.name}
+            id={row.id}
+            sizeClassName="w-10 h-10"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-foreground text-sm truncate">
+              {row.name}
+            </p>
           </div>
-        );
-      },
+        </div>
+      ),
     },
     {
       key: "course",
-      label: "ALLOCATED COURSE",
+      label: "COURSE NAME",
       render: (value, row) => {
         const courseName =
           typeof row.course === "object" && row.course !== null
@@ -69,16 +55,6 @@ export function buildTutorBatchColumns(): Column<TutorBatch>[] {
           </div>
         );
       },
-    },
-    {
-      key: "allocationTime",
-      label: "ALLOCATION TIME",
-      render: (value, row) => (
-        <div className="text-slate-500 font-medium text-sm flex items-center gap-1.5">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-          {row.allocationTime || "-"}
-        </div>
-      ),
     },
     {
       key: "progress",

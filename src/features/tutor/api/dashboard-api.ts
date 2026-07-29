@@ -1,25 +1,36 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { TutorBatch } from "@/app/tutor/dashboard/columns";
 import { getAuthHeaders, handleResponse } from "@/lib/api-client";
-
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const STATS_URL = `${API_HOST}/api/v1/tutor-portal/stats`;
 const DASHBOARD_URL = `${API_HOST}/api/v1/tutor-portal/dashboard`;
 
-
+export interface TutorDashboardStats {
+  totalAssignedBatches?: number;
+  total_assigned_batches?: number;
+  totalStudents?: number;
+  total_students?: number;
+  pendingAssignmentEvaluations?: number;
+  pending_evaluations?: number;
+  pending_assignment_evaluations?: number;
+}
 
 /**
  * Fetch tutor dashboard stats
  */
-export async function fetchTutorStats() {
+export async function fetchTutorStats(): Promise<TutorDashboardStats> {
   const response = await fetch(STATS_URL, {
     method: "GET",
     headers: getAuthHeaders(),
   });
 
   const result = await handleResponse(response);
-  return result?.data || result || {};
+  const data = result?.data || result || {};
+  return {
+    totalAssignedBatches: data.totalAssignedBatches ?? data.total_assigned_batches ?? data.total_batches ?? 0,
+    totalStudents: data.totalStudents ?? data.total_students ?? 0,
+    pendingAssignmentEvaluations: data.pendingAssignmentEvaluations ?? data.pending_evaluations ?? data.pending_assignment_evaluations ?? 0,
+  };
 }
 
 /**
@@ -32,8 +43,8 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
   query.append("page", page.toString());
   query.append("limit", limit.toString());
 
-  if (search) {
-    query.append("search", search);
+  if (search?.trim()) {
+    query.append("search", search.trim());
   }
 
   if (query.toString()) {
@@ -47,11 +58,9 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
 
   const result = await handleResponse(response);
   
-  // Normalize the response format if backend returns different structure
   const data = result?.data?.data || result?.data || [];
-  const total = result?.data?.total || result?.total || data.length;
+  const total = result?.data?.total ?? result?.total ?? data.length;
 
-  // Map data to match frontend columns structure
   const mappedData = Array.isArray(data) ? data.map((b: any) => {
     let courseName = "N/A";
     if (typeof b.course === "string") {
@@ -62,25 +71,23 @@ export async function fetchTutorBatches(page: number = 1, limit: number = 5, sea
       courseName = b.course_name;
     } else if (typeof b.course_name === "object" && b.course_name !== null) {
       courseName = b.course_name.name || b.course_name.title || "N/A";
+    } else if (typeof b.courseName === "string") {
+      courseName = b.courseName;
     }
 
     let batchName = "N/A";
     if (typeof b.name === "string") {
       batchName = b.name;
-    } else if (typeof b.name === "object" && b.name !== null) {
-      batchName = b.name.name || "N/A";
     } else if (typeof b.batch_name === "string") {
       batchName = b.batch_name;
+    } else if (typeof b.batchName === "string") {
+      batchName = b.batchName;
     }
 
     return {
-      id: b.id || b.batch_id,
+      id: b.id || b.batch_id || b.batchId,
       name: batchName,
       course: courseName,
-      schedule: typeof b.schedule === "string" ? b.schedule : "N/A",
-      allocationTime: typeof (b.allocationTime || b.allocation_time) === "string"
-        ? (b.allocationTime || b.allocation_time)
-        : "N/A",
       progress: typeof b.progress === "number" ? b.progress : 0,
     };
   }) : [];

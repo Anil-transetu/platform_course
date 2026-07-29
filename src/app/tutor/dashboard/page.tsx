@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Layers, Users, FileText, CalendarDays, Eye, CheckCircle2 } from "lucide-react";
+import { Layers, Users, FileText, Eye, CheckCircle2, MoreVertical } from "lucide-react";
 import StatsCard from "@/components/ui/StatsCard";
 import DataTable from "@/components/reusable/DataTable";
 import { buildTutorBatchColumns, TutorBatch } from "./columns";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical } from "lucide-react";
 import Link from "next/link";
 import InstitutionPageSkeleton from "@/components/admin/institutions/InstitutionPageSkeleton";
 import { useTutorDashboardStats, useTutorDashboardBatches } from "@/features/tutor/api/dashboard-api";
@@ -94,6 +93,9 @@ export default function TutorDashboardPage() {
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
   const stats = statsData || {};
+  const totalAssignedBatches = stats.totalAssignedBatches ?? stats.total_assigned_batches ?? 0;
+  const totalStudents = stats.totalStudents ?? stats.total_students ?? 0;
+  const pendingEvaluations = stats.pendingAssignmentEvaluations ?? stats.pending_evaluations ?? stats.pending_assignment_evaluations ?? 0;
 
   return (
     <div className="p-6 w-full max-w-7xl mx-auto space-y-6 flex flex-col h-full">
@@ -111,35 +113,31 @@ export default function TutorDashboardPage() {
         <InstitutionPageSkeleton />
       ) : (
         <>
-          {/* Stats Cards Section */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-shrink-0">
+          {/* Stats Cards Section - ONLY 3 Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0">
             <StatsCard
               title="Total Assigned Batches"
-              value={stats.total_assigned_batches ?? 0}
+              value={totalAssignedBatches}
               icon={<Layers size={20} />}
               iconBgClass="bg-blue-50"
               iconColorClass="text-blue-600"
+              tooltip="Total number of batches currently assigned to you."
             />
             <StatsCard
               title="Total Students"
-              value={stats.total_students ?? 0}
+              value={totalStudents}
               icon={<Users size={20} />}
               iconBgClass="bg-purple-50"
               iconColorClass="text-purple-600"
+              tooltip="Total number of students enrolled across your assigned batches."
             />
             <StatsCard
-              title="Pending Evaluations"
-              value={stats.pending_evaluations ?? 0}
+              title="Pending Assignment Evaluations"
+              value={pendingEvaluations}
               icon={<FileText size={20} />}
               iconBgClass="bg-orange-50"
               iconColorClass="text-orange-600"
-            />
-            <StatsCard
-              title="Today's Sessions"
-              value={stats.today_sessions ?? 0}
-              icon={<CalendarDays size={20} />}
-              iconBgClass="bg-green-50"
-              iconColorClass="text-green-600"
+              tooltip="Total assignment submissions waiting for tutor evaluation."
             />
           </div>
 

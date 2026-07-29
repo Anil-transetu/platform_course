@@ -4,22 +4,22 @@ import { getAuthHeaders, handleResponse } from "@/lib/api-client";
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || "https://lms-backend-n83k.onrender.com";
 const BASE_URL = `${API_HOST}/api/v1/tutor-portal/batch`;
 
-export interface BatchQuizStats {
+export interface BatchAssignmentStats {
   totalStudents?: number;
   total_students?: number;
-  quizAttempts?: number;
-  quiz_attempts?: number;
+  submittedAssignments?: number;
+  submitted_assignments?: number;
   total_submissions?: number;
-  averageScore?: number;
-  average_score?: number;
+  pendingEvaluations?: number;
+  pending_evaluations?: number;
 }
 
 /**
- * Fetch Quiz Stats by Batch ID
- * Endpoint: GET /api/v1/tutor-portal/batch/:batchId/quiz-stats
+ * Fetch Assignment Stats by Batch ID
+ * Endpoint: GET /api/v1/tutor-portal/batch/:batchId/assignment-stats
  */
-export async function fetchBatchQuizStats(batchId: string | number): Promise<BatchQuizStats> {
-  const response = await fetch(`${BASE_URL}/${batchId}/quiz-stats`, {
+export async function fetchBatchAssignmentStats(batchId: string | number): Promise<BatchAssignmentStats> {
+  const response = await fetch(`${BASE_URL}/${batchId}/assignment-stats`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -28,34 +28,34 @@ export async function fetchBatchQuizStats(batchId: string | number): Promise<Bat
   const data = result.data || result || {};
   return {
     totalStudents: data.totalStudents ?? data.total_students ?? 0,
-    quizAttempts: data.quizAttempts ?? data.quiz_attempts ?? data.total_submissions ?? 0,
-    averageScore: data.averageScore ?? data.average_score ?? data.average_quiz_score ?? 0,
+    submittedAssignments: data.submittedAssignments ?? data.submitted_assignments ?? data.total_submissions ?? 0,
+    pendingEvaluations: data.pendingEvaluations ?? data.pending_evaluations ?? 0,
   };
 }
 
 /**
- * React Query Hook for quiz stats
+ * React Query Hook for assignment stats
  */
-export function useBatchQuizStats(batchId: string | number) {
+export function useBatchAssignmentStats(batchId: string | number) {
   return useQuery({
-    queryKey: ["batch-quiz-stats", batchId],
-    queryFn: () => fetchBatchQuizStats(batchId),
+    queryKey: ["batch-assignment-stats", batchId],
+    queryFn: () => fetchBatchAssignmentStats(batchId),
     enabled: !!batchId,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 /**
- * Fetch Student Quiz List by Batch ID
- * Endpoint: GET /api/v1/tutor-portal/batch/:batchId/quizzes
+ * Fetch Student Assignment List by Batch ID
+ * Endpoint: GET /api/v1/tutor-portal/batch/:batchId/assignments
  */
-export async function fetchBatchQuizzes(
+export async function fetchBatchAssignments(
   batchId: number | string,
   page: number = 1,
   limit: number = 5,
   search?: string
 ) {
-  let url = `${BASE_URL}/${batchId}/quizzes`;
+  let url = `${BASE_URL}/${batchId}/assignments`;
 
   const query = new URLSearchParams({
     page: page.toString(),
@@ -79,14 +79,14 @@ export async function fetchBatchQuizzes(
   const total = result?.data?.total ?? result?.total ?? result?.pagination?.total_items ?? data.length;
 
   const mappedData = Array.isArray(data) ? data.map((s: any) => ({
-    id: s.id || `${s.studentId || s.student_id}-${s.quizId || s.quiz_id || "quiz"}`,
+    id: s.id || `${s.studentId || s.student_id}-${s.assignmentId || s.assignment_id || "assignment"}`,
     studentId: s.studentId ?? s.student_id ?? s.id ?? 0,
     studentProfile: s.studentProfile || s.student_profile || s.avatar || null,
     name: s.studentName || s.student_name || s.name || "N/A",
     email: s.studentEmail || s.student_email || s.email || "N/A",
-    latestQuiz: s.latestQuiz || s.latest_quiz || s.quizTitle || s.quiz_title || "N/A",
+    latestAssignment: s.latestAssignment || s.latest_assignment || s.assignmentTitle || s.assignment_title || "N/A",
     submittedOn: s.submittedOn || s.submitted_on || s.submissionDate || s.submission_date || "N/A",
-    submittedQuizCount: s.submittedQuizCount ?? s.submitted_quiz_count ?? s.submissionCount ?? s.submission_count ?? 0,
+    submittedAssignmentCount: s.submittedAssignmentCount ?? s.submitted_assignment_count ?? s.submissionCount ?? s.submission_count ?? 0,
   })) : [];
 
   return {
@@ -95,15 +95,15 @@ export async function fetchBatchQuizzes(
   };
 }
 
-export function useBatchQuizzes(
+export function useBatchAssignments(
   batchId: number | string,
   page: number = 1,
   limit: number = 5,
   search?: string
 ) {
   return useQuery({
-    queryKey: ["batchQuizzes", batchId, { page, limit, search }],
-    queryFn: () => fetchBatchQuizzes(batchId, page, limit, search),
+    queryKey: ["batchAssignments", batchId, { page, limit, search }],
+    queryFn: () => fetchBatchAssignments(batchId, page, limit, search),
     enabled: !!batchId,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
