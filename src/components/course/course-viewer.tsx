@@ -13,6 +13,8 @@ import { QuizResultView } from "@/features/student/courses/components/quiz/QuizR
 import { QuizReviewView } from "@/features/student/courses/components/quiz/QuizReviewView";
 import { useStartQuiz } from "@/features/student/courses/api/quiz-api";
 import { toast } from "sonner";
+import { AssignmentAttemptView } from "@/features/student/courses/components/assignment/AssignmentAttemptView";
+import { AssignmentResultView } from "@/features/student/courses/components/assignment/AssignmentResultView";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -74,7 +76,7 @@ export function CourseViewer({ courseId, activeItem }: CourseViewerProps) {
   }
 
   if (activeItem.type === "assignment") {
-    return <AssignmentViewer content={viewContent} data={activeItem.data as Assignment} />;
+    return <AssignmentViewer courseId={courseId} content={viewContent} data={activeItem.data as Assignment} />;
   }
 
   return <EmptyState title="Unsupported content type" description="This content type is not supported yet." />;
@@ -579,7 +581,34 @@ function QuizViewer({ courseId, content, data }: { courseId: string; content: an
   );
 }
 
-function AssignmentViewer({ content, data }: { content: CourseContent; data: Assignment }) {
+function AssignmentViewer({ courseId, content, data }: { courseId: string; content: CourseContent; data: Assignment }) {
+  const [viewState, setViewState] = React.useState<'intro' | 'attempting' | 'result'>('intro');
+
+  if (viewState === 'attempting') {
+    return (
+      <AssignmentAttemptView
+        courseId={courseId}
+        assignmentTitle={content.title || data.title || data.name}
+        onBack={() => setViewState('intro')}
+        onSubmit={() => setViewState('result')}
+      />
+    );
+  }
+
+  if (viewState === 'result') {
+    return (
+      <AssignmentResultView
+        courseId={courseId}
+        assignmentTitle={content.title || data.title || data.name}
+        onBackToCourse={() => setViewState('intro')}
+        onNextSection={() => {
+          // Placeholder for next section logic
+          console.log("Next section");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto w-full pb-16">
       <Card>
@@ -600,7 +629,10 @@ function AssignmentViewer({ content, data }: { content: CourseContent; data: Ass
           </div>
 
           <div className="pt-6 border-t flex justify-end">
-            <button className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => setViewState('attempting')}
+              className="px-6 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2"
+            >
               Begin Submission <ArrowRight size={16} />
             </button>
           </div>
